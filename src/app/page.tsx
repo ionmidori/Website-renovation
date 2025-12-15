@@ -358,8 +358,8 @@ export default function Home() {
             </AnimatePresence>
 
             {/* Input Form */}
-            <div className="p-4 bg-slate-900/50 border-t border-white/5 backdrop-blur-md">
-              <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+            <div className="p-3 md:p-4 bg-slate-900/50 border-t border-white/5 backdrop-blur-md">
+              <form onSubmit={handleSubmit} className="flex gap-1.5 md:gap-2 items-center">
 
                 {/* Image Upload Button */}
                 <input
@@ -373,7 +373,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-3 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-all border border-white/5 group"
+                  className="p-2 md:p-3 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-all border border-white/5 group"
                   title="Carica immagini"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform">
@@ -385,7 +385,7 @@ export default function Home() {
                 <VoiceRecorder onRecordingComplete={handleAudioUpload} disabled={isLoading} />
 
                 <input
-                  className="flex-1 bg-slate-800/50 border border-white/10 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder:text-slate-500 transition-all font-light"
+                  className="flex-1 min-w-0 bg-slate-800/50 border border-white/10 rounded-full px-3 md:px-5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder:text-slate-500 transition-all font-light"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={isLoading ? "SYD sta scrivendo..." : "Scrivi il tuo messaggio..."}
@@ -395,7 +395,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={isLoading || (!input.trim() && uploadedImages.length === 0)}
-                  className="p-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:shadow-none transition-all duration-300 transform active:scale-95"
+                  className="p-2 md:p-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:shadow-none transition-all duration-300 transform active:scale-95"
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

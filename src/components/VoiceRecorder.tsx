@@ -109,7 +109,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
                 type="button"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={disabled || isProcessing}
-                className={`p-3 rounded-full transition-all duration-200 flex items-center justify-center relative
+                className={`p-2 md:p-3 rounded-full transition-all duration-200 flex items-center justify-center relative
             ${isRecording
                         ? 'bg-red-500 hover:bg-red-600 text-white ring-4 ring-red-200'
                         : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-white/5'
