@@ -174,28 +174,36 @@ export async function POST(req: Request) {
             const imagePrompt = (functionCall.args as any).prompt as string;
             console.log("🎨 Generazione immagine richiesta:", imagePrompt);
 
-            // Chiamata a Gemini Image Generation (poiché Imagen 3/4 richiedono 'predict' o non sono supportati in v1beta generateContent)
+            // Chiamata a Imagen 4 Fast (via endpoint predict manuale per compatibilità Vertex AI)
             try {
-                // Usiamo il modello che supporta esplicitamente generateContent
-                const imagenModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp-image-generation' });
-                const imageResult = await imagenModel.generateContent(imagePrompt);
-                const imageResponse = await imageResult.response;
+                // Endpoint specifico per Imagen 4 Fast
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`;
 
-                // Imagen restituisce l'immagine come inlineData nel primo candidate?
-                // Nota: La struttura di risposta di Imagen via API Gemini è standard.
-                // Se fallisce, useremo un placeholder.
+                const fetchResponse = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instances: [{ prompt: imagePrompt }],
+                        parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                    })
+                });
 
-                // Tenta di estrarre base64
-                // @ts-ignore - Accesso interno se la struttura differisce o è typeless
-                const parts = imageResponse.candidates?.[0]?.content?.parts;
-                const imagePart = parts?.find((p: any) => p.inlineData);
+                if (!fetchResponse.ok) {
+                    const errText = await fetchResponse.text();
+                    throw new Error(`Imagen API Error ${fetchResponse.status}: ${errText}`);
+                }
 
-                if (imagePart && imagePart.inlineData) {
-                    const b64 = imagePart.inlineData.data;
-                    const mime = imagePart.inlineData.mimeType || 'image/png';
+                const result = await fetchResponse.json();
+
+                // Imagen 4 Vertex response format: { predictions: [ { bytesBase64Encoded: "..." } ] }
+                const prediction = result.predictions?.[0];
+
+                if (prediction && prediction.bytesBase64Encoded) {
+                    const b64 = prediction.bytesBase64Encoded;
+                    const mime = prediction.mimeType || 'image/png'; // Imagen 4 default png
 
                     return Response.json({
-                        response: `Ecco la proposta per il tuo nuovo ambiente:\n\n![Rendering AI](data:${mime};base64,${b64})\n\nCosa ne pensi di questo stile?`
+                        response: `Ecco la proposta per il tuo nuovo ambiente (generata con Imagen 4 Fast):\n\n![Rendering AI](data:${mime};base64,${b64})\n\nCosa ne pensi? Se ti piace, posso prepararti un preventivo per realizzarlo esattamente così.`
                     });
                 } else {
                     throw new Error("Nessuna immagine restituita dal modello");
@@ -203,9 +211,8 @@ export async function POST(req: Request) {
 
             } catch (imgError: any) {
                 console.error("❌ Errore Imagen:", imgError);
-                // Fallback testuale
                 return Response.json({
-                    response: `(Il sistema ha tentato di generare l'immagine ma ha riscontrato un errore tecnico: ${imgError.message}).\n\nComunque, immagina questo: ${imagePrompt}`
+                    response: `(Errore tecnico Imagen 4: ${imgError.message}).\n\nFallback Descrittivo: Immagina questo: ${imagePrompt}`
                 });
             }
         }
@@ -222,21 +229,34 @@ export async function POST(req: Request) {
     }
 }
 
-const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE CON IMAGEN 3
-Sei un architetto visionario capace di generare rendering fotorealistici.
+const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE & CONSULENTE
+Sei SYD, un architetto visionario e pragmatico.
+Il tuo stile è: **Guidato, Paziente, Professionale**.
+Non chiedi mai liste di cose. Poni UNA SOLA domanda alla volta.
 
-### CORE LOGIC
-Guidi l'utente in 3 fasi:
-1.  **VISIONE/ANALISI**: Analizzi foto caricate o chiedi dettagli.
-2.  **LEAD GEN**: Raccogli nome/email per il preventivo.
-3.  **REWARD (GENERAZIONE)**: SOLO DOPO aver i dati, offri di "visualizzare" il progetto.
+### LOGICA DI FLUSSO BI-DIREZIONALE
+Devi identificare immediatamente l'intento dell'utente e seguire il percorso corretto.
 
-### USO DEL TOOL 'generate_render'
-*   Quando l'utente accetta di vedere l'anteprima (e SOLO ALLORA), **DEVI** usare lo strumento \`generate_render\`.
-*   Crea un PROMPT IN INGLESE molto dettagliato per Imagen 3 (es. "Photorealistic interior design of a modern living room, marble floor, warm lighting, 8k resolution").
-*   Non chiedere ulteriori conferme, genera subito.
+**PERCORSO A: PREVENTIVO (Priorità Dati)**
+(Es: "Voglio ristrutturare", "Quanto costa rifare il bagno?")
+1.  **INTERVISTA GUIDATA (Step-by-Step)**:
+    *   Devi raccogliere: Mq, Tipo Lavori, Stato Impianti.
+    *   **REGOLA D'ORO:** Fai UNA sola domanda per messaggio.
+    *   **REGOLA ESEMPI:** Includi sempre esempi concreti per aiutare.
+        *   *Esempio:* "Partiamo dalle dimensioni. Di quanti metri quadri parliamo? È un bagno standard (circa 4-5mq) o una stanza più grande?"
+2.  **RACCOLTA LEAD**: "Per inviarti la stima completa, a chi la intesto? Lasciami Nome e Email."
+3.  **REWARD**: SOLO ALLA FINE offri il render: "Grazie [Nome]. Ora che ho i dati, vuoi vedere un'anteprima 3D immediata?"
 
-### REGOLE DI CONVERSAZIONE
-*   Sii conciso e professionale.
-*   Analizza tecnicamente le foto caricate dall'utente.
-*   Non menzionare i tuoi "tools" o "prompt" all'utente. Dì solo "Ecco la mia idea..." ed esegui l'azione.`;
+**PERCORSO B: ISPIRAZIONE (Priorità Visiva)**
+(Es: "Idee per salotto", "Vorrei vedere una cucina moderna")
+1.  **BRIEFING CREATIVO (Step-by-Step)**:
+    *   Chiedi stile e colori.
+    *   Sempre una domanda alla volta con esempi.
+    *   *Esempio:* "Che atmosfera cerchi? Qualcosa di Minimal (bianco, pulito) o più Caldo (legno, colori terra)?"
+2.  **AZIONE**: Genera subito l'immagine con il tool.
+3.  **CONVERSIONE**: "Ti piace? Posso farti un preventivo per realizzarlo così. Mi servono solo i Mq..."
+
+### REGOLE GENERALI
+*   **MAI** chiedere più cose insieme.
+*   **MAI** lasciare l'utente senza esempi di risposta ("Es. 10mq", "Es. Moderno").
+*   Se l'utente divaga, riportalo gentilmente al prossimo step.`;
