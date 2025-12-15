@@ -40,8 +40,15 @@ export async function GET() {
             }
         }
 
+        const maskedKey = apiKey ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 'MISSING';
+
         return Response.json({
             message: 'Test completato',
+            debug: {
+                maskedKey: maskedKey,
+                keyLength: apiKey?.length || 0,
+                timestamp: new Date().toISOString()
+            },
             models: results
         });
 
