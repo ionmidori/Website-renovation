@@ -12,6 +12,34 @@ type Message = {
   content: string;
 };
 
+// Simple Markdown Image Parser to handle Base64 images without external libs
+const renderMessageContent = (text: string) => {
+  const regex = /!\[(.*?)\]\((.*?)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex, match.index)}</span>);
+    }
+    const alt = match[1];
+    const src = match[2];
+    parts.push(
+      <div key={`img-${match.index}`} className="my-3 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg">
+        <img src={src} alt={alt} className="w-full h-auto object-cover" />
+      </div>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>);
+  }
+
+  return parts.length > 0 ? parts : text;
+};
+
 export default function Home() {
   const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([
@@ -312,7 +340,7 @@ export default function Home() {
                       }`}
                   >
                     <div className="markdown-content whitespace-pre-wrap">
-                      {m.content}
+                      {renderMessageContent(m.content)}
                     </div>
                   </div>
                 </motion.div>
