@@ -123,12 +123,29 @@ export async function POST(req: Request) {
             }
         }
 
-        // Invia messaggio
-        const result = await chat.sendMessage(userParts);
-        const response = await result.response;
-        const text = response.text();
+        // Invia messaggio con retry logic per gestire errori 503 (Model Overloaded)
+        let responseText = "";
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
 
-        return Response.json({ response: text });
+        while (retryCount < MAX_RETRIES) {
+            try {
+                const result = await chat.sendMessage(userParts);
+                const response = await result.response;
+                responseText = response.text();
+                break; // Success!
+            } catch (error: any) {
+                if (error.status === 503 && retryCount < MAX_RETRIES - 1) {
+                    console.log(`⚠️ Gemini 503 (Overloaded) - Retry ${retryCount + 1}/${MAX_RETRIES} in 1s...`);
+                    retryCount++;
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponentialish backoff
+                    continue;
+                }
+                throw error; // Rethrow if not 503 or max retries reached
+            }
+        }
+
+        return Response.json({ response: responseText });
 
     } catch (error: any) {
         console.error("Gemini API Error:", error);
