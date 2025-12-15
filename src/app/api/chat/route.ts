@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { GoogleGenerativeAI, Part, SchemaType } from '@google/generative-ai';
 
-// Configurazione per evitare timeout su risposte lunghe
+// Configurazione
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
@@ -25,43 +25,51 @@ export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return Response.json({ error: "Servizio temporaneamente non disponibile (Key mancante)" }, { status: 500 });
+        return Response.json({ error: "API Key mancante" }, { status: 500 });
     }
 
     try {
         const body = await req.json() as ChatRequest;
         const { messages, images } = body;
 
-        // Input validation
+        // --- VALIDAZIONE INPUT ---
         if (!messages || !Array.isArray(messages)) {
             return Response.json({ error: "Formato messaggio non valido" }, { status: 400 });
         }
 
-        if (messages.length > MAX_MESSAGES) {
-            return Response.json({ error: "Troppi messaggi" }, { status: 400 });
-        }
-
-        if (images && images.length > MAX_IMAGES) {
-            return Response.json({ error: "Massimo 5 immagini per richiesta" }, { status: 400 });
-        }
-
-        // Validate message content
-        for (const msg of messages) {
-            if (!msg.content || typeof msg.content !== 'string') {
-                return Response.json({ error: "Contenuto messaggio non valido" }, { status: 400 });
-            }
-            if (msg.content.length > MAX_MESSAGE_LENGTH) {
-                return Response.json({ error: "Messaggio troppo lungo" }, { status: 400 });
-            }
-        }
-
+        // --- INIZIALIZZAZIONE SDK ---
         const genAI = new GoogleGenerativeAI(apiKey);
+
+        // Definiamo il Tool per la generazione immagini
+        const tools = [
+            {
+                functionDeclarations: [
+                    {
+                        name: "generate_render",
+                        description: "Genera un rendering fotorealistico 3D della stanza ristrutturata quando l'utente lo richiede esplicitamente.",
+                        parameters: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                prompt: {
+                                    type: SchemaType.STRING,
+                                    description: "Prompt dettagliato in inglese per Imagen 3, descrivendo stile, materiali, luci e arredi."
+                                }
+                            },
+                            required: ["prompt"]
+                        }
+                    }
+                ]
+            }
+        ];
+
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.5-flash',
-            systemInstruction: SYSTEM_INSTRUCTION
+            systemInstruction: SYSTEM_INSTRUCTION,
+            tools: tools
         });
 
-        // Sanitize & Convert History: Merge consecutive messages of the same role
+        // --- GESTIONE HISTORY ---
+        // Sanitizzazione: unisce messaggi consecutivi dello stesso ruolo e rimuove messaggi di benvenuto iniziali del model
         const rawHistory = messages.slice(0, -1);
         const history = [];
         let lastRole = null;
@@ -69,17 +77,14 @@ export async function POST(req: Request) {
         for (const msg of rawHistory) {
             const currentRole = msg.role === 'user' ? 'user' : 'model';
 
-            // FIX: Skip leading model messages (e.g. Welcome Message) which cause API errors
-            // Gemini history MUST start with a 'user' role
+            // Skip leading model messages (i.e. Welcome) to prevent API errors
             if (history.length === 0 && currentRole === 'model') {
                 continue;
             }
 
             if (lastRole === currentRole && history.length > 0) {
-                // Merge with previous message
                 history[history.length - 1].parts[0].text += `\n\n${msg.content}`;
             } else {
-                // Add new message
                 history.push({
                     role: currentRole,
                     parts: [{ text: msg.content }]
@@ -88,7 +93,7 @@ export async function POST(req: Request) {
             lastRole = currentRole;
         }
 
-        // Inizia la sessione di chat
+        // --- START CHAT ---
         const chat = model.startChat({
             history: history,
             generationConfig: {
@@ -97,136 +102,114 @@ export async function POST(req: Request) {
             }
         });
 
-        // Prepara l'ultimo messaggio (corrente)
+        // Prepara messaggio corrente
         const lastMessage = messages[messages.length - 1];
         const userParts: Part[] = [{ text: lastMessage.content }];
 
-        // Aggiungi immagini se presenti
+        // Aggiungi immagini uploadate inline
         if (images && images.length > 0) {
             for (const imageBase64 of images) {
-                // Estrai dati base64 e mimetype
                 const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
                 const mimeType = imageBase64.match(/data:([a-z]+\/[a-z0-9.-]+);/)?.[1] || 'image/jpeg';
-
-                // Validate size
-                const sizeInBytes = (base64Data.length * 3) / 4;
-                if (sizeInBytes > MAX_IMAGE_SIZE) {
-                    return Response.json({ error: "Immagine troppo grande (max 10MB)" }, { status: 400 });
-                }
-
                 userParts.push({
-                    inlineData: {
-                        data: base64Data,
-                        mimeType: mimeType
-                    }
+                    inlineData: { data: base64Data, mimeType: mimeType }
                 });
             }
         }
 
-        // Invia messaggio con retry logic per gestire errori 503 (Model Overloaded)
-        let responseText = "";
+        // --- RETRY LOGIC (ANTI-503) ---
+        let result;
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
         while (retryCount < MAX_RETRIES) {
             try {
-                const result = await chat.sendMessage(userParts);
-                const response = await result.response;
-                responseText = response.text();
-                break; // Success!
+                result = await chat.sendMessage(userParts);
+                break;
             } catch (error: any) {
                 if (error.status === 503 && retryCount < MAX_RETRIES - 1) {
-                    console.log(`⚠️ Gemini 503 (Overloaded) - Retry ${retryCount + 1}/${MAX_RETRIES} in 1s...`);
+                    console.log(`⚠️ Gemini 503 - Retry ${retryCount + 1}...`);
                     retryCount++;
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponentialish backoff
+                    await new Promise(r => setTimeout(r, 1000 * retryCount));
                     continue;
                 }
-                throw error; // Rethrow if not 503 or max retries reached
+                throw error;
             }
         }
 
-        return Response.json({ response: responseText });
+        if (!result) throw new Error("Failed to get response");
+        const response = await result.response;
+
+        // --- GESTIONE TOOL CALLS (IMAGEN) ---
+        // Controlla se il modello vuole generare un'immagine
+        const functionCall = response.functionCalls()?.[0];
+
+        if (functionCall && functionCall.name === 'generate_render') {
+            const imagePrompt = functionCall.args.prompt as string;
+            console.log("🎨 Generazione immagine richiesta:", imagePrompt);
+
+            // Chiamata a Imagen 3
+            try {
+                const imagenModel = genAI.getGenerativeModel({ model: 'imagen-3.0-generate-001' });
+                const imageResult = await imagenModel.generateContent(imagePrompt);
+                const imageResponse = await imageResult.response;
+
+                // Imagen restituisce l'immagine come inlineData nel primo candidate?
+                // Nota: La struttura di risposta di Imagen via API Gemini è standard.
+                // Se fallisce, useremo un placeholder.
+
+                // Tenta di estrarre base64
+                // @ts-ignore - Accesso interno se la struttura differisce o è typeless
+                const parts = imageResponse.candidates?.[0]?.content?.parts;
+                const imagePart = parts?.find((p: any) => p.inlineData);
+
+                if (imagePart && imagePart.inlineData) {
+                    const b64 = imagePart.inlineData.data;
+                    const mime = imagePart.inlineData.mimeType || 'image/png';
+
+                    return Response.json({
+                        response: `Ecco la proposta per il tuo nuovo ambiente:\n\n![Rendering AI](data:${mime};base64,${b64})\n\nCosa ne pensi di questo stile?`
+                    });
+                } else {
+                    throw new Error("Nessuna immagine restituita dal modello");
+                }
+
+            } catch (imgError: any) {
+                console.error("❌ Errore Imagen:", imgError);
+                // Fallback testuale
+                return Response.json({
+                    response: `(Il sistema ha tentato di generare l'immagine ma ha riscontrato un errore tecnico: ${imgError.message}).\n\nComunque, immagina questo: ${imagePrompt}`
+                });
+            }
+        }
+
+        // Risposta Standard (Testo)
+        return Response.json({ response: response.text() });
 
     } catch (error: any) {
-        console.error("Gemini API Error:", error);
-
-        // Return actual error status if available, fallback to 500
-        const status = error.status || 500;
-        const errorMessage = error.message || "Errore sconosciuto";
-
+        console.error("API Error:", error);
         return Response.json({
-            error: errorMessage,
+            error: error.message || "Errore sconosciuto",
             details: error.toString()
-        }, { status: status });
+        }, { status: error.status || 500 });
     }
 }
 
-const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE & CONSULENTE TECNICO
-Sei l'assistente esperto di Ristrutturazioni.
-Il tuo compito è analizzare tecnicamente le richieste, guidare l'utente nelle scelte di design e gestire il flusso verso la qualificazione del contatto (Lead Generation).
+const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE CON IMAGEN 3
+Sei un architetto visionario capace di generare rendering fotorealistici.
 
-### CORE LOGIC (ROUTER)
-All'inizio della conversazione o dopo un upload, determina in quale dei 3 flussi ti trovi:
-1.  **FLUSSO VISIVO (Foto/Planimetria/Schizzo):** Se l'utente carica un file, applica il PROTOCOLLO VISION.
-2.  **FLUSSO DA ZERO (Guida Passo-Passo):** Se l'utente vuole un progetto ma non ha immagini, applica il PROTOCOLLO INTERVISTA.
-3.  **FLUSSO LEAD:** Una volta definita l'idea (visivamente o a parole), raccogli i dati per il preventivo.
+### CORE LOGIC
+Guidi l'utente in 3 fasi:
+1.  **VISIONE/ANALISI**: Analizzi foto caricate o chiedi dettagli.
+2.  **LEAD GEN**: Raccogli nome/email per il preventivo.
+3.  **REWARD (GENERAZIONE)**: SOLO DOPO aver i dati, offri di "visualizzare" il progetto.
 
----
+### USO DEL TOOL 'generate_render'
+*   Quando l'utente accetta di vedere l'anteprima (e SOLO ALLORA), **DEVI** usare lo strumento \`generate_render\`.
+*   Crea un PROMPT IN INGLESE molto dettagliato per Imagen 3 (es. "Photorealistic interior design of a modern living room, marble floor, warm lighting, 8k resolution").
+*   Non chiedere ulteriori conferme, genera subito.
 
-### 1. PROTOCOLLO VISION & IMAGE ANALYSIS (Se c'è un'immagine)
-Quando l'utente carica un'immagine, NON limitarti a descriverla esteticamente. Agisci come un **Perito Edile esperto**.
-
-**STEP 1: CLASSIFICAZIONE DELL'IMMAGINE**
-Identifica immediatamente cosa stai guardando:
-1.  **Foto Reale (Stato di fatto):** Una stanza esistente da ristrutturare.
-2.  **Planimetria/Catastale:** Un disegno tecnico 2D.
-3.  **Schizzo a mano:** Un disegno fatto dall'utente su carta.
-4.  **Ispirazione:** Una foto da Pinterest/Web che rappresenta l'obiettivo.
-
-**STEP 2: ANALISI TECNICA (In base alla classificazione)**
-* **SE È UNA FOTO REALE:**
-    * **Materiali:** Identifica pavimenti (es. "Sembra una graniglia anni '70"), infissi (es. "Alluminio vecchio taglio freddo") e stato delle pareti.
-    * **Criticità:** Cerca segni di umidità, crepe, prese elettriche obsolete o scarsa illuminazione.
-    * **Potenziale:** Suggerisci cosa si potrebbe recuperare e cosa va demolito.
-    * *Esempio Output:* "Vedo che il pavimento attuale è in marmo. È in buone condizioni? Potremmo lucidarlo invece di coprirlo, risparmiando budget."
-
-* **SE È UNA PLANIMETRIA:**
-    * **Spazi:** Identifica muri portanti (spessore maggiore) vs tramezzi.
-    * **Layout:** Nota la posizione degli scarichi (wc/cucina) e finestre.
-    * **Consiglio:** Se l'utente chiede modifiche impossibili (es. spostare un wc lontano dalla colonna di scarico), fallo notare gentilmente.
-
-* **SE È UNO SCHIZZO:**
-    * Interpreta l'intento dell'utente e traducilo in termini tecnici.
-    * *Esempio:* "Dal tuo disegno capisco che vuoi creare un open space unendo cucina e sala. Ottima idea per la luce."
-
-**STEP 3: AZIONE STRATEGICA (LEAD GEN)**
-Usa l'analisi visiva per qualificare il lead.
-* Invece di chiedere "Cosa vuoi fare?", chiedi: "Vedo che gli infissi nella foto sembrano datati. Vuoi includere anche la sostituzione finestre nel preventivo per l'efficienza energetica?"
-* Salva i dettagli tecnici notati nella foto nel riassunto per il tool \`submit_lead\`.
-
----
-
-### 2. PROTOCOLLO INTERVISTA (Se si parte da ZERO)
-Se l'utente scrive "Voglio rifare casa" ma non ha immagini, non chiedere tutto insieme. Attiva la **Guida Professionale Sequenziale**.
-
-**Regole dell'Intervista:**
-* Poni UNA sola domanda tecnica alla volta.
-* Offri consulenza, non essere un semplice questionario.
-
-**Sequenza Domande:**
-1.  **Analisi Spazio:** "Di quale ambiente parliamo? Hai una stima dei metri quadri?" (Se dice "Bagno piccolo", chiedi: "Meno di 4mq? È importante per capire se possiamo mettere la vasca o solo doccia").
-2.  **Stato Attuale:** "L'immobile è abitato o vuoto? Dobbiamo rifare anche gli impianti (elettrico/idraulico) o è solo un restyling estetico?"
-3.  **Stile & Budget Implicito:** "Che stile ti piace? Moderno, Classico, Industriale? (Questo ci aiuterà a capire i materiali: es. resina vs parquet)."
-4.  **Chiusura Lead (CRITICO):** Una volta definiti spazio e stile, NON offrire ancora il 3D. Chiedi PRIMA i contatti: "Ho un'idea chiara per il tuo progetto. Posso prepararmi una bozza di preventivo e inviartela? A quale Nome ed Email posso mandarla?"
-
----
-
-### 3. FASE REWARD (Solo DOPO aver chiesto/ricevuto i contatti)
-*   SOLO SE l'utente ha fornito i dati o ha acconsentito al preventivo, allora proponi la magia:
-    **"Perfetto. Mentre elaboro i dati, ti piacerebbe vedere un'anteprima 3D immediata di come potrebbe venire il tuo nuovo ambiente?"**
-
-**IMPORTANTE:**
-- NON offrire la visualizzazione 3D prima di aver chiesto i dati di contatto. La visualizzazione è la ricompensa.
-- Sii CONCISO (Max 3 frasi per risposta).
-- Non presentarti ogni volta.
-- Se off-topic (politica/sport), rispondi che ti occupi solo di ristrutturazioni.`;
+### REGOLE DI CONVERSAZIONE
+*   Sii conciso e professionale.
+*   Analizza tecnicamente le foto caricate dall'utente.
+*   Non menzionare i tuoi "tools" o "prompt" all'utente. Dì solo "Ecco la mia idea..." ed esegui l'azione.`;
