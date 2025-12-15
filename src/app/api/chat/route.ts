@@ -61,11 +61,26 @@ export async function POST(req: Request) {
             systemInstruction: SYSTEM_INSTRUCTION
         });
 
-        // Converte la history (tutti tranne l'ultimo)
-        const history = messages.slice(0, -1).map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }]
-        }));
+        // Sanitize & Convert History: Merge consecutive messages of the same role
+        const rawHistory = messages.slice(0, -1);
+        const history = [];
+        let lastRole = null;
+
+        for (const msg of rawHistory) {
+            const currentRole = msg.role === 'user' ? 'user' : 'model';
+
+            if (lastRole === currentRole && history.length > 0) {
+                // Merge with previous message
+                history[history.length - 1].parts[0].text += `\n\n${msg.content}`;
+            } else {
+                // Add new message
+                history.push({
+                    role: currentRole,
+                    parts: [{ text: msg.content }]
+                });
+            }
+            lastRole = currentRole;
+        }
 
         // Inizia la sessione di chat
         const chat = model.startChat({
