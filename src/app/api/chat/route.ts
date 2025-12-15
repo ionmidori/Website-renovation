@@ -171,7 +171,7 @@ export async function POST(req: Request) {
         const functionCall = response.functionCalls()?.[0];
 
         if (functionCall && functionCall.name === 'generate_render') {
-            const imagePrompt = functionCall.args.prompt as string;
+            const imagePrompt = (functionCall.args as any).prompt as string;
             console.log("🎨 Generazione immagine richiesta:", imagePrompt);
 
             // Chiamata a Imagen 3
