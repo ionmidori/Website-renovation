@@ -47,7 +47,8 @@ export async function POST(req: Request) {
 
         // Validate message content
         for (const msg of messages) {
-            if (msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
+            // Check length only for user messages to allow long AI responses (images)
+            if (msg.role === 'user' && msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
                 return Response.json({ error: "Messaggio troppo lungo" }, { status: 400 });
             }
         }
@@ -108,12 +109,19 @@ export async function POST(req: Request) {
                 continue;
             }
 
+            // Sanitize content: Remove Base64 images from history to prevent context overflow/token waste
+            // The model knows it generated an image, it doesn't need the Base64 string back.
+            let cleanContent = msg.content;
+            if (currentRole === 'model') {
+                cleanContent = cleanContent.replace(/!\[.*?\]\(data:image.*?\)/g, '[Immagine Generata]');
+            }
+
             if (lastRole === currentRole && history.length > 0) {
-                history[history.length - 1].parts[0].text += `\n\n${msg.content}`;
+                history[history.length - 1].parts[0].text += `\n\n${cleanContent}`;
             } else {
                 history.push({
                     role: currentRole,
-                    parts: [{ text: msg.content }]
+                    parts: [{ text: cleanContent }]
                 });
             }
             lastRole = currentRole;
