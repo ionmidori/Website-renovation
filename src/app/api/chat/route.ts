@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+
 // Configurazione per evitare timeout su risposte lunghe
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return Response.json({ error: "Servizio temporaneamente non disponibile" }, { status: 500 });
+        return Response.json({ error: "Servizio temporaneamente non disponibile (Key mancante)" }, { status: 500 });
     }
 
     try {
@@ -53,26 +55,75 @@ export async function POST(req: Request) {
             }
         }
 
-        // Validate images size
-        if (images) {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            systemInstruction: SYSTEM_INSTRUCTION
+        });
+
+        // Converte la history (tutti tranne l'ultimo)
+        const history = messages.slice(0, -1).map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.content }]
+        }));
+
+        // Inizia la sessione di chat
+        const chat = model.startChat({
+            history: history,
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048,
+            }
+        });
+
+        // Prepara l'ultimo messaggio (corrente)
+        const lastMessage = messages[messages.length - 1];
+        const userParts: Part[] = [{ text: lastMessage.content }];
+
+        // Aggiungi immagini se presenti
+        if (images && images.length > 0) {
             for (const imageBase64 of images) {
-                const base64Length = imageBase64.length - (imageBase64.indexOf(',') + 1);
-                const sizeInBytes = (base64Length * 3) / 4;
+                // Estrai dati base64 e mimetype
+                const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+                const mimeType = imageBase64.match(/data:([a-z]+\/[a-z0-9.-]+);/)?.[1] || 'image/jpeg';
+
+                // Validate size
+                const sizeInBytes = (base64Data.length * 3) / 4;
                 if (sizeInBytes > MAX_IMAGE_SIZE) {
                     return Response.json({ error: "Immagine troppo grande (max 10MB)" }, { status: 400 });
                 }
+
+                userParts.push({
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: mimeType
+                    }
+                });
             }
         }
 
-        // COSTRUZIONE PROMPT
-        let conversationText = "";
+        // Invia messaggio
+        const result = await chat.sendMessage(userParts);
+        const response = await result.response;
+        const text = response.text();
 
-        messages.forEach((msg: ChatMessage) => {
-            const role = msg.role === 'user' ? 'UTENTE' : 'SYD';
-            conversationText += `${role}: ${msg.content}\n\n`;
-        });
+        return Response.json({ response: text });
 
-        const systemInstruction = `# SYD - ARCHITETTO PERSONALE & CONSULENTE TECNICO
+    } catch (error: any) {
+        console.error("Gemini API Error:", error);
+
+        // Return actual error status if available, fallback to 500
+        const status = error.status || 500;
+        const errorMessage = error.message || "Errore sconosciuto";
+
+        return Response.json({
+            error: errorMessage,
+            details: error.toString()
+        }, { status: status });
+    }
+}
+
+const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE & CONSULENTE TECNICO
 Sei l'assistente esperto di Ristrutturazioni.
 Il tuo compito è analizzare tecnicamente le richieste, guidare l'utente nelle scelte di design e gestire il flusso verso la qualificazione del contatto (Lead Generation).
 
@@ -140,61 +191,4 @@ Se l'utente scrive "Voglio rifare casa" ma non ha immagini, non chiedere tutto i
 - NON offrire la visualizzazione 3D prima di aver chiesto i dati di contatto. La visualizzazione è la ricompensa.
 - Sii CONCISO (Max 3 frasi per risposta).
 - Non presentarti ogni volta.
-- Se off-topic (politica/sport), rispondi che ti occupi solo di ristrutturazioni.
-
-STORIA DELLA CONVERSAZIONE:
-${conversationText}
-
-SYD (tuo turno):`;
-
-        // Costruisci il payload per Gemini API
-        const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: systemInstruction }];
-
-        // Aggiungi immagini se presenti
-        if (images && images.length > 0) {
-            images.forEach((imageBase64: string) => {
-                const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
-                const mimeType = imageBase64.match(/data:([a-z]+\/[a-z0-9.-]+);/)?.[1] || 'image/jpeg';
-
-                parts.push({
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: base64Data
-                    }
-                });
-            });
-        }
-
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: parts }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 2048,
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Gemini API Error:", response.status);
-            return Response.json({ error: "Servizio temporaneamente non disponibile" }, { status: 503 });
-        }
-
-        const data = await response.json();
-        const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Mi dispiace, riprova.";
-
-        return Response.json({ response: generatedText });
-
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error("Error:", error.message);
-            return Response.json({ error: "Si è verificato un errore" }, { status: 500 });
-        }
-        return Response.json({ error: "Errore sconosciuto" }, { status: 500 });
-    }
-}
+- Se off-topic (politica/sport), rispondi che ti occupi solo di ristrutturazioni.`;
