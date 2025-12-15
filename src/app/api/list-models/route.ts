@@ -24,21 +24,35 @@ export async function GET() {
 
         const results = [];
 
-        for (const modelName of modelsToTest) {
-            try {
-                const model = genAI.getGenerativeModel({ model: modelName });
-                const result = await model.generateContent('Test');
-                results.push({ model: modelName, status: '✅ Disponibile' });
-                console.log(`✅ ${modelName} - OK`);
-            } catch (error: any) {
-                results.push({
-                    model: modelName,
-                    status: '❌ Non disponibile',
-                    error: error.message
-                });
-                console.log(`❌ ${modelName} - ${error.message}`);
-            }
+        // TEST SPECIFICO PER VIDEO/CHAT
+        const modelName = 'gemini-2.5-flash';
+        try {
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                systemInstruction: "Sei un test."
+            });
+            const result = await model.generateContent('Ciao, funzioni?');
+            const response = await result.response;
+            results.push({
+                model: modelName,
+                status: '✅ FUNZIONA (Chat + SystemInstruction)',
+                response: response.text().substring(0, 50)
+            });
+        } catch (error: any) {
+            results.push({
+                model: modelName,
+                status: '❌ ERRORE CHAT',
+                error: error.message,
+                details: error.toString()
+            });
         }
+
+        // Test fallback su 1.5
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            await model.generateContent('Test');
+            results.push({ model: 'gemini-1.5-flash', status: '✅ Disponibile (Fallback)' });
+        } catch (e) { }
 
         const maskedKey = apiKey ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 'MISSING';
 
