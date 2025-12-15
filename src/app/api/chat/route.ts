@@ -69,6 +69,12 @@ export async function POST(req: Request) {
         for (const msg of rawHistory) {
             const currentRole = msg.role === 'user' ? 'user' : 'model';
 
+            // FIX: Skip leading model messages (e.g. Welcome Message) which cause API errors
+            // Gemini history MUST start with a 'user' role
+            if (history.length === 0 && currentRole === 'model') {
+                continue;
+            }
+
             if (lastRole === currentRole && history.length > 0) {
                 // Merge with previous message
                 history[history.length - 1].parts[0].text += `\n\n${msg.content}`;
