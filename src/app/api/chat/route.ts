@@ -174,9 +174,10 @@ export async function POST(req: Request) {
             const imagePrompt = (functionCall.args as any).prompt as string;
             console.log("🎨 Generazione immagine richiesta:", imagePrompt);
 
-            // Chiamata a Imagen 3
+            // Chiamata a Gemini Image Generation (poiché Imagen 3/4 richiedono 'predict' o non sono supportati in v1beta generateContent)
             try {
-                const imagenModel = genAI.getGenerativeModel({ model: 'imagen-3.0-generate-001' });
+                // Usiamo il modello che supporta esplicitamente generateContent
+                const imagenModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp-image-generation' });
                 const imageResult = await imagenModel.generateContent(imagePrompt);
                 const imageResponse = await imageResult.response;
 
