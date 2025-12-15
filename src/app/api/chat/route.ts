@@ -203,7 +203,7 @@ export async function POST(req: Request) {
                     const mime = prediction.mimeType || 'image/png'; // Imagen 4 default png
 
                     return Response.json({
-                        response: `Ecco la proposta per il tuo nuovo ambiente (generata con Imagen 4 Fast):\n\n![Rendering AI](data:${mime};base64,${b64})\n\nCosa ne pensi? Se ti piace, posso prepararti un preventivo per realizzarlo esattamente così.`
+                        response: `Ecco la proposta per il tuo nuovo ambiente:\n\n![Rendering AI](data:${mime};base64,${b64})\n\nCosa ne pensi? Se ti piace, posso prepararti un preventivo per realizzarlo esattamente così.`
                     });
                 } else {
                     throw new Error("Nessuna immagine restituita dal modello");

@@ -13,7 +13,7 @@ type Message = {
 };
 
 // Simple Markdown Image Parser to handle Base64 images without external libs
-const renderMessageContent = (text: string) => {
+const renderMessageContent = (text: string, onImageClick?: (src: string) => void) => {
   const regex = /!\[(.*?)\]\((.*?)\)/g;
   const parts = [];
   let lastIndex = 0;
@@ -26,7 +26,11 @@ const renderMessageContent = (text: string) => {
     const alt = match[1];
     const src = match[2];
     parts.push(
-      <div key={`img-${match.index}`} className="my-3 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg">
+      <div
+        key={`img-${match.index}`}
+        className="my-3 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => onImageClick?.(src)}
+      >
         <img src={src} alt={alt} className="w-full h-auto object-cover" />
       </div>
     );
@@ -42,6 +46,7 @@ const renderMessageContent = (text: string) => {
 
 export default function Home() {
   const [isOpen, setIsOpen] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -340,7 +345,7 @@ export default function Home() {
                       }`}
                   >
                     <div className="markdown-content whitespace-pre-wrap">
-                      {renderMessageContent(m.content)}
+                      {renderMessageContent(m.content, setSelectedImage)}
                     </div>
                   </div>
                 </motion.div>
@@ -445,6 +450,52 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl max-h-[90vh] w-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedImage}
+                alt="Full preview"
+                className="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain"
+              />
+
+              <div className="mt-6 flex gap-4">
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="px-6 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm border border-white/10"
+                >
+                  Chiudi
+                </button>
+                <a
+                  href={selectedImage}
+                  download="progetto-syd.png"
+                  className="px-6 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-lg flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+                  Scarica HD
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </main>
   );
 }
