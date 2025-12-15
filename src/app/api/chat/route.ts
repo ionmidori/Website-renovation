@@ -37,6 +37,32 @@ export async function POST(req: Request) {
             return Response.json({ error: "Formato messaggio non valido" }, { status: 400 });
         }
 
+        if (messages.length > MAX_MESSAGES) {
+            return Response.json({ error: "Troppi messaggi" }, { status: 400 });
+        }
+
+        if (images && images.length > MAX_IMAGES) {
+            return Response.json({ error: "Massimo 5 immagini per richiesta" }, { status: 400 });
+        }
+
+        // Validate message content
+        for (const msg of messages) {
+            if (msg.content && msg.content.length > MAX_MESSAGE_LENGTH) {
+                return Response.json({ error: "Messaggio troppo lungo" }, { status: 400 });
+            }
+        }
+
+        // Validate images size
+        if (images) {
+            for (const imageBase64 of images) {
+                const base64Length = imageBase64.length - (imageBase64.indexOf(',') + 1);
+                const sizeInBytes = (base64Length * 3) / 4;
+                if (sizeInBytes > MAX_IMAGE_SIZE) {
+                    return Response.json({ error: "Immagine troppo grande (max 10MB)" }, { status: 400 });
+                }
+            }
+        }
+
         // --- INIZIALIZZAZIONE SDK ---
         const genAI = new GoogleGenerativeAI(apiKey);
 
