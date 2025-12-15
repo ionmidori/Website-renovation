@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         const model = genAI.getGenerativeModel({
             model: 'gemini-2.5-flash',
             systemInstruction: SYSTEM_INSTRUCTION,
-            tools: tools
+            tools: tools as any
         });
 
         // --- GESTIONE HISTORY ---
