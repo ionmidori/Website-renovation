@@ -42,7 +42,17 @@ export function Hero() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                        <Button variant="premium" size="lg" className="h-14 px-8 text-base">
+                        <Button
+                            variant="premium"
+                            size="lg"
+                            className="h-14 px-8 text-base"
+                            onClick={() => {
+                                const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
+                                    detail: { message: "Vorrei richiedere un preventivo gratuito per la mia ristrutturazione." }
+                                });
+                                window.dispatchEvent(event);
+                            }}
+                        >
                             Richiedi Preventivo Gratuito
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>

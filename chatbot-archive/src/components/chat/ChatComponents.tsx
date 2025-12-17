@@ -24,8 +24,14 @@ export const ChatHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => (
             </div>
             <div>
                 <h3 className="font-bold text-sm">Assistente SYD</h3>
-                <p className="text-[10px] text-sage-light opacity-90 uppercase tracking-wide">Online</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-[10px] text-sage-light opacity-90 uppercase tracking-wide">Online</p>
+                    <span className="flex items-center gap-1 text-[8px] text-green-300 font-bold uppercase tracking-tighter bg-white/10 px-1 py-0.5 rounded border border-white/20">
+                        Secure Mode
+                    </span>
+                </div>
             </div>
+
         </div>
         <button className="p-1 hover:bg-white/20 rounded-full transition-colors">
             <X size={20} />

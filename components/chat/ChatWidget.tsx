@@ -95,6 +95,22 @@ export default function ChatWidget() {
         }
     };
 
+    // Event Listener for External Triggers
+    useEffect(() => {
+        const handleOpenChat = (e: CustomEvent<{ message?: string }>) => {
+            setIsOpen(true);
+            if (e.detail?.message) {
+                // Small delay to ensure UI is ready and feels natural
+                setTimeout(() => {
+                    sendMessage(e.detail.message);
+                }, 500);
+            }
+        };
+
+        window.addEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChat as any);
+        return () => window.removeEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChat as any);
+    }, []);
+
     // Core Send Logic
     const sendMessage = async (textOverride?: string) => {
         const textToSend = textOverride || input;
@@ -178,10 +194,16 @@ export default function ChatWidget() {
                                     <h3 className="font-bold text-white flex items-center gap-2">
                                         SYD <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">AI ARCHITECT</span>
                                     </h3>
-                                    <p className="text-xs text-slate-400 flex items-center gap-1">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                        Online
+                                    <p className="text-xs text-slate-400 flex items-center gap-3">
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                            Online
+                                        </span>
+                                        <span className="flex items-center gap-1 text-[9px] text-emerald-400 font-medium uppercase tracking-wider bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                            <Sparkles className="w-2 h-2" /> Secure Mode
+                                        </span>
                                     </p>
+
                                 </div>
                             </div>
                             <Button

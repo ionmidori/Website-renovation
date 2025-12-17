@@ -35,7 +35,7 @@ If you discover a security vulnerability within this project, please send an e-m
   - `X-Content-Type-Options`: set to `nosniff`.
   - `Referrer-Policy`: set to `origin-when-cross-origin`.
   - `Permissions-Policy`: Restrictive policy disabling camera, microphone, and geolocation by default.
-  - `Content-Security-Policy`: (Planned for next iteration)
+  - `Content-Security-Policy`: Enforced with strict rules for scripts, styles, and frames.
 
 ### 4. Input Validation
 - **Forms**: All forms (Contact, Newsletter) undergo client-side validation (regex for email) and sanitization before processing.
