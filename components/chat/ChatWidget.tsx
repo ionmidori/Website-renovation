@@ -24,6 +24,8 @@ export default function ChatWidget() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,7 +205,6 @@ export default function ChatWidget() {
                                             <Sparkles className="w-2 h-2" /> Secure Mode
                                         </span>
                                     </p>
-
                                 </div>
                             </div>
                             <Button
@@ -248,8 +249,18 @@ export default function ChatWidget() {
                                                 urlTransform={(value) => value}
                                                 components={{
                                                     img: ({ node, ...props }) => (
-                                                        props.src ? <img {...props} className="rounded-lg max-w-full h-auto mt-2 border border-white/10" /> : null
+                                                        props.src ? (
+                                                            <div className="group relative mt-2 cursor-pointer overflow-hidden rounded-lg border border-white/10" onClick={() => setSelectedImage(props.src as string)}>
+                                                                <img {...props} className="max-w-full h-auto transition-transform hover:scale-105" />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <span className="text-xs text-white font-medium bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1">
+                                                                        <Minimize2 className="w-3 h-3 rotate-45" /> Espandi
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ) : null
                                                     )
+
                                                 }}
                                             >
                                                 {msg.content}
@@ -352,6 +363,49 @@ export default function ChatWidget() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* LIGHTBOX FOR IMAGE PREVIEW */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedImage(null)}
+                        className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+                    >
+                        <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+                            <motion.img
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                src={selectedImage}
+                                alt="Full preview"
+                                className="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-white/10"
+                            />
+
+                            <div className="mt-4 flex gap-4">
+                                <Button
+                                    onClick={() => setSelectedImage(null)}
+                                    variant="outline"
+                                    className="border-white/20 text-white hover:bg-white/10"
+                                >
+                                    <X className="w-4 h-4 mr-2" />
+                                    Chiudi
+                                </Button>
+                                <a
+                                    href={selectedImage}
+                                    download={`renovation-ai-vision-${Date.now()}.png`}
+                                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
+                                >
+                                    <Send className="w-4 h-4 mr-2 rotate-180" /> {/* Simulating download icon */}
+                                    Scarica HD
+                                </a>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
+
 }

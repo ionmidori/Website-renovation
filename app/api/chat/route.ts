@@ -133,7 +133,13 @@ export async function POST(req: Request) {
 
             // Sanitize content: Remove Base64 images from history to prevent context overflow/token waste
             // The model knows it generated an image, it doesn't need the Base64 string back.
-            let cleanContent = msg.content;
+            let cleanContent = msg.content || "";
+
+            // Fix for empty messages (e.g. User sent only an image): Gemini API requires non-empty text
+            if (!cleanContent.trim()) {
+                cleanContent = currentRole === 'user' ? "(Immagine Inviata)" : "(Risposta non testuale)";
+            }
+
             if (currentRole === 'model') {
                 cleanContent = cleanContent.replace(/!\[.*?\]\(data:image.*?\)/g, '[Immagine Generata]');
             }
