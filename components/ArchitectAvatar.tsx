@@ -1,9 +1,10 @@
 import React from 'react';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
-export default function ArchitectAvatar() {
+export default function ArchitectAvatar({ className }: { className?: string }) {
     return (
-        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-slate-700 shadow-lg group">
+        <div className={cn("relative w-12 h-12 rounded-full overflow-hidden border-2 border-slate-700 shadow-lg group", className)}>
             <Image
                 src="/assets/syd_avatar_v3.png"
                 alt="SYD Avatar"
@@ -18,3 +19,4 @@ export default function ArchitectAvatar() {
         </div>
     );
 }
+

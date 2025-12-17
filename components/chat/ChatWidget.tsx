@@ -152,31 +152,90 @@ export default function ChatWidget() {
         }
     };
 
+    const [showWelcomeBadge, setShowWelcomeBadge] = useState(false);
+
+    // Initial Welcome Badge Timer
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!isOpen) {
+                setShowWelcomeBadge(true);
+            }
+        }, 3000); // Show after 3 seconds
+
+        return () => clearTimeout(timer);
+    }, [isOpen]);
+
+    // Hide badge when chat opens
+    useEffect(() => {
+        if (isOpen) {
+            setShowWelcomeBadge(false);
+        }
+    }, [isOpen]);
+
     return (
         <>
-            {/* Toggle Button */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="fixed bottom-6 right-6 z-50"
-            >
-                <Button
-                    onClick={() => setIsOpen(!isOpen)}
-                    size="icon"
-                    className={cn(
-                        "w-16 h-16 rounded-full shadow-2xl transition-all duration-300 relative border border-white/10",
-                        isOpen ? "bg-slate-800 text-white" : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-110"
+            {/* Toggle Button Container */}
+            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4">
+
+                {/* Welcome Badge / Tooltip */}
+                <AnimatePresence>
+                    {showWelcomeBadge && !isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 20, scale: 0.8 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 10, scale: 0.8 }}
+                            className="bg-white text-slate-900 px-4 py-2 rounded-xl shadow-xl shadow-blue-500/10 border border-blue-100 flex items-center gap-3 relative mr-2 cursor-pointer"
+                            onClick={() => setIsOpen(true)}
+                        >
+                            <div className="relative">
+                                <ArchitectAvatar className="w-8 h-8" />
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold text-slate-800">SYD AI</span>
+                                <span className="text-[11px] text-slate-500 font-medium">Ciao! Posso aiutarti col progetto?</span>
+                            </div>
+
+                            {/* Arrow pointing to button */}
+                            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-blue-100"></div>
+
+                            {/* Close badge button */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowWelcomeBadge(false);
+                                }}
+                                className="absolute -top-2 -left-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full p-0.5"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </motion.div>
                     )}
+                </AnimatePresence>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
                 >
-                    {isOpen ? <X className="w-8 h-8" /> : (
-                        <>
-                            <MessageSquare className="w-8 h-8 text-white" />
-                            {/* Notification Dot */}
-                            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                        </>
-                    )}
-                </Button>
-            </motion.div>
+                    <Button
+                        onClick={() => setIsOpen(!isOpen)}
+                        size="icon"
+                        className={cn(
+                            "w-16 h-16 rounded-full shadow-2xl transition-all duration-300 relative border border-white/10",
+                            isOpen ? "bg-slate-800 text-white" : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-110"
+                        )}
+                    >
+                        {isOpen ? <X className="w-8 h-8" /> : (
+                            <>
+                                <MessageSquare className="w-8 h-8 text-white" />
+                                {/* Notification Dot */}
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                            </>
+                        )}
+                    </Button>
+                </motion.div>
+            </div>
+
 
             {/* Chat Window */}
             <AnimatePresence>
