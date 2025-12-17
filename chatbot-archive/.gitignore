@@ -32,7 +32,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-env.local.template
 
 # vercel
 .vercel
@@ -40,3 +39,5 @@ env.local.template
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
