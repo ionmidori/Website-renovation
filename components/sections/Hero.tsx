@@ -94,16 +94,24 @@ export function Hero() {
                             <div className="ml-4 w-60 h-6 rounded-full bg-slate-800/50" />
                         </div>
 
-                        {/* Fake Content Area */}
-                        <div className="p-1 min-h-[400px] relative bg-slate-950">
-                            {/* This would be an image in real app, using generation tool to simulate */}
+                        {/* Content Area - Clickable to trigger rendering */}
+                        <div
+                            className="p-1 min-h-[400px] relative bg-slate-950 cursor-pointer transition-all hover:ring-2 hover:ring-blue-500/50"
+                            onClick={() => {
+                                const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
+                                    detail: { message: "Vorrei vedere un rendering 3D della mia idea." }
+                                });
+                                window.dispatchEvent(event);
+                            }}
+                            title="Clicca per iniziare la visualizzazione AI"
+                        >
                             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
                                 <div className="text-center">
                                     <div className="w-20 h-20 mx-auto bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
                                         <Zap className="w-10 h-10 text-blue-400" />
                                     </div>
                                     <p className="text-slate-500 font-mono text-sm">AI Visualization Engine</p>
-                                    <p className="text-slate-600 text-xs mt-2">Loading photorealistic model...</p>
+                                    <p className="text-slate-600 text-xs mt-2">Clicca per generare...</p>
                                 </div>
                             </div>
 

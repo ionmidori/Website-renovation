@@ -23,29 +23,148 @@ export default function ChatWidget() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [typingMessage, setTypingMessage] = useState('SYD sta pensando...');
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const prevMessagesLengthRef = useRef(messages.length);
 
-    // Auto-scroll logic
+    // Contextual typing messages - optimized
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (!isLoading) {
+            setTypingMessage('SYD sta pensando...'); // Reset
+            return;
         }
-    }, [messages, isOpen]);
 
-    // Handle Image Selection
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const typingMessages = [
+            'SYD sta analizzando...',
+            'Elaborando la risposta...',
+            'Consultando gli archivi...',
+            'Quasi pronto...'
+        ];
+
+        let index = 0;
+        setTypingMessage(typingMessages[0]);
+
+        const interval = setInterval(() => {
+            index = (index + 1) % typingMessages.length;
+            setTypingMessage(typingMessages[index]);
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [isLoading]);
+
+    // Auto-scroll logic - optimized to prevent lag
+    useEffect(() => {
+        // Only scroll if messages actually changed (not on every render/input)
+        if (messages.length !== prevMessagesLengthRef.current || isOpen) {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+            prevMessagesLengthRef.current = messages.length;
+        }
+    }, [messages.length, isOpen]);
+
+    /**
+     * Compresses and resizes images client-side before upload.
+     * @param file - Original file selected by user
+     * @returns Compressed blob ready for Gemini API
+     */
+    const compressImageForGemini = async (file: File): Promise<Blob> => {
+        const maxWidth = 2048;
+        const quality = 0.8;
+        const mimeType = 'image/jpeg';
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Compression failed'));
+                        }
+                    }, mimeType, quality);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    };
+
+    // Handle Image Selection with Compression (Non-blocking)
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64 = reader.result as string;
-                setSelectedImages((prev) => [...prev, base64]);
-            };
-            reader.readAsDataURL(file);
+
+            // Create temporary placeholder immediately (non-blocking)
+            const tempId = `temp-${Date.now()}`;
+            const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzFmMjkzNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5NGE3YjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Db21wcmltZW5kby4uLjwvdGV4dD48L3N2Zz4=';
+
+            // Add placeholder and get its index
+            let placeholderIndex: number;
+            setSelectedImages((prev) => {
+                placeholderIndex = prev.length; // Store the index where the placeholder will be
+                return [...prev, placeholderImage];
+            });
+
+            // Compress in background (async, non-blocking)
+            try {
+                const compressedBlob = await compressImageForGemini(file);
+
+                // Convert blob to base64
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = reader.result as string;
+                    // Replace placeholder with compressed image
+                    setSelectedImages((prev) => {
+                        const updated = [...prev];
+                        if (placeholderIndex < updated.length) { // Ensure index is valid
+                            updated[placeholderIndex] = base64;
+                        }
+                        return updated;
+                    });
+                };
+                reader.readAsDataURL(compressedBlob);
+            } catch (error) {
+                console.error('Image compression error:', error);
+                // Fallback: load original
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = reader.result as string;
+                    setSelectedImages((prev) => {
+                        const updated = [...prev];
+                        if (placeholderIndex < updated.length) { // Ensure index is valid
+                            updated[placeholderIndex] = base64;
+                        }
+                        return updated;
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
         }
     };
 
@@ -221,15 +340,21 @@ export default function ChatWidget() {
                         onClick={() => setIsOpen(!isOpen)}
                         size="icon"
                         className={cn(
-                            "w-16 h-16 rounded-full shadow-2xl transition-all duration-300 relative border border-white/10",
-                            isOpen ? "bg-slate-800 text-white" : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-110"
+                            "w-32 h-28 rounded-full transition-all duration-300 relative flex items-center justify-center !overflow-visible",
+                            isOpen ? "bg-slate-800 text-white shadow-2xl border border-white/10 w-16 h-16" : "bg-transparent shadow-none border-none hover:scale-105"
                         )}
                     >
                         {isOpen ? <X className="w-8 h-8" /> : (
                             <>
-                                <MessageSquare className="w-8 h-8 text-white" />
+                                <div className="relative w-full h-full flex items-center justify-center !overflow-visible">
+                                    <img
+                                        src="/assets/syd_final_diecut.png"
+                                        alt="Chat"
+                                        className="w-full h-full max-w-none object-contain drop-shadow-xl transform transition-transform duration-300"
+                                    />
+                                </div>
                                 {/* Notification Dot */}
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse z-10" />
                             </>
                         )}
                     </Button>
@@ -253,15 +378,12 @@ export default function ChatWidget() {
                                 <ArchitectAvatar />
                                 <div>
                                     <h3 className="font-bold text-white flex items-center gap-2">
-                                        SYD <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">AI ARCHITECT</span>
+                                        SYD
                                     </h3>
                                     <p className="text-xs text-slate-400 flex items-center gap-3">
                                         <span className="flex items-center gap-1">
                                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                             Online
-                                        </span>
-                                        <span className="flex items-center gap-1 text-[9px] text-emerald-400 font-medium uppercase tracking-wider bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                            <Sparkles className="w-2 h-2" /> Secure Mode
                                         </span>
                                     </p>
                                 </div>
@@ -288,14 +410,13 @@ export default function ChatWidget() {
                                         msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
                                     )}
                                 >
-                                    <div className={cn(
-                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1",
-                                        msg.role === 'user'
-                                            ? "bg-blue-600 border-blue-500 text-white"
-                                            : "bg-slate-800 border-slate-700 text-blue-400"
-                                    )}>
-                                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                                    </div>
+                                    {msg.role === 'user' ? (
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1 bg-blue-600 border-blue-500 text-white">
+                                            <User className="w-4 h-4" />
+                                        </div>
+                                    ) : (
+                                        <ArchitectAvatar className="w-8 h-8 mt-1 shrink-0" />
+                                    )}
 
                                     <div className={cn(
                                         "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
@@ -309,14 +430,14 @@ export default function ChatWidget() {
                                                 components={{
                                                     img: ({ node, ...props }) => (
                                                         props.src ? (
-                                                            <div className="group relative mt-2 cursor-pointer overflow-hidden rounded-lg border border-white/10" onClick={() => setSelectedImage(props.src as string)}>
+                                                            <span className="group relative mt-2 cursor-pointer overflow-hidden rounded-lg border border-white/10 block" onClick={() => setSelectedImage(props.src as string)}>
                                                                 <img {...props} className="max-w-full h-auto transition-transform hover:scale-105" />
-                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                     <span className="text-xs text-white font-medium bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1">
                                                                         <Minimize2 className="w-3 h-3 rotate-45" /> Espandi
                                                                     </span>
-                                                                </div>
-                                                            </div>
+                                                                </span>
+                                                            </span>
                                                         ) : null
                                                     )
 
@@ -329,20 +450,32 @@ export default function ChatWidget() {
                                 </motion.div>
                             ))}
 
-                            {/* Loading Indicator */}
+                            {/* Enhanced Loading Indicator */}
                             {isLoading && (
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-800 border-slate-700 border flex items-center justify-center shrink-0">
-                                        <Sparkles className="w-4 h-4 text-blue-400" />
-                                    </div>
-                                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-tl-none flex items-center gap-2">
-                                        <div className="flex gap-1">
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" />
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex gap-3"
+                                >
+                                    <ArchitectAvatar className="w-8 h-8 shrink-0" />
+                                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-tl-none">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex gap-1">
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                                            </div>
+                                            <motion.span
+                                                key={typingMessage}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="text-xs text-slate-400 font-medium"
+                                            >
+                                                {typingMessage}
+                                            </motion.span>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
                             <div ref={messagesEndRef} />
