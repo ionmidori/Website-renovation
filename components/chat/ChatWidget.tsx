@@ -435,12 +435,12 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-24 right-4 md:right-6 w-[95vw] md:w-[450px] bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50"
+                        className="fixed bottom-8 right-4 md:right-6 w-[95vw] md:w-[450px] bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50"
                         style={{
                             height: viewportHeight
-                                ? `${Math.min(viewportHeight - 120, 700)}px`
+                                ? `${Math.min(viewportHeight - 50, 700)}px`
                                 : 'min(700px, 80dvh)',
-                            maxHeight: viewportHeight ? `${viewportHeight - 120}px` : '80dvh'
+                            maxHeight: viewportHeight ? `${viewportHeight - 50}px` : '80dvh'
                         }}
                     >
                         {/* Header */}
