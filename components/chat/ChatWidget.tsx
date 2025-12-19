@@ -414,9 +414,9 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        // Mobile: Fixed inset-0, full width/height (dvh), Flex Column, No Radius
+                        // Mobile: Fixed inset-0, full width/height (100% of resized viewport), Flex Column
                         // Desktop: Fixed bottom-24 right-6, 450px width, 700px height, Rounded
-                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full h-[100dvh] md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-50 origin-bottom-right"
+                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full h-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-50 origin-bottom-right"
                     >
                         {/* Header: Flex fixed item */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0">
@@ -536,7 +536,7 @@ export default function ChatWidget() {
                         </div>
 
                         {/* Input Area: Flex fixed item, standard flow (no absolute/fixed positioning) */}
-                        <div className="p-4 bg-slate-900/90 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                        <div className="p-4 pb-6 md:pb-4 bg-slate-900/90 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                             <div className="flex gap-2 items-end max-w-full">
                                 <Button
                                     variant="ghost"
