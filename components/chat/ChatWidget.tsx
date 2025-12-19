@@ -8,8 +8,18 @@ import { Button } from '@/components/ui/button';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import ArchitectAvatar from '@/components/ArchitectAvatar';
 import { cn } from '@/lib/utils';
-import { useChat } from '@ai-sdk/react'; // Vercel AI SDK UI
+// import { useChat } from '@ai-sdk/react'; // REMOVED: Incompatible with Next 16/React 19 currently.
 
+/**
+ * ChatWidget Component
+ * 
+ * ARCHITECTURE NOTE (Phase 2.0 Lite):
+ * This component currently uses a MANUAL FETCH implementation with TextDecoder for streaming.
+ * 
+ * TODO: [Phase 2.1] Refactor to use Vercel AI SDK 'useChat' hook once upstream 
+ * compatibility issues with Next 16/React 19 are resolved (specifically 'append is not a function' error).
+ * Current implementation guarantees stability for production.
+ */
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
 
