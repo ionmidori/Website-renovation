@@ -18,7 +18,7 @@ type Message = {
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: "Ciao! Sono **SYD**, il tuo Architetto personale.\n\nPosso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
+        { role: 'assistant', content: "Posso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -291,6 +291,31 @@ export default function ChatWidget() {
         }
     }, [isOpen]);
 
+    // Typewriter effect for welcome badge
+    const [typewriterText, setTypewriterText] = useState('');
+    const fullMessage = "Ciao, sono SYD! Posso aiutarti con il tuo progetto?";
+
+    useEffect(() => {
+        if (!showWelcomeBadge || isOpen) {
+            setTypewriterText('');
+            return;
+        }
+
+        let currentIndex = 0;
+        setTypewriterText('');
+
+        const typeInterval = setInterval(() => {
+            if (currentIndex < fullMessage.length) {
+                setTypewriterText(fullMessage.slice(0, currentIndex + 1));
+                currentIndex++;
+            } else {
+                clearInterval(typeInterval);
+            }
+        }, 75); // 75ms per carattere - velocità più naturale
+
+        return () => clearInterval(typeInterval);
+    }, [showWelcomeBadge, isOpen]);
+
     return (
         <>
             {/* Toggle Button Container */}
@@ -303,21 +328,22 @@ export default function ChatWidget() {
                             initial={{ opacity: 0, x: 20, scale: 0.8 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 10, scale: 0.8 }}
-                            className="bg-gradient-to-br from-white to-blue-50 text-slate-900 px-3 py-4 rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-200/50 flex flex-col gap-2.5 relative mr-3 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 w-28"
+                            className="backdrop-blur-2xl text-white px-4 py-4 rounded-2xl shadow-2xl shadow-blue-400/40 border-2 border-white/40 flex flex-col gap-0 relative mr-3 cursor-pointer hover:shadow-blue-300/60 hover:scale-105 hover:border-white/60 transition-all duration-300 w-52"
                             onClick={() => setIsOpen(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%)',
+                                boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.3), 0 20px 40px -10px rgba(59,130,246,0.4)',
+                            }}
                         >
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                    <span className="text-sm font-bold text-slate-900 tracking-wide">SYD</span>
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-slate-600 font-medium leading-relaxed text-center">
-                                Ciao! Posso aiutarti con il tuo progetto?
+                            <p className="text-sm text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[60px] flex items-center justify-center">
+                                {typewriterText}
+                                {typewriterText.length < fullMessage.length && (
+                                    <span className="inline-block w-0.5 h-4 bg-white ml-0.5 animate-pulse"></span>
+                                )}
                             </p>
 
                             {/* Arrow pointing to button */}
-                            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-gradient-to-br from-white to-blue-50 rotate-45 border-r border-t border-blue-200/50"></div>
+                            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 backdrop-blur-md rotate-45 border-r-2 border-t-2 border-white/40" style={{ background: 'rgba(255,255,255,0.2)' }}></div>
 
                             {/* Close badge button */}
                             <button
@@ -371,10 +397,10 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-24 right-4 md:right-6 w-[95vw] md:w-[450px] max-h-[80vh] h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50"
+                        className="fixed bottom-24 right-4 md:right-6 w-[95vw] md:w-[450px] h-[min(700px,80dvh)] bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50">
+                        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0">
                             <div className="flex items-center gap-3">
                                 <ArchitectAvatar />
                                 <div>
@@ -400,7 +426,11 @@ export default function ChatWidget() {
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                        <div
+                            ref={messagesEndRef}
+                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+                            style={{ WebkitOverflowScrolling: 'touch' }}
+                        >
                             {messages.map((msg, idx) => (
                                 <motion.div
                                     key={idx}
@@ -478,12 +508,10 @@ export default function ChatWidget() {
                                     </div>
                                 </motion.div>
                             )}
-
-                            <div ref={messagesEndRef} />
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-slate-900/50 border-t border-white/5 backdrop-blur-md">
+                        <div className="p-4 bg-slate-900/50 border-t border-white/5 backdrop-blur-md flex-shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
 
                             {/* Image Previews */}
                             {selectedImages.length > 0 && (
@@ -528,6 +556,14 @@ export default function ChatWidget() {
                                                 e.preventDefault();
                                                 sendMessage();
                                             }
+                                        }}
+                                        onFocus={() => {
+                                            // Scroll automatico quando si apre la tastiera
+                                            setTimeout(() => {
+                                                if (messagesEndRef.current) {
+                                                    messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+                                                }
+                                            }, 300);
                                         }}
                                         placeholder="Descrivi cosa vuoi ristrutturare..."
                                         className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide"
