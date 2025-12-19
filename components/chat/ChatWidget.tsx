@@ -16,6 +16,7 @@ export default function ChatWidget() {
     // Vercel AI SDK Hook - Manages all chat state (messages, input, loading, streaming)
     // @ts-ignore
     const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
+        // @ts-ignore
         api: '/api/chat',
         initialMessages: [
             { id: 'welcome', role: 'assistant', content: "Posso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
