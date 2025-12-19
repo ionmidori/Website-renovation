@@ -309,30 +309,15 @@ export default function ChatWidget() {
         }
     }, [isOpen]);
 
-    // Typewriter effect for welcome badge
-    const [typewriterText, setTypewriterText] = useState('');
-    const fullMessage = "Ciao, sono SYD! Posso aiutarti con il tuo progetto?";
-
+    // Auto-close welcome badge
     useEffect(() => {
-        if (!showWelcomeBadge || isOpen) {
-            setTypewriterText('');
-            return;
+        if (showWelcomeBadge) {
+            const timer = setTimeout(() => {
+                setShowWelcomeBadge(false);
+            }, 7000); // Close after 7 seconds
+            return () => clearTimeout(timer);
         }
-
-        let currentIndex = 0;
-        setTypewriterText('');
-
-        const typeInterval = setInterval(() => {
-            if (currentIndex < fullMessage.length) {
-                setTypewriterText(fullMessage.slice(0, currentIndex + 1));
-                currentIndex++;
-            } else {
-                clearInterval(typeInterval);
-            }
-        }, 75); // 75ms per carattere - velocità più naturale
-
-        return () => clearInterval(typeInterval);
-    }, [showWelcomeBadge, isOpen]);
+    }, [showWelcomeBadge]);
 
     // Visual Viewport Logic (Mobile Only)
     useEffect(() => {
@@ -424,11 +409,8 @@ export default function ChatWidget() {
                                 boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.3), 0 20px 40px -10px rgba(59,130,246,0.4)',
                             }}
                         >
-                            <p className="text-xs text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[70px] flex items-center justify-center">
-                                {typewriterText}
-                                {typewriterText.length < fullMessage.length && (
-                                    <span className="inline-block w-0.5 h-3.5 bg-white ml-0.5 animate-pulse"></span>
-                                )}
+                            <p className="text-xs text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[50px] flex items-center justify-center">
+                                Ciao, sono SYD! Posso aiutarti con il tuo progetto?
                             </p>
 
                             {/* Arrow pointing to button */}
