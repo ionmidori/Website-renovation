@@ -13,22 +13,83 @@ import { useChat } from '@ai-sdk/react'; // Vercel AI SDK UI
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
 
-    // Vercel AI SDK Hook - Manages all chat state (messages, input, loading, streaming)
-    // @ts-ignore
-    // @ts-ignore
-    const { messages = [], input = '', setInput, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
-        // @ts-ignore
-        api: '/api/chat',
-        initialMessages: [
-            { id: 'welcome', role: 'assistant', content: "Posso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
-        ],
-        // Gestione errori stream
-        onError: (error) => {
-            console.error("Stream error:", error);
-            // Non blocchiamo, l'utente vedrà l'errore se il messaggio fallisce
-        },
-        maxSteps: 5 // Abilita Client-Side automatic tool roundtrips se necessario (anche se gestito lato server principalmente)
-    });
+    // Manual Chat State (Replacing broken useChat hook)
+    const [messages, setMessages] = useState<any[]>([
+        { id: 'welcome', role: 'assistant', content: "Posso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
+    ]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Initial check for debug
+    useEffect(() => {
+        console.log("ChatWidget initialized (Manual Mode)");
+    }, []);
+
+    // Manual Append Function
+    const append = async (message: { role: string, content: string }, options?: { body?: any }) => {
+        const userMsg = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: message.content
+        };
+
+        // Optimistic update
+        const currentMessages = [...messages, userMsg];
+        setMessages(currentMessages);
+        setIsLoading(true);
+
+        try {
+            const body = {
+                messages: currentMessages,
+                ...(options?.body || {}) // Include images if passed
+            };
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) throw new Error("Network response was not ok");
+
+            if (!response.body) return;
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            // Create placeholder assistant message
+            const assistantMsgId = (Date.now() + 1).toString();
+            let accumulatedContent = '';
+
+            setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '' }]);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                accumulatedContent += chunk;
+
+                // Update the last message (Assistant) with new content
+                setMessages(prev => {
+                    const newMsgs = [...prev];
+                    const lastMsg = newMsgs[newMsgs.length - 1];
+                    if (lastMsg.id === assistantMsgId) {
+                        lastMsg.content = accumulatedContent;
+                    }
+                    return newMsgs;
+                });
+            }
+
+        } catch (error) {
+            console.error("Manual fetch error:", error);
+            alert("Errore di connessione. Riprova.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Local Input State (Manual management to fix 'setInput is not a function' crash)
+    const [inputValue, setInputValue] = useState('');
 
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [typingMessage, setTypingMessage] = useState('SYD sta pensando...');
@@ -144,29 +205,11 @@ export default function ChatWidget() {
 
     // Handle Voice
     const handleVoiceRecorded = async (file: File) => {
-        // Convert audio to base64 to send as user message context? 
-        // Or simpler: just send a text note that voice was sent, processing needs strict multimodal API.
-        // For standard "StreamText" with Gemini, we can send parts. 
-        // Vercel AI SDK 'append' supports data urls but standard 'useChat' implies text.
-        // Workaround: We upload via separate API or convert Client-Side (Whisper) or just send as attachment if supported.
-        // For now, preserving old logic simplified: we can't easily stream audio via basic useChat yet without custom implementation.
-        // We will simulate "Voice Sent" and just append a text message for now, assuming Multimodal is future step.
-        // OR: User previous implementation did extensive fetch.
-        // Let's use `append` with the audio as an attachment? 
-        // Gemini Multimodal via AI SDK supports images/audio if configured. 
-        // Let's try base64 attachment.
-
-        // FIX: Used to fetch manually expecting JSON, but new API is Streaming.
-        // For now, we simulate the voice message as text intent to keep the stream flow intact.
-        // In a full implementation, we would transcribe audio client-side or send it to a dedicated whisper endpoint.
-        // To prevent CRASH, we just append a user message.
         append({
             role: 'user',
             content: "🎤 (Messaggio Vocale inviato)"
         });
-
-        // Optional: We could upload the file separately if needed, but for now this restores stability.
-        console.log("Voice file captured (processing placeholder):", file.name);
+        console.log("Voice file captured:", file.name);
     };
 
     // External Triggers
@@ -186,60 +229,26 @@ export default function ChatWidget() {
     // Send Logic Wrapper
     const submitMessage = (e?: React.FormEvent) => {
         e?.preventDefault();
-        if ((!input.trim() && selectedImages.length === 0) || isLoading) return;
-
-        // Note: AI SDK 'handleSubmit' works with forms automatically but we have custom images behavior
-        // We use 'append' manually or 'handleSubmit' with options?
-        // handleSubmit generally takes the input state.
-        // But we need to attach images. 
-        // AI SDK `handleSubmit(e, { data: ... })` allows extra data but Images usually go into `experimental_attachments`.
-        // Let's stick to a robust manual `append` which clears input.
-
-        // Prepare attachments? Not yet standard in V0 ChatWidget. 
-        // We will just inject images into the content locally?
-        // No, `append` takes `{ role, content }`. 
-        // If we want to send images, we might need `experimental_attachments`.
-        // OR: We embed the images in the message content as markdown? 
-        // Gemini supports Base64 parts. 
-        // Vercel AI SDK Core `convertToCoreMessages` handles mixed content if structured right.
-        // But `useChat` on client handles strings mostly unless using experimental.
-
-        // SIMPLEST MIGRATION STRATEGY:
-        // Use `handleSubmit` for text. 
-        // If images exist, use `append` with constructed message.
+        if ((!inputValue.trim() && selectedImages.length === 0) || isLoading) return;
 
         if (selectedImages.length > 0) {
-            // Costruiamo un messaggio misto?
-            // Vercel SDK experimental_attachments is the way.
-            // For now: Just clear input and append.
-            // We can't actually pass input + images easily in legacy mode without experimental flags.
-            // Let's simulate:
-            // Note: User's previous route logic parsed `images` from body.
-            // `useChat` sends POST body with `{ messages }`. 
-            // We can pass `body` in handleSubmit options!
-
-            handleSubmit(e, {
-                body: {
-                    images: selectedImages // Send images as separate body field, route.ts needs to handle it?
-                    // Wait, my new route.ts uses `convertToCoreMessages(messages)`. It ignores extra body fields unless I map them.
-                    // The new route.ts standard `streamText` expects text messages.
-                    // I should probably manually append a message with Image Part if I can.
-                    // Given the complexity of Client-Side Image -> CoreMessage conversion in React Native/Web without experimental keys:
-                    // I will inject the images into the `data` field of the handleSubmit, 
-                    // OR just stick to Text-Only for this immediate "Stream" migration and enable images in Phase 2.1?
-                    // NO, User has images working. I must preserve it.
-
-                    // Alternative: Append a message where content is textual but we also send images in body,
-                    // and in Route.ts we intercept the last message and attach images?
-                    // YES.
-                },
-                data: {
-                    imagePayload: selectedImages // Accessibile via data stream?
-                }
+            // Send input + images
+            append({
+                role: 'user',
+                content: inputValue
+            }, {
+                body: { images: selectedImages }
             });
+
             setSelectedImages([]);
+            setInputValue(''); // Clear input
         } else {
-            handleSubmit(e);
+            // Text only
+            append({
+                role: 'user',
+                content: inputValue
+            });
+            setInputValue(''); // Clear input
         }
     };
 
@@ -423,8 +432,8 @@ export default function ChatWidget() {
                                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} multiple />
                                     <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
                                         <textarea
-                                            value={input}
-                                            onChange={handleInputChange}
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitMessage(e); } }}
                                             onFocus={() => setTimeout(() => scrollToBottom('smooth'), 100)}
                                             placeholder="Descrivi cosa vuoi ristrutturare..."
@@ -434,7 +443,7 @@ export default function ChatWidget() {
                                         />
                                         <div className="flex items-center gap-1 pr-1 shrink-0"><VoiceRecorder onRecordingComplete={handleVoiceRecorded} disabled={isLoading} /></div>
                                     </div>
-                                    <Button onClick={() => submitMessage()} disabled={isLoading || (!input.trim() && selectedImages.length === 0)} className={cn("rounded-xl transition-all duration-300 shrink-0", input.trim() || selectedImages.length > 0 ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20" : "bg-slate-800 text-slate-500")} size="icon"><Send className="w-5 h-5" /></Button>
+                                    <Button onClick={() => submitMessage()} disabled={isLoading || (!inputValue.trim() && selectedImages.length === 0)} className={cn("rounded-xl transition-all duration-300 shrink-0", inputValue.trim() || selectedImages.length > 0 ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20" : "bg-slate-800 text-slate-500")} size="icon"><Send className="w-5 h-5" /></Button>
                                 </div>
                             </div>
                         </motion.div>

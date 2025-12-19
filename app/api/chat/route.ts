@@ -52,91 +52,70 @@ Identifica se hai:
 `;
 
 export async function POST(req: Request) {
-    try {
-        // 1. Rate Limiting Check
-        const ip = req.headers.get('x-forwarded-for') || 'unknown';
-        const now = Date.now();
-        const lastRequest = rateLimit.get(ip) || 0;
-
-        if (now - lastRequest < 2000) { // 2 secondi cooldown
-            return new Response("Too Many Requests", { status: 429 });
+    // Basic Rate Limiting
+    const ip = (req.headers.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0];
+    const now = Date.now();
+    if (rateLimitMap.has(ip)) {
+        const lastRequest = rateLimitMap.get(ip)!;
+        if (now - lastRequest < 2000) { // 2 seconds cooldown
+            return new Response('Too Many Requests', { status: 429 });
         }
-        rateLimit.set(ip, now);
+    }
+    rateLimitMap.set(ip, now);
 
-        // 2. Parsing Payload
+    try {
         const { messages, images } = await req.json();
 
-        // 3. Conversione Core Messages
-        let initialMessages = convertToCoreMessages(messages);
-
-        // 4. Image Injection (Critical Fix)
-        // Se il frontend invia immagini, le attacchiamo all'ultimo messaggio utente
-        if (images && Array.isArray(images) && images.length > 0) {
-            const lastMessage = initialMessages[initialMessages.length - 1];
-
+        // Multimodal: Inject images into the last user message
+        const correntMessages = convertToCoreMessages(messages);
+        if (images && images.length > 0) {
+            const lastMessage = correntMessages[correntMessages.length - 1];
             if (lastMessage.role === 'user') {
-                const textContent = typeof lastMessage.content === 'string'
-                    ? lastMessage.content
-                    : (Array.isArray(lastMessage.content) ? lastMessage.content.find(c => c.type === 'text')?.text || '' : '');
+                const textContent = typeof lastMessage.content === 'string' ? lastMessage.content :
+                    Array.isArray(lastMessage.content) ? lastMessage.content.find(c => c.type === 'text')?.text || '' : '';
 
-                // Ristruttura come array di parti
                 lastMessage.content = [
                     { type: 'text', text: textContent },
-                    ...images.map((img: string) => ({ type: 'image' as const, image: img }))
-                ];
+                    ...images.map((img: string) => ({ type: 'image', image: img }))
+                ] as any;
             }
         }
 
         const result = streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-flash'), // Using Flash for speed/cost
             system: SYSTEM_INSTRUCTION,
-            messages: initialMessages,
-            // @ts-ignore
-            maxSteps: 5, // Abilita multi-step
+            messages: correntMessages,
+            maxSteps: 5, // Allow tools
             tools: {
                 generate_render: tool({
-                    description: 'Genera un rendering fotorealistico 3D della stanza.',
+                    description: 'Generate a photorealistic 3D render of a renovation project. Use this when the user explicitly asks to visualize, see, or render a room.',
                     parameters: z.object({
-                        prompt: z.string().describe('Prompt dettagliato in inglese per Imagen 3, descrivendo stile, materiali, luci e arredi.'),
+                        prompt: z.string().describe('A detailed, English description of the room to render, including style, colors, materials, and lighting. optimize for photorealism.'),
                     }),
-                    // @ts-ignore
                     execute: async ({ prompt }: { prompt: string }) => {
-                        const apiKey = process.env.GEMINI_API_KEY;
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
+                        if (!response.ok) throw new Error(`Imagen API Error ${response.status}`);
 
-                        try {
-                            const response = await fetch(url, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    instances: [{ prompt: prompt }],
-                                    parameters: { sampleCount: 1, aspectRatio: "16:9" }
-                                })
-                            });
+                        const data = await response.json();
+                        const prediction = data.predictions?.[0];
 
-                            if (!response.ok) throw new Error(`Imagen API Error ${response.status}`);
-
-                            const data = await response.json();
-                            const prediction = data.predictions?.[0];
-
-                            if (prediction?.bytesBase64Encoded) {
-                                const mime = prediction.mimeType || 'image/png';
-                                return `![Rendering AI](data:${mime};base64,${prediction.bytesBase64Encoded})`;
-                            }
-                            return "Errore: Nessuna immagine generata.";
-                        } catch (error: any) {
-                            console.error("Imagen Error:", error);
-                            return `(Impossibile generare immagine: ${error.message}). Immagina un rendering con: ${prompt}`;
+                        if (prediction?.bytesBase64Encoded) {
+                            const mime = prediction.mimeType || 'image/png';
+                            return `![Rendering AI](data:${mime};base64,${prediction.bytesBase64Encoded})`;
                         }
-                    },
+                        return "Errore: Nessuna immagine generata.";
+                    } catch(error: any) {
+                        console.error("Imagen Error:", error);
+                        return `(Impossibile generare immagine: ${error.message}). Immagina un rendering con: ${prompt}`;
+                    }
+                },
                 }),
-            },
-        });
+    },
+});
 
-        // @ts-ignore
-        return result.toDataStreamResponse();
+// @ts-ignore
+return result.toDataStreamResponse();
     } catch (error) {
-        console.error('API Error:', error);
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-    }
+    console.error('API Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+}
 }

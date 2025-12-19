@@ -11,14 +11,15 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Renovation AI - Il Futuro della Ristrutturazione",
   description: "Trasforma la tua casa con il potere dell'Intelligenza Artificiale. Design premium, esecuzione impeccabile.",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: "cover",
-    interactiveWidget: "resizes-content"
-  }
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content"
 };
 
 export default function RootLayout({
