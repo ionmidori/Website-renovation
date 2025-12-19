@@ -93,29 +93,42 @@ export async function POST(req: Request) {
                         prompt: z.string().describe('A detailed, English description of the room to render, including style, colors, materials, and lighting. optimize for photorealism.'),
                     }),
                     execute: async ({ prompt }: { prompt: string }) => {
-                        if (!response.ok) throw new Error(`Imagen API Error ${response.status}`);
+                        try {
+                            const apiKey = process.env.GEMINI_API_KEY;
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
 
-                        const data = await response.json();
-                        const prediction = data.predictions?.[0];
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    instances: [{ prompt: prompt }],
+                                    parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                                })
+                            });
 
-                        if (prediction?.bytesBase64Encoded) {
-                            const mime = prediction.mimeType || 'image/png';
-                            return `![Rendering AI](data:${mime};base64,${prediction.bytesBase64Encoded})`;
+                            if (!response.ok) throw new Error(`Imagen API Error ${response.status}`);
+
+                            const data = await response.json();
+                            const prediction = data.predictions?.[0];
+
+                            if (prediction?.bytesBase64Encoded) {
+                                const mime = prediction.mimeType || 'image/png';
+                                return `![Rendering AI](data:${mime};base64,${prediction.bytesBase64Encoded})`;
+                            }
+                            return "Errore: Nessuna immagine generata.";
+                        } catch (error: any) {
+                            console.error("Imagen Error:", error);
+                            return `(Impossibile generare immagine: ${error.message}). Immagina un rendering con: ${prompt}`;
                         }
-                        return "Errore: Nessuna immagine generata.";
-                    } catch(error: any) {
-                        console.error("Imagen Error:", error);
-                        return `(Impossibile generare immagine: ${error.message}). Immagina un rendering con: ${prompt}`;
-                    }
-                },
+                    },
                 }),
-    },
-});
+            },
+        });
 
-// @ts-ignore
-return result.toDataStreamResponse();
+        // @ts-ignore
+        return result.toDataStreamResponse();
     } catch (error) {
-    console.error('API Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-}
+        console.error('API Error:', error);
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+    }
 }
