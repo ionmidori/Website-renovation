@@ -345,17 +345,17 @@ export default function ChatWidget() {
                             initial={{ opacity: 0, x: 20, scale: 0.8 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 10, scale: 0.8 }}
-                            className="backdrop-blur-2xl text-white px-4 py-4 rounded-2xl shadow-2xl shadow-blue-400/40 border-2 border-white/40 flex flex-col gap-0 relative mr-3 cursor-pointer hover:shadow-blue-300/60 hover:scale-105 hover:border-white/60 transition-all duration-300 w-52"
+                            className="backdrop-blur-2xl text-white px-3 py-5 rounded-2xl shadow-2xl shadow-blue-400/40 border-2 border-white/40 flex flex-col gap-0 relative mr-1 cursor-pointer hover:shadow-blue-300/60 hover:scale-105 hover:border-white/60 transition-all duration-300 w-40"
                             onClick={() => setIsOpen(true)}
                             style={{
                                 background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%)',
                                 boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.3), 0 20px 40px -10px rgba(59,130,246,0.4)',
                             }}
                         >
-                            <p className="text-sm text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[60px] flex items-center justify-center">
+                            <p className="text-xs text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[70px] flex items-center justify-center">
                                 {typewriterText}
                                 {typewriterText.length < fullMessage.length && (
-                                    <span className="inline-block w-0.5 h-4 bg-white ml-0.5 animate-pulse"></span>
+                                    <span className="inline-block w-0.5 h-3.5 bg-white ml-0.5 animate-pulse"></span>
                                 )}
                             </p>
 
