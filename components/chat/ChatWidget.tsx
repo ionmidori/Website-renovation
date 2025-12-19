@@ -26,6 +26,7 @@ export default function ChatWidget() {
     const [typingMessage, setTypingMessage] = useState('SYD sta pensando...');
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -333,14 +334,75 @@ export default function ChatWidget() {
         return () => clearInterval(typeInterval);
     }, [showWelcomeBadge, isOpen]);
 
-    // Body Scroll Lock when chat is open (Mobile/App-like feel)
+    // Visual Viewport Logic (Mobile Only)
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
+        if (!isOpen) return;
+
+        const handleResize = () => {
+            // Only apply on mobile where we want full screen
+            if (window.visualViewport && window.innerWidth < 768) {
+                setViewportHeight(window.visualViewport.height);
+            } else {
+                setViewportHeight(null);
+            }
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize); // Handle scroll too
+            handleResize(); // Initial set
         }
-        return () => { document.body.style.overflow = ''; };
+
+        window.addEventListener('resize', handleResize); // Fallback
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+                window.visualViewport.removeEventListener('scroll', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [isOpen]);
+
+    // Strict Body Scroll Lock & Bounce Prevention
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+
+        if (isOpen) {
+            // Store current scroll to maybe restore it (optional, but good UX)
+            // For now, strict adherence to preventing bounce:
+            html.style.overflow = 'hidden';
+            html.style.height = '100%';
+            html.style.width = '100%';
+            html.style.position = 'fixed';
+
+            body.style.overflow = 'hidden';
+            body.style.height = '100%';
+            body.style.width = '100%';
+            body.style.position = 'fixed';
+        } else {
+            html.style.overflow = '';
+            html.style.height = '';
+            html.style.width = '';
+            html.style.position = '';
+
+            body.style.overflow = '';
+            body.style.height = '';
+            body.style.width = '';
+            body.style.position = '';
+        }
+
+        return () => {
+            html.style.overflow = '';
+            html.style.height = '';
+            html.style.width = '';
+            html.style.position = '';
+            body.style.overflow = '';
+            body.style.height = '';
+            body.style.width = '';
+            body.style.position = '';
+        };
     }, [isOpen]);
 
     return (
@@ -424,8 +486,12 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        // Mobile: Fixed inset-0 (anchors to viewport edges), Flex Column. No explicit height to allow native resize.
-                        // Desktop: Fixed bottom-24 right-6, 450px width, 700px height, Rounded
+                        // Mobile: Fixed top-0, Dynamic JS Height (Visual Viewport)
+                        // Desktop: Fixed bottom-24 right-6, 450px width, 700px height
+                        style={{
+                            height: viewportHeight ? `${viewportHeight}px` : undefined,
+                            top: viewportHeight ? 0 : undefined
+                        }}
                         className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-[100] origin-bottom-right"
                     >
                         {/* Header: Flex fixed item */}
