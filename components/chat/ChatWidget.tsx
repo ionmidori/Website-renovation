@@ -18,7 +18,7 @@ type Message = {
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: "Ciao! Sono **SYD**, il tuo Architetto AI.\n\nPosso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
+        { role: 'assistant', content: "Ciao! Sono **SYD**, il tuo Architetto personale.\n\nPosso aiutarti a:\n1. 📐 **Creare un Preventivo** dettagliato.\n2. 🎨 **Visualizzare un Rendering** 3D della tua idea.\n\nDa dove iniziamo?" }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -34,14 +34,14 @@ export default function ChatWidget() {
     // Contextual typing messages - optimized
     useEffect(() => {
         if (!isLoading) {
-            setTypingMessage('SYD sta pensando...'); // Reset
+            setTypingMessage('Sto pensando...'); // Reset
             return;
         }
 
         const typingMessages = [
-            'SYD sta analizzando...',
-            'Elaborando la risposta...',
-            'Consultando gli archivi...',
+            'Sto analizzando...',
+            'Sto elaborando la risposta...',
+            'Sto consultando gli archivi...',
             'Quasi pronto...'
         ];
 
@@ -303,20 +303,21 @@ export default function ChatWidget() {
                             initial={{ opacity: 0, x: 20, scale: 0.8 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 10, scale: 0.8 }}
-                            className="bg-white text-slate-900 px-4 py-2 rounded-xl shadow-xl shadow-blue-500/10 border border-blue-100 flex items-center gap-3 relative mr-2 cursor-pointer"
+                            className="bg-gradient-to-br from-white to-blue-50 text-slate-900 px-3 py-4 rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-200/50 flex flex-col gap-2.5 relative mr-3 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 w-28"
                             onClick={() => setIsOpen(true)}
                         >
-                            <div className="relative">
-                                <ArchitectAvatar className="w-8 h-8" />
-                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                    <span className="text-sm font-bold text-slate-900 tracking-wide">SYD</span>
+                                </div>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-slate-800">SYD AI</span>
-                                <span className="text-[11px] text-slate-500 font-medium">Ciao! Posso aiutarti col progetto?</span>
-                            </div>
+                            <p className="text-[11px] text-slate-600 font-medium leading-relaxed text-center">
+                                Ciao! Posso aiutarti con il tuo progetto?
+                            </p>
 
                             {/* Arrow pointing to button */}
-                            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-blue-100"></div>
+                            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-gradient-to-br from-white to-blue-50 rotate-45 border-r border-t border-blue-200/50"></div>
 
                             {/* Close badge button */}
                             <button
@@ -324,7 +325,7 @@ export default function ChatWidget() {
                                     e.stopPropagation();
                                     setShowWelcomeBadge(false);
                                 }}
-                                className="absolute -top-2 -left-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full p-0.5"
+                                className="absolute -top-2 -right-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full p-0.5 transition-colors"
                             >
                                 <X className="w-3 h-3" />
                             </button>
@@ -354,7 +355,7 @@ export default function ChatWidget() {
                                     />
                                 </div>
                                 {/* Notification Dot */}
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse z-10" />
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse z-10" />
                             </>
                         )}
                     </Button>
