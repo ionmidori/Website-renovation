@@ -1,10 +1,13 @@
 import { google } from '@ai-sdk/google';
-import { streamText, tool, convertToCoreMessages } from 'ai';
+import { streamText, tool, convertToCoreMessages, CoreMessage } from 'ai';
 import { z } from 'zod';
 
 // Configurazione
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
+
+// Rate Limit (Semplice In-Memory per istanza serverless)
+const rateLimit = new Map<string, number>();
 
 const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE & CONSULENTE
 Sei SYD, un architetto visionario e pragmatico.
@@ -50,14 +53,46 @@ Identifica se hai:
 
 export async function POST(req: Request) {
     try {
-        const { messages } = await req.json();
+        // 1. Rate Limiting Check
+        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const now = Date.now();
+        const lastRequest = rateLimit.get(ip) || 0;
+
+        if (now - lastRequest < 2000) { // 2 secondi cooldown
+            return new Response("Too Many Requests", { status: 429 });
+        }
+        rateLimit.set(ip, now);
+
+        // 2. Parsing Payload
+        const { messages, images } = await req.json();
+
+        // 3. Conversione Core Messages
+        let initialMessages = convertToCoreMessages(messages);
+
+        // 4. Image Injection (Critical Fix)
+        // Se il frontend invia immagini, le attacchiamo all'ultimo messaggio utente
+        if (images && Array.isArray(images) && images.length > 0) {
+            const lastMessage = initialMessages[initialMessages.length - 1];
+
+            if (lastMessage.role === 'user') {
+                const textContent = typeof lastMessage.content === 'string'
+                    ? lastMessage.content
+                    : (Array.isArray(lastMessage.content) ? lastMessage.content.find(c => c.type === 'text')?.text || '' : '');
+
+                // Ristruttura come array di parti
+                lastMessage.content = [
+                    { type: 'text', text: textContent },
+                    ...images.map((img: string) => ({ type: 'image' as const, image: img }))
+                ];
+            }
+        }
 
         const result = streamText({
             model: google('gemini-1.5-flash'),
             system: SYSTEM_INSTRUCTION,
-            messages: convertToCoreMessages(messages),
+            messages: initialMessages,
             // @ts-ignore
-            maxSteps: 5, // Abilita multi-step (Reasoning -> Tool -> Response)
+            maxSteps: 5, // Abilita multi-step
             tools: {
                 generate_render: tool({
                     description: 'Genera un rendering fotorealistico 3D della stanza.',
@@ -66,9 +101,7 @@ export async function POST(req: Request) {
                     }),
                     // @ts-ignore
                     execute: async ({ prompt }: { prompt: string }) => {
-                        // Chiamata a Imagen 4 Fast (via endpoint predict manuale)
                         const apiKey = process.env.GEMINI_API_KEY;
-                        // Endpoint fallback a Imagen 3.0 se 4 fast non disponbile/stabile, o viceversa
                         const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
 
                         try {
@@ -88,7 +121,6 @@ export async function POST(req: Request) {
 
                             if (prediction?.bytesBase64Encoded) {
                                 const mime = prediction.mimeType || 'image/png';
-                                // Restituisci il markdown immagine direttamente come risultato del tool
                                 return `![Rendering AI](data:${mime};base64,${prediction.bytesBase64Encoded})`;
                             }
                             return "Errore: Nessuna immagine generata.";
