@@ -64,7 +64,7 @@ export async function POST(req: Request) {
                     parameters: z.object({
                         prompt: z.string().describe('Prompt dettagliato in inglese per Imagen 3, descrivendo stile, materiali, luci e arredi.'),
                     }),
-                    execute: async ({ prompt }) => {
+                    execute: async ({ prompt }: { prompt: string }) => {
                         // Chiamata a Imagen 4 Fast (via endpoint predict manuale)
                         const apiKey = process.env.GEMINI_API_KEY;
                         // Endpoint fallback a Imagen 3.0 se 4 fast non disponbile/stabile, o viceversa
@@ -100,6 +100,7 @@ export async function POST(req: Request) {
             },
         });
 
+        // @ts-ignore
         return result.toDataStreamResponse();
     } catch (error) {
         console.error('API Error:', error);
