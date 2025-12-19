@@ -56,6 +56,7 @@ export async function POST(req: Request) {
             model: google('gemini-1.5-flash'),
             system: SYSTEM_INSTRUCTION,
             messages: convertToCoreMessages(messages),
+            // @ts-ignore
             maxSteps: 5, // Abilita multi-step (Reasoning -> Tool -> Response)
             tools: {
                 generate_render: tool({
