@@ -64,6 +64,7 @@ export async function POST(req: Request) {
                     parameters: z.object({
                         prompt: z.string().describe('Prompt dettagliato in inglese per Imagen 3, descrivendo stile, materiali, luci e arredi.'),
                     }),
+                    // @ts-ignore
                     execute: async ({ prompt }: { prompt: string }) => {
                         // Chiamata a Imagen 4 Fast (via endpoint predict manuale)
                         const apiKey = process.env.GEMINI_API_KEY;
