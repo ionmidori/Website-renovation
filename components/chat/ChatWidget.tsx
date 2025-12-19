@@ -333,6 +333,16 @@ export default function ChatWidget() {
         return () => clearInterval(typeInterval);
     }, [showWelcomeBadge, isOpen]);
 
+    // Body Scroll Lock when chat is open (Mobile/App-like feel)
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
+
     return (
         <>
             {/* Toggle Button Container */}
@@ -419,7 +429,7 @@ export default function ChatWidget() {
                         className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-[100] origin-bottom-right"
                     >
                         {/* Header: Flex fixed item */}
-                        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0">
+                        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
                             <div className="flex items-center gap-3">
                                 <ArchitectAvatar />
                                 <div>

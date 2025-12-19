@@ -208,7 +208,7 @@ export async function POST(req: Request) {
 
         if (functionCall && functionCall.name === 'generate_render') {
             const imagePrompt = (functionCall.args as any).prompt as string;
-            console.log("🎨 Generazione immagine richiesta:", imagePrompt);
+            // console.log("🎨 Generazione immagine richiesta:", imagePrompt); // REMOVED FOR PRIVACY
 
             // CHECK LIMIT (Max 2 images per session)
             const imageCount = messages.filter(m => m.role === 'assistant' && (m.content.includes('data:image') || m.content.includes('![Rendering AI]'))).length;
