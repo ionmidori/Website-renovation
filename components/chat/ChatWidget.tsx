@@ -328,10 +328,10 @@ export default function ChatWidget() {
                 currentIndex++;
             } else {
                 clearInterval(typeInterval);
-                // Start auto-close timer after typing finishes (e.g., 5 seconds read time)
+                // Start auto-close timer after typing finishes (e.g., 6 seconds read time)
                 closeTimer = setTimeout(() => {
                     setShowWelcomeBadge(false);
-                }, 5000);
+                }, 6000);
             }
         }, 50); // 50ms per character (slightly faster for responsiveness)
 
@@ -429,7 +429,7 @@ export default function ChatWidget() {
     return (
         <>
             {/* Toggle Button Container */}
-            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4">
+            <div className="fixed bottom-8 right-6 z-50 flex items-center gap-4">
 
                 {/* Welcome Badge / Tooltip */}
                 <AnimatePresence>
@@ -509,7 +509,7 @@ export default function ChatWidget() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[90] bg-[#0f172a] touch-none md:hidden"
+                            className="fixed inset-0 z-[90] bg-[#0f172a] touch-none md:bg-black/40 md:backdrop-blur-sm transition-all duration-300"
                         />
 
                         <motion.div
@@ -524,7 +524,7 @@ export default function ChatWidget() {
                                 height: viewportHeight ? `${viewportHeight}px` : undefined,
                                 top: viewportHeight ? 0 : undefined
                             }}
-                            className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
+                            className="fixed inset-0 md:inset-auto md:bottom-4 md:right-6 w-full md:w-[450px] md:h-[850px] md:max-h-[calc(100vh-40px)] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
                         >
                             {/* Header: Flex fixed item */}
                             <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
