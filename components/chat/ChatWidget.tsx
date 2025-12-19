@@ -502,197 +502,209 @@ export default function ChatWidget() {
             {/* Chat Window */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        // Mobile: Fixed top-0, Dynamic JS Height (Visual Viewport)
-                        // Desktop: Fixed bottom-24 right-6, 450px width, 700px height
-                        style={{
-                            height: viewportHeight ? `${viewportHeight}px` : undefined,
-                            top: viewportHeight ? 0 : undefined
-                        }}
-                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
-                    >
-                        {/* Header: Flex fixed item */}
-                        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-                            <div className="flex items-center gap-3">
-                                <ArchitectAvatar />
-                                <div>
-                                    <h3 className="font-bold text-white flex items-center gap-2">
-                                        SYD
-                                        <span className="text-[9px] font-medium px-2 py-0.5 rounded-md backdrop-blur-md border border-white/20 text-blue-200" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)' }}>
-                                            Architetto personale
-                                        </span>
-                                    </h3>
-                                    <p className="text-xs text-slate-400 flex items-center gap-3">
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                            Online
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsOpen(false)}
-                                className="text-slate-400 hover:text-white"
-                            >
-                                <Minimize2 className="w-5 h-5" />
-                            </Button>
-                        </div>
+                    <>
+                        {/* Mobile Backdrop Curtain (Prevents "revealing site" on overscroll) */}
+                        <motion.div
+                            key="backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[90] bg-[#0f172a] touch-none md:hidden"
+                        />
 
-                        {/* Messages Area: Flex grow item, handles its own scroll */}
-                        <div
-                            ref={messagesContainerRef}
-                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y"
-                            style={{ WebkitOverflowScrolling: 'touch' }}
+                        <motion.div
+                            key="chat-window"
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            // Mobile: Fixed top-0, Dynamic JS Height (Visual Viewport)
+                            // Desktop: Fixed bottom-24 right-6, 450px width, 700px height
+                            style={{
+                                height: viewportHeight ? `${viewportHeight}px` : undefined,
+                                top: viewportHeight ? 0 : undefined
+                            }}
+                            className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
                         >
-                            {messages.map((msg, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={cn(
-                                        "flex gap-3 max-w-[90%]",
-                                        msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                                    )}
-                                >
-                                    {msg.role === 'user' ? (
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1 bg-blue-600 border-blue-500 text-white">
-                                            <User className="w-4 h-4" />
-                                        </div>
-                                    ) : (
-                                        <ArchitectAvatar className="w-8 h-8 mt-1 shrink-0" />
-                                    )}
-
-                                    <div className={cn(
-                                        "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
-                                        msg.role === 'user'
-                                            ? "bg-blue-600 text-white rounded-tr-none"
-                                            : "bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none"
-                                    )}>
-                                        <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
-                                            <ReactMarkdown
-                                                urlTransform={(value) => value}
-                                                components={{
-                                                    img: ({ node, ...props }) => (
-                                                        props.src ? (
-                                                            <span className="group relative mt-2 cursor-pointer overflow-hidden rounded-lg border border-white/10 block" onClick={() => setSelectedImage(props.src as string)}>
-                                                                <img {...props} className="max-w-full h-auto transition-transform hover:scale-105" />
-                                                                <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                                    <span className="text-xs text-white font-medium bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1">
-                                                                        <Minimize2 className="w-3 h-3 rotate-45" /> Espandi
-                                                                    </span>
-                                                                </span>
-                                                            </span>
-                                                        ) : null
-                                                    )
-
-                                                }}
-                                            >
-                                                {msg.content}
-                                            </ReactMarkdown>
-                                        </div>
+                            {/* Header: Flex fixed item */}
+                            <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+                                <div className="flex items-center gap-3">
+                                    <ArchitectAvatar />
+                                    <div>
+                                        <h3 className="font-bold text-white flex items-center gap-2">
+                                            SYD
+                                            <span className="text-[9px] font-medium px-2 py-0.5 rounded-md backdrop-blur-md border border-white/20 text-blue-200" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)' }}>
+                                                Architetto personale
+                                            </span>
+                                        </h3>
+                                        <p className="text-xs text-slate-400 flex items-center gap-3">
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                                Online
+                                            </span>
+                                        </p>
                                     </div>
-                                </motion.div>
-                            ))}
-
-                            {/* Enhanced Loading Indicator */}
-                            {isLoading && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex gap-3"
-                                >
-                                    <ArchitectAvatar className="w-8 h-8 shrink-0" />
-                                    <div className="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-tl-none">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex gap-1">
-                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                                            </div>
-                                            <motion.span
-                                                key={typingMessage}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                className="text-xs text-slate-400 font-medium"
-                                            >
-                                                {typingMessage}
-                                            </motion.span>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* Marker invisibile per autoscroll */}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Input Area: Flex fixed item, standard flow (no absolute/fixed positioning) */}
-                        <div className="p-4 pb-8 md:pb-4 bg-slate-900/90 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
-                            <div className="flex gap-2 items-end max-w-full">
+                                </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-slate-400 hover:text-white shrink-0"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isLoading}
+                                    onClick={() => setIsOpen(false)}
+                                    className="text-slate-400 hover:text-white"
                                 >
-                                    <Paperclip className="w-5 h-5" />
-                                </Button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleFileSelect}
-                                    multiple
-                                />
-
-                                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
-                                    <textarea
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                sendMessage();
-                                            }
-                                        }}
-                                        onFocus={() => {
-                                            // Optional: visual scroll to ensure latest message seen
-                                            setTimeout(() => scrollToBottom('smooth'), 100);
-                                        }}
-                                        placeholder="Descrivi cosa vuoi ristrutturare..."
-                                        className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block"
-                                        rows={1}
-                                        disabled={isLoading}
-                                    />
-                                    <div className="flex items-center gap-1 pr-1 shrink-0">
-                                        <VoiceRecorder onRecordingComplete={handleVoiceRecorded} disabled={isLoading} />
-                                    </div>
-                                </div>
-
-                                <Button
-                                    onClick={() => sendMessage()}
-                                    disabled={isLoading || (!input.trim() && selectedImages.length === 0)}
-                                    className={cn(
-                                        "rounded-xl transition-all duration-300 shrink-0",
-                                        input.trim() || selectedImages.length > 0
-                                            ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
-                                            : "bg-slate-800 text-slate-500"
-                                    )}
-                                    size="icon"
-                                >
-                                    <Send className="w-5 h-5" />
+                                    <Minimize2 className="w-5 h-5" />
                                 </Button>
                             </div>
-                        </div>
-                    </motion.div>
+
+                            {/* Messages Area: Flex grow item, handles its own scroll */}
+                            <div
+                                ref={messagesContainerRef}
+                                className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y"
+                                style={{ WebkitOverflowScrolling: 'touch' }}
+                            >
+                                {messages.map((msg, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className={cn(
+                                            "flex gap-3 max-w-[90%]",
+                                            msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+                                        )}
+                                    >
+                                        {msg.role === 'user' ? (
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1 bg-blue-600 border-blue-500 text-white">
+                                                <User className="w-4 h-4" />
+                                            </div>
+                                        ) : (
+                                            <ArchitectAvatar className="w-8 h-8 mt-1 shrink-0" />
+                                        )}
+
+                                        <div className={cn(
+                                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
+                                            msg.role === 'user'
+                                                ? "bg-blue-600 text-white rounded-tr-none"
+                                                : "bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none"
+                                        )}>
+                                            <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
+                                                <ReactMarkdown
+                                                    urlTransform={(value) => value}
+                                                    components={{
+                                                        img: ({ node, ...props }) => (
+                                                            props.src ? (
+                                                                <span className="group relative mt-2 cursor-pointer overflow-hidden rounded-lg border border-white/10 block" onClick={() => setSelectedImage(props.src as string)}>
+                                                                    <img {...props} className="max-w-full h-auto transition-transform hover:scale-105" />
+                                                                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                        <span className="text-xs text-white font-medium bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1">
+                                                                            <Minimize2 className="w-3 h-3 rotate-45" /> Espandi
+                                                                        </span>
+                                                                    </span>
+                                                                </span>
+                                                            ) : null
+                                                        )
+
+                                                    }}
+                                                >
+                                                    {msg.content}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+
+                                {/* Enhanced Loading Indicator */}
+                                {isLoading && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex gap-3"
+                                    >
+                                        <ArchitectAvatar className="w-8 h-8 shrink-0" />
+                                        <div className="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-tl-none">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex gap-1">
+                                                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                                                </div>
+                                                <motion.span
+                                                    key={typingMessage}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    className="text-xs text-slate-400 font-medium"
+                                                >
+                                                    {typingMessage}
+                                                </motion.span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Marker invisibile per autoscroll */}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Input Area: Flex fixed item, standard flow (no absolute/fixed positioning) */}
+                            <div className="p-4 pb-8 md:pb-4 bg-slate-900/90 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
+                                <div className="flex gap-2 items-end max-w-full">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-slate-400 hover:text-white shrink-0"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isLoading}
+                                    >
+                                        <Paperclip className="w-5 h-5" />
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                        multiple
+                                    />
+
+                                    <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
+                                        <textarea
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    sendMessage();
+                                                }
+                                            }}
+                                            onFocus={() => {
+                                                // Optional: visual scroll to ensure latest message seen
+                                                setTimeout(() => scrollToBottom('smooth'), 100);
+                                            }}
+                                            placeholder="Descrivi cosa vuoi ristrutturare..."
+                                            className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block"
+                                            rows={1}
+                                            disabled={isLoading}
+                                        />
+                                        <div className="flex items-center gap-1 pr-1 shrink-0">
+                                            <VoiceRecorder onRecordingComplete={handleVoiceRecorded} disabled={isLoading} />
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        onClick={() => sendMessage()}
+                                        disabled={isLoading || (!input.trim() && selectedImages.length === 0)}
+                                        className={cn(
+                                            "rounded-xl transition-all duration-300 shrink-0",
+                                            input.trim() || selectedImages.length > 0
+                                                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                                                : "bg-slate-800 text-slate-500"
+                                        )}
+                                        size="icon"
+                                    >
+                                        <Send className="w-5 h-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 
@@ -704,7 +716,7 @@ export default function ChatWidget() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setSelectedImage(null)}
-                        className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+                        className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
                     >
                         <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
                             <motion.img
