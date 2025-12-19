@@ -27,6 +27,7 @@ export default function ChatWidget() {
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const prevMessagesLengthRef = useRef(messages.length);
@@ -56,16 +57,32 @@ export default function ChatWidget() {
         return () => clearInterval(interval);
     }, [isLoading]);
 
-    // Auto-scroll logic - optimized to prevent lag
+    // Auto-scroll logic - universale per mobile e desktop
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        // Fallback con scrollIntoView
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+        }
+    };
+
     useEffect(() => {
-        // Only scroll if messages actually changed (not on every render/input)
+        // Scroll quando cambiano i messaggi o si apre la chat
         if (messages.length !== prevMessagesLengthRef.current || isOpen) {
-            if (messagesEndRef.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            }
+            // Usa instant scroll all'apertura per UX migliore
+            scrollToBottom(isOpen && prevMessagesLengthRef.current === messages.length ? 'instant' : 'smooth');
             prevMessagesLengthRef.current = messages.length;
         }
     }, [messages.length, isOpen]);
+
+    // Scroll anche quando finisce il loading
+    useEffect(() => {
+        if (!isLoading && messages.length > 0) {
+            setTimeout(() => scrollToBottom('smooth'), 100);
+        }
+    }, [isLoading]);
 
     /**
      * Compresses and resizes images client-side before upload.
@@ -406,6 +423,9 @@ export default function ChatWidget() {
                                 <div>
                                     <h3 className="font-bold text-white flex items-center gap-2">
                                         SYD
+                                        <span className="text-[9px] font-medium px-2 py-0.5 rounded-md backdrop-blur-md border border-white/20 text-blue-200" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%)' }}>
+                                            Architetto personale
+                                        </span>
                                     </h3>
                                     <p className="text-xs text-slate-400 flex items-center gap-3">
                                         <span className="flex items-center gap-1">
@@ -427,7 +447,7 @@ export default function ChatWidget() {
 
                         {/* Messages Area */}
                         <div
-                            ref={messagesEndRef}
+                            ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
                             style={{ WebkitOverflowScrolling: 'touch' }}
                         >
@@ -508,6 +528,9 @@ export default function ChatWidget() {
                                     </div>
                                 </motion.div>
                             )}
+
+                            {/* Marker invisibile per autoscroll */}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         {/* Input Area */}
@@ -559,11 +582,7 @@ export default function ChatWidget() {
                                         }}
                                         onFocus={() => {
                                             // Scroll automatico quando si apre la tastiera
-                                            setTimeout(() => {
-                                                if (messagesEndRef.current) {
-                                                    messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
-                                                }
-                                            }, 300);
+                                            setTimeout(() => scrollToBottom('smooth'), 300);
                                         }}
                                         placeholder="Descrivi cosa vuoi ristrutturare..."
                                         className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide"
