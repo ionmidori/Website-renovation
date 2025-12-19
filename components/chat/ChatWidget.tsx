@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import ArchitectAvatar from '@/components/ArchitectAvatar';
 import { cn } from '@/lib/utils';
-import { useChat } from 'ai/react'; // Vercel AI SDK
+import { useChat } from '@ai-sdk/react'; // Vercel AI SDK UI
 
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
