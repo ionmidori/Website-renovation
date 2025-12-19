@@ -414,9 +414,11 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-0 md:bottom-24 right-0 md:right-6 w-full md:w-[450px] bg-[#0f172a]/95 backdrop-blur-xl border-t md:border border-slate-700/50 rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 h-[85dvh] md:h-[min(700px,80dvh)] max-h-[100dvh]"
+                        // Mobile: Fixed inset-0, full width/height (dvh), Flex Column, No Radius
+                        // Desktop: Fixed bottom-24 right-6, 450px width, 700px height, Rounded
+                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full h-[100dvh] md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-50 origin-bottom-right"
                     >
-                        {/* Header */}
+                        {/* Header: Flex fixed item */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0">
                             <div className="flex items-center gap-3">
                                 <ArchitectAvatar />
@@ -445,11 +447,11 @@ export default function ChatWidget() {
                             </Button>
                         </div>
 
-                        {/* Messages Area */}
+                        {/* Messages Area: Flex grow item, handles its own scroll */}
                         <div
                             ref={messagesContainerRef}
-                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-                            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
+                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain"
+                            style={{ WebkitOverflowScrolling: 'touch' }}
                         >
                             {messages.map((msg, idx) => (
                                 <motion.div
@@ -533,32 +535,15 @@ export default function ChatWidget() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input Area */}
-                        <div className="p-4 bg-slate-900/50 border-t border-white/5 backdrop-blur-md flex-shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-
-                            {/* Image Previews */}
-                            {selectedImages.length > 0 && (
-                                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-                                    {selectedImages.map((img, i) => (
-                                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shrink-0 group">
-                                            <img src={img} alt="Preview" className="w-full h-full object-cover" />
-                                            <button
-                                                onClick={() => removeImage(i)}
-                                                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <X className="w-4 h-4 text-white" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div className="flex items-end gap-2">
+                        {/* Input Area: Flex fixed item, standard flow (no absolute/fixed positioning) */}
+                        <div className="p-4 bg-slate-900/90 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                            <div className="flex gap-2 items-end max-w-full">
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     className="text-slate-400 hover:text-white shrink-0"
                                     onClick={() => fileInputRef.current?.click()}
+                                    disabled={isLoading}
                                 >
                                     <Paperclip className="w-5 h-5" />
                                 </Button>
@@ -568,9 +553,10 @@ export default function ChatWidget() {
                                     className="hidden"
                                     accept="image/*"
                                     onChange={handleFileSelect}
+                                    multiple
                                 />
 
-                                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors">
+                                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
                                     <textarea
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
@@ -581,30 +567,31 @@ export default function ChatWidget() {
                                             }
                                         }}
                                         onFocus={() => {
-                                            // Scroll automatico quando si apre la tastiera
-                                            setTimeout(() => scrollToBottom('smooth'), 300);
+                                            // Optional: visual scroll to ensure latest message seen
+                                            setTimeout(() => scrollToBottom('smooth'), 100);
                                         }}
                                         placeholder="Descrivi cosa vuoi ristrutturare..."
-                                        className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide"
+                                        className="w-full bg-transparent text-white text-sm px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block"
                                         rows={1}
                                         disabled={isLoading}
                                     />
-                                    <div className="flex items-center gap-1 pr-1">
+                                    <div className="flex items-center gap-1 pr-1 shrink-0">
                                         <VoiceRecorder onRecordingComplete={handleVoiceRecorded} disabled={isLoading} />
                                     </div>
                                 </div>
 
                                 <Button
                                     onClick={() => sendMessage()}
-                                    disabled={(!input.trim() && selectedImages.length === 0) || isLoading}
+                                    disabled={isLoading || (!input.trim() && selectedImages.length === 0)}
                                     className={cn(
-                                        "rounded-full w-12 h-12 shrink-0 transition-all",
+                                        "rounded-xl transition-all duration-300 shrink-0",
                                         input.trim() || selectedImages.length > 0
                                             ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
                                             : "bg-slate-800 text-slate-500"
                                     )}
+                                    size="icon"
                                 >
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+                                    <Send className="w-5 h-5" />
                                 </Button>
                             </div>
                         </div>
