@@ -32,27 +32,6 @@ export default function ChatWidget() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const prevMessagesLengthRef = useRef(messages.length);
 
-    // Visual Viewport per gestione tastiera Android/iOS
-    const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-
-    // Listener per Visual Viewport (gestisce tastiera su mobile)
-    useEffect(() => {
-        if (typeof window === 'undefined' || !window.visualViewport) return;
-
-        const handleViewportResize = () => {
-            if (window.visualViewport) {
-                setViewportHeight(window.visualViewport.height);
-            }
-        };
-
-        window.visualViewport.addEventListener('resize', handleViewportResize);
-        handleViewportResize(); // Initial set
-
-        return () => {
-            window.visualViewport?.removeEventListener('resize', handleViewportResize);
-        };
-    }, []);
-
     // Contextual typing messages - optimized
     useEffect(() => {
         if (!isLoading) {
@@ -435,13 +414,7 @@ export default function ChatWidget() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-8 right-4 md:right-6 w-[95vw] md:w-[450px] bg-[#0f172a]/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50"
-                        style={{
-                            height: viewportHeight
-                                ? `${Math.min(viewportHeight - 50, 700)}px`
-                                : 'min(700px, 80dvh)',
-                            maxHeight: viewportHeight ? `${viewportHeight - 50}px` : '80dvh'
-                        }}
+                        className="fixed bottom-0 md:bottom-24 right-0 md:right-6 w-full md:w-[450px] bg-[#0f172a]/95 backdrop-blur-xl border-t md:border border-slate-700/50 rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50 h-[85dvh] md:h-[min(700px,80dvh)] max-h-[100dvh]"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0">

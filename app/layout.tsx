@@ -13,7 +13,9 @@ export const metadata: Metadata = {
   description: "Trasforma la tua casa con il potere dell'Intelligenza Artificiale. Design premium, esecuzione impeccabile.",
   viewport: {
     width: "device-width",
-    initialScale: 1.0,
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
     interactiveWidget: "resizes-content"
   }
 };
