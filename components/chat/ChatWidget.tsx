@@ -349,6 +349,14 @@ export default function ChatWidget() {
         };
     }, [isOpen]);
 
+    // Scroll to bottom when keyboard opens (viewport height changes)
+    useEffect(() => {
+        if (isOpen && viewportHeight) {
+            // Small delay to allow layout update
+            setTimeout(() => scrollToBottom('smooth'), 100);
+        }
+    }, [viewportHeight, isOpen]);
+
     // Strict Body Scroll Lock & Bounce Prevention
     useEffect(() => {
         const html = document.documentElement;
@@ -361,21 +369,25 @@ export default function ChatWidget() {
             html.style.height = '100%';
             html.style.width = '100%';
             html.style.position = 'fixed';
+            html.style.overscrollBehavior = 'none'; // Prevent bounce
 
             body.style.overflow = 'hidden';
             body.style.height = '100%';
             body.style.width = '100%';
             body.style.position = 'fixed';
+            body.style.overscrollBehavior = 'none'; // Prevent bounce
         } else {
             html.style.overflow = '';
             html.style.height = '';
             html.style.width = '';
             html.style.position = '';
+            html.style.overscrollBehavior = '';
 
             body.style.overflow = '';
             body.style.height = '';
             body.style.width = '';
             body.style.position = '';
+            body.style.overscrollBehavior = '';
         }
 
         return () => {
@@ -383,10 +395,12 @@ export default function ChatWidget() {
             html.style.height = '';
             html.style.width = '';
             html.style.position = '';
+            html.style.overscrollBehavior = '';
             body.style.overflow = '';
             body.style.height = '';
             body.style.width = '';
             body.style.position = '';
+            body.style.overscrollBehavior = '';
         };
     }, [isOpen]);
 
@@ -474,7 +488,7 @@ export default function ChatWidget() {
                             height: viewportHeight ? `${viewportHeight}px` : undefined,
                             top: viewportHeight ? 0 : undefined
                         }}
-                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden z-[100] origin-bottom-right"
+                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none z-[100] origin-bottom-right"
                     >
                         {/* Header: Flex fixed item */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
