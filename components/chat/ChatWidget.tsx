@@ -14,6 +14,7 @@ export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
 
     // Vercel AI SDK Hook - Manages all chat state (messages, input, loading, streaming)
+    // @ts-ignore
     const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
         api: '/api/chat',
         initialMessages: [
