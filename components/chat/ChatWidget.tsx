@@ -309,15 +309,37 @@ export default function ChatWidget() {
         }
     }, [isOpen]);
 
-    // Auto-close welcome badge
+    // Typewriter effect & Auto-close logic
+    const [typewriterText, setTypewriterText] = useState('');
+    const fullMessage = "Ciao, sono SYD! Posso aiutarti con il tuo progetto?";
+
     useEffect(() => {
-        if (showWelcomeBadge) {
-            const timer = setTimeout(() => {
-                setShowWelcomeBadge(false);
-            }, 7000); // Close after 7 seconds
-            return () => clearTimeout(timer);
+        if (!showWelcomeBadge || isOpen) {
+            setTypewriterText('');
+            return;
         }
-    }, [showWelcomeBadge]);
+
+        let currentIndex = 0;
+        let closeTimer: NodeJS.Timeout;
+
+        const typeInterval = setInterval(() => {
+            if (currentIndex < fullMessage.length) {
+                setTypewriterText(fullMessage.slice(0, currentIndex + 1));
+                currentIndex++;
+            } else {
+                clearInterval(typeInterval);
+                // Start auto-close timer after typing finishes (e.g., 5 seconds read time)
+                closeTimer = setTimeout(() => {
+                    setShowWelcomeBadge(false);
+                }, 5000);
+            }
+        }, 50); // 50ms per character (slightly faster for responsiveness)
+
+        return () => {
+            clearInterval(typeInterval);
+            clearTimeout(closeTimer);
+        };
+    }, [showWelcomeBadge, isOpen]);
 
     // Visual Viewport Logic (Mobile Only)
     useEffect(() => {
@@ -424,7 +446,10 @@ export default function ChatWidget() {
                             }}
                         >
                             <p className="text-xs text-white font-medium leading-relaxed text-center drop-shadow-sm min-h-[50px] flex items-center justify-center">
-                                Ciao, sono SYD! Posso aiutarti con il tuo progetto?
+                                {typewriterText}
+                                {typewriterText.length < fullMessage.length && (
+                                    <span className="inline-block w-0.5 h-3.5 bg-white ml-0.5 animate-pulse"></span>
+                                )}
                             </p>
 
                             {/* Arrow pointing to button */}
@@ -488,7 +513,7 @@ export default function ChatWidget() {
                             height: viewportHeight ? `${viewportHeight}px` : undefined,
                             top: viewportHeight ? 0 : undefined
                         }}
-                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none z-[100] origin-bottom-right"
+                        className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 w-full md:w-[450px] md:h-[700px] bg-[#0f172a]/95 backdrop-blur-xl border-none md:border border-slate-700/50 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
                     >
                         {/* Header: Flex fixed item */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
@@ -522,7 +547,7 @@ export default function ChatWidget() {
                         {/* Messages Area: Flex grow item, handles its own scroll */}
                         <div
                             ref={messagesContainerRef}
-                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain"
+                            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y"
                             style={{ WebkitOverflowScrolling: 'touch' }}
                         >
                             {messages.map((msg, idx) => (
