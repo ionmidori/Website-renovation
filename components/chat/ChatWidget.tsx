@@ -449,7 +449,7 @@ export default function ChatWidget() {
                         <div
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-                            style={{ WebkitOverflowScrolling: 'touch' }}
+                            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
                         >
                             {messages.map((msg, idx) => (
                                 <motion.div
