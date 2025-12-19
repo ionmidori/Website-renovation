@@ -7,7 +7,7 @@ export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 // Rate Limit (Semplice In-Memory per istanza serverless)
-const rateLimit = new Map<string, number>();
+const rateLimitMap = new Map<string, number>();
 
 const SYSTEM_INSTRUCTION = `# SYD - ARCHITETTO PERSONALE & CONSULENTE
 Sei SYD, un architetto visionario e pragmatico.
