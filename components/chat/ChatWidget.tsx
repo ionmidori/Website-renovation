@@ -396,7 +396,7 @@ export default function ChatWidget() {
                                                             <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><span className="text-xs text-white font-medium bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 flex items-center gap-1"><Minimize2 className="w-3 h-3 rotate-45" /> Espandi</span></span>
                                                         </span>
                                                     ) : null
-                                                }}>{msg.content}</ReactMarkdown>
+                                                }}>{(msg as any).content}</ReactMarkdown>
                                             </div>
                                         </div>
                                     </motion.div>
