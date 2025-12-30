@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // SESSIONS COLLECTION
+    // ==========================================
+    // Public read (anyone can view chat history)
+    // Server-only write (only Admin SDK can create/update)
+    match /sessions/{sessionId} {
+      // Allow anyone to read session metadata
+      allow read: if true;
+      
+      // Only server can write (via Admin SDK with service account)
+      allow write: if false;
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Allow anyone to read messages
+        allow read: if true;
+        
+        // Only server can write messages
+        allow write: if false;
+      }
+    }
+    
+    // ==========================================
+    // LEADS COLLECTION
+    // ==========================================
+    // Server-only access (sensitive customer data)
+    match /leads/{leadId} {
+      // Only server can read/write leads
+      allow read, write: if false;
+    }
+    
+    // ==========================================
+    // USERS COLLECTION (if you add it later)
+    // ==========================================
+    // Users can only read/write their own data
+    match /users/{userId} {
+      // Allow authenticated users to read their own data
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow authenticated users to write their own data
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ==========================================
+    // DEFAULT RULE - DENY ALL
+    // ==========================================
+    // Deny access to all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,96 @@
+import React, { RefObject } from 'react';
+import { Button } from '@/components/ui/button';
+import { Send, Paperclip } from 'lucide-react';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { cn } from '@/lib/utils';
+
+interface ChatInputProps {
+    inputValue: string;
+    setInputValue: (value: string) => void;
+    onSubmit: (e?: React.FormEvent) => void;
+    isLoading: boolean;
+    selectedImages: string[];
+    onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onVoiceRecorded: (file: File) => void;
+    onScrollToBottom: () => void;
+    fileInputRef: RefObject<HTMLInputElement | null>;
+}
+
+/**
+ * Chat input component with textarea, file upload, voice recorder, and send button
+ * Extracted from ChatWidget.tsx (lines 561-581)
+ */
+export function ChatInput({
+    inputValue,
+    setInputValue,
+    onSubmit,
+    isLoading,
+    selectedImages,
+    onFileSelect,
+    onVoiceRecorded,
+    onScrollToBottom,
+    fileInputRef
+}: ChatInputProps) {
+    return (
+        <div
+            className="px-4 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full"
+            style={{ backgroundColor: '#0b1120', paddingTop: '10px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}
+        >
+            <div className="flex gap-2 items-end max-w-full">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-slate-400 hover:text-white shrink-0"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                >
+                    <Paperclip className="w-5 h-5" />
+                </Button>
+
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={onFileSelect}
+                    multiple
+                />
+
+                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
+                    <textarea
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                onSubmit(e);
+                            }
+                        }}
+                        onFocus={() => setTimeout(() => onScrollToBottom(), 100)}
+                        placeholder="Descrivi cosa vuoi ristrutturare..."
+                        className="w-full bg-transparent text-white text-[16px] px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block"
+                        rows={1}
+                        disabled={isLoading}
+                    />
+                    <div className="flex items-center gap-1 pr-1 shrink-0">
+                        <VoiceRecorder onRecordingComplete={onVoiceRecorded} disabled={isLoading} />
+                    </div>
+                </div>
+
+                <Button
+                    onClick={() => onSubmit()}
+                    disabled={isLoading || (!inputValue.trim() && selectedImages.length === 0)}
+                    className={cn(
+                        "rounded-xl transition-all duration-300 shrink-0",
+                        inputValue.trim() || selectedImages.length > 0
+                            ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                            : "bg-slate-800 text-slate-500"
+                    )}
+                    size="icon"
+                >
+                    <Send className="w-5 h-5" />
+                </Button>
+            </div>
+        </div>
+    );
+}

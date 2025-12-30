@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==========================================
+    // RENDERS FOLDER (Generated Images)
+    // ==========================================
+    // Public read so users can view images in chat
+    // Server-only write via Admin SDK
+    match /renders/{fileName} {
+      // Anyone can read (view images)
+      allow read: if true;
+      
+      // Only server can write (upload images via Admin SDK)
+      allow write: if false;
+    }
+    
+    // ==========================================
+    // DEFAULT RULE - DENY ALL
+    // ==========================================
+    // Deny access to all other folders
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
