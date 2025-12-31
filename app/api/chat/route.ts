@@ -226,7 +226,7 @@ export async function POST(req: Request) {
                 sessionId // Pass sessionId to tools via context.metadata
             },
 
-            onFinish: async ({ text, toolResults }) => {
+            onFinish: async ({ text, toolResults }: { text: string; toolResults: any[] }) => {
                 // Save the final message to database
                 let finalText = text;
 
