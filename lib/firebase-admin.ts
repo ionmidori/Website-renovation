@@ -13,6 +13,35 @@ let firestoreInstance: Firestore | undefined;
 let storageInstance: Storage | undefined;
 
 /**
+ * ✅ CRITICAL FIX #2: Validate Firebase credentials format
+ * Prevents security risks from malformed credentials
+ */
+function validateFirebaseCredentials(privateKey: string, clientEmail: string, projectId: string): void {
+    // Validate private key format
+    if (!privateKey.includes('BEGIN PRIVATE KEY') || !privateKey.includes('END PRIVATE KEY')) {
+        throw new Error('[Firebase] Invalid private key format - must be a valid RSA private key');
+    }
+
+    // Validate private key is not empty between markers
+    const keyContent = privateKey.split('BEGIN PRIVATE KEY')[1]?.split('END PRIVATE KEY')[0];
+    if (!keyContent || keyContent.trim().length < 100) {
+        throw new Error('[Firebase] Private key appears to be truncated or empty');
+    }
+
+    // Validate email format
+    if (!clientEmail.includes('@') || !clientEmail.endsWith('.gserviceaccount.com')) {
+        throw new Error('[Firebase] Invalid service account email - must end with .gserviceaccount.com');
+    }
+
+    // Validate project ID format
+    if (!projectId || projectId.length < 6 || !/^[a-z0-9-]+$/.test(projectId)) {
+        throw new Error('[Firebase] Invalid project ID - must contain only lowercase letters, numbers, and hyphens');
+    }
+
+    console.log('[Firebase] ✅ Credentials validation passed');
+}
+
+/**
  * Initialize Firebase Admin SDK
  * Loads from environment variables (Vercel-compatible) or falls back to JSON file
  */
@@ -26,6 +55,13 @@ function initializeFirebase(): App {
 
             if (privateKey && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
                 console.log('[Firebase] Loading credentials from environment variables');
+
+                // ✅ CRITICAL FIX #2: Validate credentials before use
+                validateFirebaseCredentials(
+                    privateKey,
+                    process.env.FIREBASE_CLIENT_EMAIL,
+                    process.env.FIREBASE_PROJECT_ID
+                );
 
                 firebaseApp = initializeApp({
                     credential: cert({
@@ -56,6 +92,13 @@ function initializeFirebase(): App {
             }
 
             const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
+            // ✅ CRITICAL FIX #2: Validate JSON file credentials
+            validateFirebaseCredentials(
+                serviceAccount.private_key,
+                serviceAccount.client_email,
+                serviceAccount.project_id
+            );
 
             firebaseApp = initializeApp({
                 credential: cert(serviceAccount),

@@ -4,6 +4,7 @@ import { google as googleProvider } from '@ai-sdk/google';
 import { getConversationContext, saveMessage, ensureSession } from '@/lib/db/messages';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { createChatTools } from '@/lib/chat-tools';
+import { callAIWithRetry } from '@/lib/ai-retry';
 
 // Configurazione
 export const maxDuration = 60;
@@ -51,10 +52,11 @@ FORMATO SBAGLIATO (NON fare questo):
 "Ecco il rendering! L'immagine è stata generata."
 
 **IMPORTANTE**: 
-- Usa SEMPRE la sintassi Markdown per immagini con URL dal tool
-- L'URL è nel campo imageUrl restituito dal tool
-- Aggiungi 1-2 frasi prima e dopo l'immagine per contestualizzarla
-- NON mettere l'immagine in un code block
+- DEVI SEMPRE includere l'immagine subito dopo che il tool restituisce imageUrl
+- Usa SEMPRE la sintassi Markdown: ![](URL_IMMAGINE)
+- L'URL è nel campo imageUrl del risultato del tool
+- Non mettere l'immagine in un code block
+- ESEMPIO: "Ecco il tuo rendering!\\n\\n![](https://storage.googleapis...png)\\n\\nHo creato..."
 
 ---
 
@@ -66,7 +68,7 @@ FORMATO SBAGLIATO (NON fare questo):
    - Chiedi stanza
    - Chiedi stile  
    - Chiedi colori/materiali
-   - Fai riepilogo: "Abbiamo: bagno minimal con toni neutri. Procedo con la generazione?"
+   - Fai riepilogo: "Abbiamo: [stanza] [stile] con [dettagli]. Procedo con la generazione?"
    - Genera SOLO se user dice "Sì"/"Procedi"/"Vai"
    - DOPO la generazione, mostra SEMPRE l'immagine con ![alt](url)
 
@@ -121,7 +123,19 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { messages, images, sessionId = 'default-session' } = body;
+        const { messages, images, sessionId } = body;
+
+        // ✅ BUG FIX #5: Strict sessionId validation (security)
+        if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
+            console.error('[API] Missing or invalid sessionId');
+            return new Response(JSON.stringify({
+                error: 'sessionId is required',
+                details: 'A valid session identifier must be provided'
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         console.log("API Request Debug:", {
             hasMessages: !!messages,
@@ -194,50 +208,14 @@ export async function POST(req: Request) {
         ).join(' ');
 
         // Check if user has explicitly requested rendering/visualization
-        const wantsRendering = conversationText.includes('rendering') ||
-            conversationText.includes('visualizza') ||
-            conversationText.includes('mostra') ||
-            conversationText.includes('vedere') ||
-            conversationText.includes('anteprima') ||
-            conversationText.includes('3d');
+        // ✅ ALWAYS enable tools - let the AI decide when to use them
+        // The system prompt already instructs the AI to only use tools after confirmation
+        const { createChatTools } = await import('@/lib/chat-tools');
+        const tools = createChatTools(sessionId);
+        console.log('[Tools] ✅ Tools ENABLED (always available)');
 
-        // Check if necessary info has been collected (room type + style mentioned)
-        const hasRoomInfo = conversationText.includes('sogg') || // soggiorno
-            conversationText.includes('cucina') ||
-            conversationText.includes('bagno') ||
-            conversationText.includes('camera') ||
-            conversationText.includes('stanza');
-
-        const hasStyleInfo = conversationText.includes('modern') ||
-            conversationText.includes('classic') ||
-            conversationText.includes('minima') ||
-            conversationText.includes('industrial') ||
-            conversationText.includes('stile');
-
-        // Only enable tools if:
-        // 1. User wants rendering AND has provided details
-        // 2. OR conversation is advanced (more than 4 messages)
-        const shouldEnableTools = (wantsRendering && hasRoomInfo && hasStyleInfo) ||
-            coreMessages.length > 6;
-
-        // Load tools conditionally with sessionId injected via factory
-        let tools: ReturnType<typeof createChatTools> | undefined;
-
-        if (wantsRendering && hasRoomInfo && hasStyleInfo) {
-            const { createChatTools } = await import('@/lib/chat-tools'); // Import here
-            tools = createChatTools(sessionId); // Inject sessionId via closure
-            console.log('[Tools] ✅ Tools ENABLED');
-        } else {
-            console.log('[Tools] ⚠️ Tools DISABLED - conversation does not meet criteria');
-            console.log({
-                wantsRendering,
-                hasRoomInfo,
-                messageCount: coreMessages.length
-            });
-        }
-
-        // Use streamText with tools re-enabled
-        const result = streamText({
+        // ✅ CRITICAL FIX #3: Use streamText with retry logic
+        const result = await callAIWithRetry({
             model: googleProvider('gemini-3-flash-preview'),
             system: SYSTEM_INSTRUCTION,
             messages: coreMessages as any,
@@ -249,50 +227,120 @@ export async function POST(req: Request) {
             },
 
             onFinish: async ({ text, toolResults }) => {
+                // Save the final message to database
                 let finalText = text;
 
-                // Check if generate_render tool was used and inject imageUrl if present
-                const renderTool = (toolResults as any)?.find((tr: any) => tr.toolName === 'generate_render');
+                // ✅ Still inject markdown for database storage
+                const renderTool = Array.isArray(toolResults)
+                    ? (toolResults as any[]).find(tr =>
+                        tr && typeof tr === 'object' && tr.toolName === 'generate_render'
+                    )
+                    : undefined;
 
                 if (renderTool) {
                     console.log('[onFinish] Tool results:', JSON.stringify(toolResults, null, 2));
 
-                    // Extract imageUrl from tool result (no race condition - using actual result)
-                    // NOTE: AI SDK might use 'result' or 'output' depending on version/context
-                    const result = (renderTool as any).result || (renderTool as any).output;
+                    const result = renderTool.result || renderTool.output;
 
                     if (result?.status === 'success' && result?.imageUrl) {
                         const imageUrl = result.imageUrl;
-                        console.log('[onFinish] Found imageUrl in tool result:', imageUrl);
+                        console.log('[onFinish] Found imageUrl:', imageUrl);
 
-                        // Inject Markdown image
+                        // Inject Markdown image for database
                         const imageMarkdown = `\n\n![](${imageUrl})\n\n`;
                         finalText = finalText
                             ? `${finalText}${imageMarkdown}`
                             : `Ecco il tuo rendering!${imageMarkdown}`;
 
-                        console.log('[onFinish] ✅ Injected image Markdown from tool result');
+                        console.log('[onFinish] ✅ Injected image Markdown for database');
                     }
                 }
 
+                // ✅ BUG FIX #3: Error boundary for saveMessage
                 console.log('[onFinish] Saving assistant message');
-                await saveMessage(sessionId, 'assistant', finalText, {
-                    toolCalls: toolResults?.map((tr: any) => ({
-                        name: tr.toolName || 'unknown',
-                        args: tr.args || {},
-                        result: tr.result || {}
-                    }))
-                });
+                try {
+                    await saveMessage(sessionId, 'assistant', finalText, {
+                        toolCalls: toolResults?.map((tr: any) => ({
+                            name: tr.toolName || 'unknown',
+                            args: tr.args || {},
+                            result: tr.result || {}
+                        }))
+                    });
+                    console.log('[onFinish] ✅ Message saved successfully');
+                } catch (error) {
+                    console.error('[onFinish] ❌ CRITICAL: Failed to save message', error);
+                    // Note: We don't throw here to avoid breaking the stream response
+                    // Consider implementing retry logic or dead letter queue
+                }
             },
         });
 
-        // ✅ Return streaming response with rate limit headers
-        return result.toTextStreamResponse({
+        // ✅ CRITICAL FIX: Use toDataStreamResponse to stream tool results to frontend
+        const response = result.toDataStreamResponse({
             headers: {
                 'X-RateLimit-Limit': '20',
                 'X-RateLimit-Remaining': remaining.toString(),
                 'X-RateLimit-Reset': resetAt.toISOString(),
             },
+        });
+
+        // Intercept and transform the stream to append image URL when tool returns it
+        const originalBody = response.body;
+        if (!originalBody) {
+            return response;
+        }
+
+        const reader = originalBody.getReader();
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        const transformedStream = new ReadableStream({
+            async start(controller) {
+                let accumulatedText = '';
+                let foundImageUrl: string | null = null;
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+
+                        // Forward the chunk immediately
+                        if (value) {
+                            controller.enqueue(value);
+
+                            // Try to detect tool result with imageUrl in the stream
+                            const chunk = decoder.decode(value, { stream: true });
+                            accumulatedText += chunk;
+
+                            // Look for imageUrl in JSON format
+                            if (!foundImageUrl && accumulatedText.includes('"imageUrl"')) {
+                                const match = accumulatedText.match(/"imageUrl"\s*:\s*"([^"]+)"/);
+                                if (match) {
+                                    foundImageUrl = match[1];
+                                    console.log('[Stream Transform] 🖼️ Found imageUrl:', foundImageUrl);
+                                }
+                            }
+                        }
+
+                        if (done) {
+                            // Before closing stream, append image markdown if we found imageUrl
+                            if (foundImageUrl) {
+                                const imageMarkdown = `\n\n![](${foundImageUrl})\n\n`;
+                                controller.enqueue(encoder.encode(imageMarkdown));
+                                console.log('[Stream Transform] ✅ Appended image markdown to stream');
+                            }
+                            controller.close();
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Stream Transform] ❌ Error:', error);
+                    controller.error(error);
+                }
+            },
+        });
+
+        return new Response(transformedStream, {
+            headers: response.headers,
         });
 
     } catch (error: any) {
