@@ -6,11 +6,11 @@ export default function ArchitectAvatar({ className }: { className?: string }) {
     return (
         <div className={cn("relative w-12 h-12 shadow-sm group flex items-center justify-center bg-indigo-50 rounded-full overflow-hidden border-2 border-white/20", className)}>
             <Image
-                src="/assets/syd_avatar_final.png"
+                src="/assets/syd_avatar_final_v2.jpg"
                 alt="SYD Avatar"
                 fill
                 sizes="128px"
-                className="object-cover scale-110 -translate-x-2 transition-transform duration-500 group-hover:scale-125"
+                className="object-cover scale-110 transition-transform duration-500 group-hover:scale-125"
                 priority
             />
         </div>

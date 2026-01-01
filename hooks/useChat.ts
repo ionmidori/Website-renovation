@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export type Message = {
@@ -14,6 +14,27 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | undefined>(undefined);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // ✅ Load history on mount
+    useEffect(() => {
+        if (!sessionId || initialMessages.length > 0) return;
+
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch(`/api/chat/history?sessionId=${sessionId}`);
+                if (!res.ok) throw new Error('Failed to load history');
+
+                const data = await res.json();
+                if (data.messages && Array.isArray(data.messages)) {
+                    setMessages(data.messages);
+                }
+            } catch (err) {
+                console.error('[useChat] Failed to load history:', err);
+            }
+        };
+
+        fetchHistory();
+    }, [sessionId, initialMessages.length]);
 
     const handleInputChange = (e: any) => {
         setInput(e.target.value);

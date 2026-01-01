@@ -10,9 +10,9 @@ export function createChatTools(sessionId: string) {
 
     // Define schemas first
     const GenerateRenderParameters = z.object({
-        prompt: z.string().max(1000).describe('Detailed visual description of the interior design to generate (IN ENGLISH). Include furniture, colors, textures, lighting.'),
-        roomType: z.string().max(100).describe('Type of room IN ENGLISH (e.g., "living room", "bathroom", "kitchen", "bedroom").'),
-        style: z.string().max(100).describe('Design style IN ENGLISH (e.g., "modern", "industrial", "minimalist").'),
+        prompt: z.string().min(10).describe('MANDATORY: Detailed visual description of the interior design in ENGLISH. Must include specific colors, materials, and furniture.'),
+        roomType: z.string().min(3).describe('MANDATORY: Type of room in ENGLISH (e.g. "kitchen", "bathroom").'),
+        style: z.string().min(3).describe('MANDATORY: Design style in ENGLISH (e.g. "industrial", "modern").'),
     });
 
     const SubmitLeadParameters = z.object({

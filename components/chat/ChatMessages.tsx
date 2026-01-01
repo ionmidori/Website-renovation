@@ -65,7 +65,7 @@ const ChatMessagesComponent = ({
         >
             {messages.map((msg, idx) => (
                 <motion.div
-                    key={msg.id} // ✅ Use stable ID instead of index
+                    key={msg.id || idx} // ✅ Use stable ID or index fallback
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={cn("flex gap-3 max-w-[90%]", msg.role === 'user' ? "ml-auto flex-row-reverse" : "")}
