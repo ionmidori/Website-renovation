@@ -70,7 +70,7 @@ export async function getLeads(
         return snapshot.docs.map(doc => ({
             ...doc.data(),
             id: doc.id,
-        })) as Lead[];
+        })) as unknown as Lead[];
 
     } catch (error) {
         console.error('[getLeads] Error fetching leads:', error);
