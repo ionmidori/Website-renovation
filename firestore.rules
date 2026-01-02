@@ -6,19 +6,22 @@ service cloud.firestore {
     // ==========================================
     // SESSIONS COLLECTION
     // ==========================================
-    // Public read (anyone can view chat history)
+    // ✅ SECURITY FIX: Time-limited read access (7-day TTL)
+    // Prevents unauthorized access to old sessions
     // Server-only write (only Admin SDK can create/update)
     match /sessions/{sessionId} {
-      // Allow anyone to read session metadata
-      allow read: if true;
+      // Allow read only if session is less than 7 days old
+      // This improves privacy while maintaining current architecture
+      allow read: if resource.data.createdAt != null && 
+                     resource.data.createdAt > request.time - duration.value(7, 'd');
       
       // Only server can write (via Admin SDK with service account)
       allow write: if false;
       
       // Messages subcollection
       match /messages/{messageId} {
-        // Allow anyone to read messages
-        allow read: if true;
+        // Allow read only if parent session is less than 7 days old
+        allow read: if get(/databases/$(database)/documents/sessions/$(sessionId)).data.createdAt > request.time - duration.value(7, 'd');
         
         // Only server can write messages
         allow write: if false;
