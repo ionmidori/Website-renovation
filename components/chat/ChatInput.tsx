@@ -1,6 +1,6 @@
 import React, { RefObject } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip } from 'lucide-react';
+import { Send, Paperclip, Loader2 } from 'lucide-react';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,8 @@ interface ChatInputProps {
     setInputValue: (value: string) => void;
     onSubmit: (e?: React.FormEvent) => void;
     isLoading: boolean;
+    isUploading?: boolean; // New prop
+    uploadStatus?: string; // New prop
     selectedImages: string[];
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onVoiceRecorded: (file: File) => void;
@@ -25,6 +27,8 @@ export function ChatInput({
     setInputValue,
     onSubmit,
     isLoading,
+    isUploading = false,
+    uploadStatus = '',
     selectedImages,
     onFileSelect,
     onVoiceRecorded,
@@ -36,15 +40,26 @@ export function ChatInput({
             className="px-4 border-t border-white/10 backdrop-blur-md flex-shrink-0 w-full"
             style={{ backgroundColor: '#0b1120', paddingTop: '10px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}
         >
+            {/* Upload Status Indicator */}
+            {uploadStatus && (
+                <div className="text-xs text-blue-400 mb-1 ml-1 animate-pulse font-medium">
+                    {uploadStatus}
+                </div>
+            )}
+
             <div className="flex gap-2 items-end max-w-full">
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="text-slate-400 hover:text-white shrink-0"
+                    className="text-slate-400 hover:text-white shrink-0 relative"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
+                    disabled={isLoading || isUploading}
                 >
-                    <Paperclip className="w-5 h-5" />
+                    {isUploading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    ) : (
+                        <Paperclip className="w-5 h-5" />
+                    )}
                 </Button>
 
                 <input

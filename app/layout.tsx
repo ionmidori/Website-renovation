@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className="scroll-smooth">
+    <html lang="it" className="scroll-smooth" suppressHydrationWarning>
       <body
         className={`${outfit.variable} antialiased font-sans bg-slate-950 text-slate-50`}
       >

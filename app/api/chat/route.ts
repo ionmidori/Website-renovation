@@ -156,6 +156,7 @@ Prima di tutto, devi compilare il campo \`structuralElements\` con TUTTI gli ele
 - Scrivi in INGLESE
 - Sii SPECIFICO e COMPLETO
 
+
 **STEP 2 - roomType & style:**
 Compila questi campi in INGLESE (es. "living room", "modern")
 
@@ -173,7 +174,92 @@ prompt: "Industrial living room featuring a large arched window on the left wall
 \`\`\`
 
 ❗ RICORDA: Il campo structuralElements è il "ponte" tra la foto analizzata e il rendering finale. Se lo compili bene, l'AI non dimenticherà mai cosa ha visto!
+
+---
+
+## 🔀 SCELTA MODALITÀ (mode) - IMPORTANTISSIMO
+
+Quando chiami \`generate_render\`, devi scegliere il parametro \`mode\` corretto:
+
+### MODE: "creation" (Creazione da zero)
+Usa questo mode quando:
+- L'utente NON ha caricato una foto
+- Sta descrivendo una stanza immaginaria
+- Esempi: "Voglio un bagno moderno", "Crea un soggiorno minimal"
+
+**Tool call esempio**:
+\`\`\`
+mode: "creation"
+sourceImageUrl: <lascia vuoto>
+\`\`\`
+
+### MODE: "modification" (Modifica foto esistente)
+Usa questo mode quando:
+- L'utente HA CARICATO una foto della sua stanza
+- Vedi "[Immagine allegata]" nella cronologia recente
+- Vuole trasformare quella stanza specifica
+- L'utente dice "questa stanza", "la mia camera", "cambia questo"
+- Esempi: "Trasforma questa camera in stile industriale", "Cambia il mio soggiorno"
+
+**Tool call esempio**:
+\`\`\`
+mode: "modification"
+sourceImageUrl: "https://storage.googleapis.com/..." <OBBLIGATORIO>
+\`\`\`
+
+### REGOLA D'ORO per sourceImageUrl
+Se scegli \`mode: "modification"\`, DEVI compilare anche \`sourceImageUrl\`:
+
+1. **Cerca nella cronologia** il marker dell'immagine: \`[Immagine allegata: https://storage.googleapis.com/...]\`
+2. **Estrai l'URL** dal marker (tutto dopo "Immagine allegata: " fino al "]")
+3. **Formato URL corretto**: \`https://storage.googleapis.com/BUCKET/user-uploads/SESSION_ID/TIMESTAMP-UUID.EXTENSION\`
+4. **Se NON trovi il marker con URL**:
+   - Cerca un marker base \`[Immagine allegata]\` (significa che l'upload è fallito)
+   - Chiedi: "Mi dispiace, non riesco a trovare l'immagine. Puoi per favore ricaricarla?"
+5. **Se l'utente NON ha mai caricato foto** ma chiede "modifica questa stanza":
+   - Chiedi: "Per modificare una stanza esistente, carica prima una foto della stanza attuale!"
+
+### FALLBACK AUTOMATICO
+Se non sei sicuro quale mode usare, usa **"creation"** (è il default sicuro).
+
+### ESEMPI PRATICI
+
+**Esempio 1 - Creation**:
+- User: "Voglio vedere un bagno moderno con doccia walk-in"
+- Tool call: \`mode: "creation"\` (no sourceImageUrl)
+
+**Esempio 2 - Modification** (✅ CORRETTO):
+- User: [carica foto] "Trasforma questa camera in stile giapponese"
+- Cronologia mostra: "Trasforma questa camera in stile giapponese [Immagine allegata: https://storage.googleapis.com/bucket/user-uploads/abc123/1234567-xyz.jpg]"
+- Cronologia: "https://storage.googleapis.com/bucket/user-uploads/session-123/1234567-abc.jpg [Immagine allegata]"
+- Tool call: \`mode: "modification"\`, \`sourceImageUrl: "https://storage.googleapis.com/..."\`
+
+- ❌ NON chiamare mode: "modification" senza immagine
+- ✅ Rispondi: "Per modificare la tua cucina, carica prima una foto!"
+
+### SCELTA modificationType (Solo per mode="modification")
+Se hai scelto mode="modification", decidi il tipo di intervento:
+
+**1. "renovation" (DEFAULT - Ristrutturazione completa)**
+- Quando l'utente vuole cambiare lo stile generale
+- "Falla in stile industriale", "Cambia tutto", "Voglio vedere come verrebbe moderna"
+- Questo userà il modello più potente (Imagen 3 Generate)
+
+**2. "detail" (Modifica di dettaglio)**
+- Quando l'utente chiede una modifica specifica su un oggetto
+- "Cambia il colore del divano", "Aggiungi una pianta", "Togli il quadro"
+- Questo userà il modello di editing (Imagen 3 Capability) per preservare tutto il resto
+
+**Esempio Detail**:
+\`\`\`
+mode: "modification"
+sourceImageUrl: "https://..."
+modificationType: "detail"
+structuralElements: "existing living room" (descrivi comunque la stanza)
+prompt: "Living room with a RED sofa instead of grey" (descrivi la modifica nel prompt)
+\`\`\`
 `;
+
 
 
 
@@ -209,7 +295,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { messages, images, sessionId } = body;
+        const { messages, images, imageUrls, sessionId } = body; // ✅ Extract imageUrls
 
         // ✅ BUG FIX #5: Strict sessionId validation (security)
         if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
@@ -227,6 +313,8 @@ export async function POST(req: Request) {
             hasMessages: !!messages,
             messagesLength: messages?.length,
             hasImages: !!images,
+            hasImageUrls: !!imageUrls, // ✅ Log imageUrls presence
+            imageUrlsCount: imageUrls?.length || 0,
             sessionId
         });
 
@@ -270,10 +358,19 @@ export async function POST(req: Request) {
         // ✅ FIX: Use helper to correctly extract text from message.parts structure
         let userTextContent = extractUserMessage(latestUserMessage);
 
-        // Append explicit marker if images are present to preserve context in history
+        // ✅ HYBRID TOOL: Append marker with public URL if imageUrls available
         if (images && Array.isArray(images) && images.length > 0) {
-            userTextContent += ' [Immagine allegata]';
-            console.log('[API] Appended [Immagine allegata] marker to user message');
+            // If we have public URLs, include them in the marker for AI context
+            if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
+                // Save first URL (most recent image) in marker for modification mode
+                const firstImageUrl = imageUrls[0];
+                userTextContent += ` [Immagine allegata: ${firstImageUrl}]`;
+                console.log('[API] ✅ Appended [Immagine allegata] marker with public URL:', firstImageUrl);
+            } else {
+                // Fallback: basic marker without URL
+                userTextContent += ' [Immagine allegata]';
+                console.log('[API] Appended [Immagine allegata] marker (no public URL available)');
+            }
         }
 
         console.log('[Firestore] Attempting to save user message...', { sessionId, content: userTextContent.substring(0, 50) });

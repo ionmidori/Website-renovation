@@ -42,7 +42,7 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
 
     const append = useCallback(async (
         message: { role: string; content: string },
-        options?: { body?: { images?: string[] } }
+        options?: { body?: { images?: string[]; imageUrls?: string[] } }
     ) => {
         setIsLoading(true);
         setError(undefined);
@@ -79,7 +79,8 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
                 body: JSON.stringify({
                     messages: [...messages, userMsg],
                     sessionId,
-                    images: options?.body?.images
+                    images: options?.body?.images,
+                    imageUrls: options?.body?.imageUrls  // Public URLs for modification mode
                 }),
                 signal: abortControllerRef.current.signal
             });

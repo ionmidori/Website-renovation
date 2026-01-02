@@ -75,8 +75,9 @@ export default function ChatWidget() {
         return messages.length === 0 ? [welcomeMessage] : messages;
     }, [historyMessages.length, messages, welcomeMessage]);
 
-    // Image Upload
-    const { selectedImages, handleFileSelect, clearImages } = useImageUpload();
+    // Image Upload (now with persistent Storage URLs)
+    // Image Upload (now with persistent Storage URLs)
+    const { selectedImages, imageUrls, handleFileSelect, clearImages, isUploading, uploadStatus } = useImageUpload(sessionId);
 
     // Scroll Management
     const { messagesContainerRef, messagesEndRef, scrollToBottom } = useChatScroll(displayMessages.length, isOpen);
@@ -100,7 +101,10 @@ export default function ChatWidget() {
                 role: 'user',
                 content: inputValue
             }, {
-                body: { images: selectedImages }
+                body: {
+                    images: selectedImages,      // base64 for AI vision
+                    imageUrls: imageUrls          // Public URLs for modification mode
+                }
             });
             clearImages();
             setInputValue('');
@@ -218,6 +222,8 @@ export default function ChatWidget() {
                                 setInputValue={setInputValue}
                                 onSubmit={submitMessage}
                                 isLoading={isLoading}
+                                isUploading={isUploading} // New prop
+                                uploadStatus={uploadStatus} // New prop
                                 selectedImages={selectedImages}
                                 onFileSelect={handleFileSelect}
                                 onVoiceRecorded={handleVoiceRecorded}
