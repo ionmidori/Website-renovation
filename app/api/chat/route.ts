@@ -147,15 +147,32 @@ Quando l'utente carica una foto (es. della sua stanza attuale):
 
 ## ISTRUZIONI PER IL TOOL generate_render
 
-Quando chiami \`generate_render\`, devi riempire il parametro \`prompt\` con una DESCRIZIONE VISIVA RICCA in INGLESE.
-❌ NON scrivere solo: "Salotto moderno"
-✅ SCRIVI (Inglese): "Modern living room with dark wood flooring, large window on the left wall, white L-shaped sofa, light gray walls"
-DEVI compilare ANCHE "roomType" (es. "living room") e "style" (es. "modern") in INGLESE. Non lasciarli mai vuoti.
+⚠️ NUOVO WORKFLOW A 3 STEP - OBBLIGATORIO:
 
-Se c'è una "FOTO UTENTE" analizzata in precedenza, DEVI includere i dettagli strutturali di quella foto nel \`prompt\` (in inglese).
-Esempio: "Ristrutturazione di una camera (dalla foto: soffitto alto, finestra ad arco) in stile industriale..."
+**STEP 1 - structuralElements (OBBLIGATORIO):**
+Prima di tutto, devi compilare il campo \`structuralElements\` con TUTTI gli elementi strutturali che hai visto:
+- Se l'utente ha caricato una FOTO: descrivi gli elementi visibili (es. "arched window on left wall, wooden ceiling beams, parquet floor")
+- Se NON c'è foto: descrivi gli elementi richiesti nella conversazione (es. "large kitchen island, walk-in shower, double sink")
+- Scrivi in INGLESE
+- Sii SPECIFICO e COMPLETO
 
-CRITICO: Se l'utente dice "Sì" a un tuo riepilogo (es. "Rendering cucina moderna con isola?"), DEVI usare ESATTAMENTE i dettagli citati nel riepilogo per il \`prompt\` (traducendoli in inglese). NON inventare cose diverse e NON essere generico.
+**STEP 2 - roomType & style:**
+Compila questi campi in INGLESE (es. "living room", "modern")
+
+**STEP 3 - prompt (DEVE iniziare con structuralElements):**
+Il prompt DEVE iniziare descrivendo gli elementi di STEP 1.
+❌ NON scrivere solo: "Modern living room"
+✅ SCRIVI: "Modern living room featuring the large arched window on the left wall, exposed wooden ceiling beams, and oak parquet flooring. The space includes a white L-shaped sofa..."
+
+ESEMPIO COMPLETO:
+\`\`\`
+structuralElements: "arched window left wall, wooden beams ceiling, parquet floor"
+roomType: "living room"
+style: "industrial"
+prompt: "Industrial living room featuring a large arched window on the left wall, exposed wooden beams on the ceiling, and oak parquet flooring. The space includes metal and leather furniture, Edison bulbs, concrete accents..."
+\`\`\`
+
+❗ RICORDA: Il campo structuralElements è il "ponte" tra la foto analizzata e il rendering finale. Se lo compili bene, l'AI non dimenticherà mai cosa ha visto!
 `;
 
 

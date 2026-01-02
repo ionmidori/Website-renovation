@@ -8,11 +8,29 @@ import { generateInteriorImage, buildInteriorDesignPrompt } from '@/lib/imagen/g
 // Factory function to create tools with injected sessionId
 export function createChatTools(sessionId: string) {
 
-    // Define schemas first
+    // Define schemas first - ✅ CHAIN OF THOUGHT: Forza l'AI a riflettere sulla struttura prima del prompt
     const GenerateRenderParameters = z.object({
-        prompt: z.string().min(10).describe('MANDATORY: Detailed visual description of the interior design in ENGLISH. Must include specific colors, materials, and furniture.'),
+        // 1️⃣ STEP 1: Analizza la struttura (Chain of Thought)
+        structuralElements: z.string()
+            .min(20)
+            .describe(
+                'MANDATORY: List ALL structural elements visible in the user photo or mentioned in the request (in ENGLISH). ' +
+                'Examples: "arched window on left wall", "exposed wooden ceiling beams", "parquet flooring", "high ceilings 3.5m". ' +
+                'If no photo was uploaded, describe the structural requests from the conversation (e.g., "large kitchen island", "walk-in shower").'
+            ),
+
+        // 2️⃣ STEP 2: Type & Style (già esistenti)
         roomType: z.string().min(3).describe('MANDATORY: Type of room in ENGLISH (e.g. "kitchen", "bathroom").'),
         style: z.string().min(3).describe('MANDATORY: Design style in ENGLISH (e.g. "industrial", "modern").'),
+
+        // 3️⃣ STEP 3: Prompt finale (DEVE usare structuralElements)
+        prompt: z.string()
+            .min(30)
+            .describe(
+                'MANDATORY: The final detailed prompt for the image generator IN ENGLISH. ' +
+                'MUST start by describing the structuralElements listed above. ' +
+                'Example: "A modern living room featuring a large arched window on the left wall, exposed wooden beams on the ceiling, and oak parquet flooring. The space includes..."'
+            ),
     });
 
     const SubmitLeadParameters = z.object({
@@ -38,10 +56,12 @@ export function createChatTools(sessionId: string) {
             The imageUrl will be in the tool result under result.imageUrl - you MUST display it with ![](url) syntax.`,
             parameters: GenerateRenderParameters,
             execute: async (args: any) => {
-                const { prompt, roomType, style } = args || {}; // Handle potential null args
+                const { prompt, roomType, style, structuralElements } = args || {}; // Handle potential null args
                 try {
                     // Use sessionId from closure (injected via factory)
-                    console.log('🔥🔥🔥 [generate_render] RECEIVED ARGS:', { prompt, roomType, style });
+                    console.log('🏗️ [Chain of Thought] Structural elements detected:', structuralElements);
+                    console.log('🎨 [generate_render] RECEIVED ARGS:', { prompt, roomType, style });
+
                     const safeRoomType = (roomType || 'room').substring(0, 100);
                     const safeStyle = (style || 'modern').substring(0, 100);
                     // Use English for the default prompt logic to match the English template
