@@ -51,7 +51,7 @@ export async function generateInteriorImage(options: {
 
         // ✅ BUG FIX #8: Configurable Imagen model version
         const location = 'us-central1';
-        const model = process.env.IMAGEN_MODEL_VERSION || 'imagegeneration@006'; // Imagen 3
+        const model = process.env.IMAGEN_MODEL_VERSION || 'imagen-4.0-generate-001';
 
         const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:predict`;
 
@@ -72,6 +72,10 @@ export async function generateInteriorImage(options: {
 
         console.log('[Imagen REST] Calling API...');
 
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         // Make REST API call
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -80,7 +84,9 @@ export async function generateInteriorImage(options: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestPayload),
+            signal: controller.signal,
         });
+        clearTimeout(timeoutId); // Clear timeout on success
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -89,6 +95,7 @@ export async function generateInteriorImage(options: {
         }
 
         const result = await response.json();
+
         console.log('[Imagen REST] API Response received');
 
         // Extract base64 image from response
@@ -112,7 +119,6 @@ export async function generateInteriorImage(options: {
         console.log(`[Imagen REST] Image size: ${(imageBuffer.length / 1024).toFixed(2)} KB`);
 
         return imageBuffer;
-
     } catch (error) {
         console.error('[Imagen REST] Error:', error);
 

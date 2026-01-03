@@ -71,6 +71,32 @@ export function ChatInput({
                     multiple
                 />
 
+                {/* ✅ NEW: Optimistic Image Preview (before sending) */}
+                {selectedImages.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                        {selectedImages.map((img, idx) => (
+                            <div
+                                key={idx}
+                                className="relative group w-20 h-20 rounded-lg overflow-hidden border border-blue-500/30 shadow-lg"
+                            >
+                                <img
+                                    src={img}
+                                    alt={`Selected ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                />
+                                {/* Optional: Add remove button per image
+                                <button
+                                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeImage(idx)}
+                                >
+                                    <X className="w-3 h-3 text-white" />
+                                </button>
+                                */}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center p-1 focus-within:border-blue-500/50 transition-colors min-w-0">
                     <textarea
                         value={inputValue}

@@ -99,8 +99,12 @@ export default function ChatWidget() {
         if (selectedImages.length > 0) {
             append({
                 role: 'user',
-                content: inputValue
-            }, {
+                content: inputValue,
+                // ✅ NEW: Include attachments for immediate preview in chat
+                attachments: {
+                    images: imageUrls.length > 0 ? imageUrls : selectedImages // Prefer public URLs, fallback to base64
+                }
+            } as any, {
                 body: {
                     images: selectedImages,      // base64 for AI vision
                     imageUrls: imageUrls          // Public URLs for modification mode
@@ -137,12 +141,22 @@ export default function ChatWidget() {
 
             if (transcribedText && transcribedText.trim()) {
                 // Step 2: Send transcribed text to chat using append from useChat
-                await append({
+                const message: any = {
                     role: 'user',
                     content: `🎤 ${transcribedText}`
-                }, {
+                };
+
+                // ✅ NEW: Include attachments if images are selected
+                if (selectedImages.length > 0) {
+                    message.attachments = {
+                        images: imageUrls.length > 0 ? imageUrls : selectedImages
+                    };
+                }
+
+                await append(message, {
                     body: {
-                        images: selectedImages
+                        images: selectedImages,
+                        imageUrls: imageUrls
                     }
                 });
             } else {

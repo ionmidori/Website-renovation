@@ -97,11 +97,17 @@ export async function generateInteriorImageI2I(options: {
         const isCapabilityModel = model.includes('capability');
         const isImagen3Generate = model.includes('imagen-3.0-generate');
 
+        // ✅ QUALITY WRAPPER: Hardcoded parameters for maximum quality
         const parameters: any = {
             sampleCount: numberOfImages,
             // aspectRatio is not supported in I2I mode for some models (inherit from source)
             safetySetting: 'block_some',
             personGeneration: 'allow_adult',
+
+            // ✅ NEW: Negative prompt to prevent distortions and artifacts
+            negativePrompt: 'blurry, distorted, low resolution, cartoon, painting, melted objects, ' +
+                'bad perspective, floating structures, noise, ugly, deformed, watermark, ' +
+                'text overlay, amateur, sketch, low quality, pixelated',
         };
 
         // Strict Payload Logic based on Model Type
@@ -113,7 +119,7 @@ export async function generateInteriorImageI2I(options: {
             };
         } else if (isImagen3Generate) {
             // Imagen 3 Generate (Standard I2I) - STRICTLY NO editConfig
-            console.log('[Imagen I2I] Imagen 3 Generate detected - Using CLEAN payload');
+            console.log('[Imagen I2I] Imagen 3 Generate detected - Using CLEAN payload with negative prompt');
         } else {
             // Legacy/Standard models (Imagen 2) - Standard payload
             console.log('[Imagen I2I] Legacy/Standard Model detected - skipping editConfig');
@@ -130,6 +136,20 @@ export async function generateInteriorImageI2I(options: {
             ],
             parameters: parameters
         };
+
+        // ✅ LOGGING FOR USER DEBUGGING (Excluding large image data if present)
+        console.log('--- [DEBUG] IMAGEN API PAYLOAD ---');
+        console.log('Model:', model);
+        console.log('Endpoint:', endpoint);
+        console.log('Payload:', JSON.stringify({
+            instances: requestPayload.instances.map(inst => ({
+                ...inst,
+                // Truncate image data if it were base64 for cleaner logs
+                image: inst.image?.gcsUri ? inst.image : '{base64_data_hidden}'
+            })),
+            parameters: requestPayload.parameters
+        }, null, 2));
+        console.log('--- [DEBUG] END PAYLOAD ---');
 
         console.log('[Imagen I2I] Calling API with editMode:', mode, 'maskMode:', maskMode);
 
@@ -224,6 +244,7 @@ export async function generateInteriorImageI2I(options: {
 /**
  * Build enhanced prompt for image-to-image editing
  * Optimized for preserving structural elements while changing style
+ * ENHANCED: Quality Wrapper with mandatory Style Booster
  */
 export function buildI2IEditingPrompt(options: {
     userPrompt: string;
@@ -233,18 +254,29 @@ export function buildI2IEditingPrompt(options: {
 }): string {
     const { userPrompt, structuralElements, roomType, style } = options;
 
+    // ✅ MANDATORY STYLE BOOSTER: Injected into every prompt for max quality
+    const STYLE_BOOSTER = ', photorealistic 8k, highly detailed, architectural photography, ' +
+        'sharp focus, raytracing lighting, physically based rendering, ' +
+        'professional interior design portfolio';
+
     // If we have structural elements, emphasize preservation
     const structuralInstruction = structuralElements
-        ? `PRESERVE EXISTING STRUCTURE: ${structuralElements}. `
+        ? `STRICTLY PRESERVE THE ARCHITECTURAL STRUCTURE AND LAYOUT: ${structuralElements}. `
         : '';
 
+    // ✅ QUALITY WRAPPER: Every prompt gets the booster appended
     const enhancedPrompt = `
 ${structuralInstruction}
-Transform this ${roomType} into ${style} style.
-${userPrompt}
+Task: Professional total renovation of this ${roomType} into a high-end ${style} design.
+User request: ${userPrompt}
 
-Maintain the existing architectural elements (windows, doors, walls, ceiling height). Change only the interior design, materials, colors, furniture, and decorative elements. Professional architectural visualization quality with natural lighting, realistic materials and textures, proper perspective, modern high-end interior design, clean composition, 4K quality.
+Instructions:
+- Keep the exact position of windows, doors, and walls.
+- Replace all materials, textures, and furniture with premium ${style} alternatives.
+- Use realistic lighting (natural sunlight through windows + interior ambient lighting).
+- Quality requirements: ${STYLE_BOOSTER}
     `.trim();
 
+    console.log('[I2I Prompt] Style Booster injected:', STYLE_BOOSTER);
     return enhancedPrompt;
 }

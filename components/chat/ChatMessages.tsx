@@ -7,6 +7,7 @@ import { ImagePreview } from '@/components/chat/ImagePreview';
 import { cn } from '@/lib/utils';
 
 // ✅ Message interface compatible with AI SDK
+// Extended with attachments for user-uploaded image previews
 interface Message {
     id: string;
     role: string;
@@ -18,6 +19,10 @@ interface Message {
         args?: any;
         result?: any;
     }>;
+    // ✅ NEW: Support for user-uploaded image attachments
+    attachments?: {
+        images?: string[]; // Array of image URLs (base64 or public URLs)
+    };
 }
 
 interface ChatMessagesProps {
@@ -89,6 +94,21 @@ const ChatMessagesComponent = ({
                                 ? "bg-blue-600 text-white rounded-tr-none"
                                 : "bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none"
                         )}>
+                            {/* ✅ NEW: Render user-uploaded image attachments */}
+                            {msg.role === 'user' && msg.attachments?.images && msg.attachments.images.length > 0 && (
+                                <div className="mb-3 space-y-2">
+                                    {msg.attachments.images.map((imageUrl, imgIdx) => (
+                                        <ImagePreview
+                                            key={imgIdx}
+                                            src={imageUrl}
+                                            alt="Uploaded image"
+                                            onClick={onImageClick}
+                                            className="w-full rounded-lg"
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
                                 {/* ✅ Render content from both formats */}
                                 {(() => {

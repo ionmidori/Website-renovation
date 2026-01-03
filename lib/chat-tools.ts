@@ -4,9 +4,11 @@ import { z } from 'zod';
 // ✅ BUG FIX #12: Removed duplicate import (storage is imported dynamically below)
 import { saveLead } from '@/lib/db/leads';
 import { generateInteriorImage, buildInteriorDesignPrompt } from '@/lib/imagen/generate-interior';
-// 🆕 Hybrid tool imports for image-to-image editing
-import { generateInteriorImageI2I, buildI2IEditingPrompt } from '@/lib/imagen/generate-interior-i2i';
+// ✅ VISION + T2I: Static imports (no I2I fallback needed)
+import { analyzeRoomStructure } from '@/lib/vision/analyze-room';
+import { buildPromptFromRoomAnalysis } from '@/lib/imagen/prompt-builders';
 import { uploadBase64Image } from '@/lib/imagen/upload-base64-image';
+import crypto from 'node:crypto';
 
 // Factory function to create tools with injected sessionId
 export function createChatTools(sessionId: string) {
@@ -117,34 +119,68 @@ export function createChatTools(sessionId: string) {
                     let imageBuffer: Buffer;
                     let enhancedPrompt: string;
 
+
                     const actualMode = mode || 'creation'; // Default to creation for backward compatibility
 
+                    // 🔍 DEBUG LOGGING
+                    console.log('🔍 [DEBUG] actualMode:', actualMode);
+                    console.log('🔍 [DEBUG] sourceImageUrl:', sourceImageUrl);
+                    console.log('🔍 [DEBUG] mode param:', mode);
+                    console.log('🔍 [DEBUG] Condition met?', actualMode === 'modification' && sourceImageUrl);
+
                     if (actualMode === 'modification' && sourceImageUrl) {
-                        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                        // 🖼️ IMAGE-TO-IMAGE MODIFICATION MODE
-                        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                        console.log('[Hybrid Tool] 🖼️ Using IMAGE-TO-IMAGE editing (modification mode)');
-                        console.log('[Hybrid Tool] Reference image:', sourceImageUrl);
+                        try {
+                            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                            // 📸 PHOTO-BASED RENOVATION: Vision Analysis → T2I
+                            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                            console.log('[Vision] 📸 PHOTO-BASED MODE: Analyzing with Gemini Vision → T2I');
+                            console.log('[Vision] Reference photo:', sourceImageUrl);
 
-                        // Build specialized I2I prompt that emphasizes structure preservation
-                        enhancedPrompt = buildI2IEditingPrompt({
-                            userPrompt: safePrompt,
-                            structuralElements: structuralElements || undefined,
-                            roomType: safeRoomType,
-                            style: safeStyle,
-                        });
+                            // Step 1: Analyze room structure with Gemini Vision
+                            console.log('[Vision] Step 1: Analyzing room structure...');
+                            const roomAnalysis = await analyzeRoomStructure(sourceImageUrl);
 
-                        console.log('[Hybrid Tool] Calling Imagen Capability API (I2I)...');
+                            console.log('[Vision] ✅ Analysis complete');
+                            console.log('[Vision] Detected:', roomAnalysis.room_type, `(~${roomAnalysis.approximate_size_sqm}sqm)`);
+                            console.log('[Vision] Features:', roomAnalysis.architectural_features.join(', '));
 
-                        // Generate image using I2I editing
-                        imageBuffer = await generateInteriorImageI2I({
-                            prompt: enhancedPrompt,
-                            referenceImage: sourceImageUrl,
-                            mode: 'inpainting-insert',
-                            maskMode: 'auto',
-                            aspectRatio: '16:9',
-                            modificationType: modificationType || 'renovation',
-                        });
+                            // Step 2: Build super-detailed prompt from Vision analysis
+                            enhancedPrompt = buildPromptFromRoomAnalysis(
+                                roomAnalysis,
+                                safeStyle,
+                                safePrompt
+                            );
+
+                            console.log('[Vision] Step 2: Generating with T2I using Vision-guided prompt');
+                            console.log('[T2I] Prompt preview:', enhancedPrompt.substring(0, 150) + '...');
+
+                            // Step 3: Generate with T2I (NOT I2I!)
+                            imageBuffer = await generateInteriorImage({
+                                prompt: enhancedPrompt,
+                                aspectRatio: '16:9',
+                                numberOfImages: 1,
+                            });
+
+                            console.log('[T2I] ✅ Generation complete using Vision-guided T2I');
+
+                        } catch (visionError) {
+                            console.error('[Vision] ⚠️ Analysis failed, falling back to standard T2I:', visionError);
+
+                            // FALLBACK: Use standard T2I generation
+                            console.log('[Fallback] Switching to standard Text-to-Image generation...');
+
+                            enhancedPrompt = buildInteriorDesignPrompt({
+                                userPrompt: safePrompt,
+                                roomType: safeRoomType,
+                                style: safeStyle,
+                            });
+
+                            imageBuffer = await generateInteriorImage({
+                                prompt: enhancedPrompt,
+                                aspectRatio: '16:9',
+                            });
+                        }
+
 
                     } else {
                         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -200,11 +236,15 @@ export function createChatTools(sessionId: string) {
                         },
                     });
 
-                    // Make file publicly accessible
-                    await file.makePublic();
+                    // Generate Signed URL (valid for 7 days)
+                    // This replaces makePublic() for better security
+                    const [signedUrl] = await file.getSignedUrl({
+                        action: 'read',
+                        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+                    });
 
-                    const imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-                    console.log('[generate_render] ✅ Image uploaded:', imageUrl);
+                    const imageUrl = signedUrl;
+                    console.log('[generate_render] ✅ Image uploaded (secure signed URL):', imageUrl.substring(0, 50) + '...');
 
                     // Return URL directly - Gemini will receive this and include it in response
                     return {
