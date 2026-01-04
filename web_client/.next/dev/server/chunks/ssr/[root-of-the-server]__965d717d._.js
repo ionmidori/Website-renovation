@@ -2532,6 +2532,8 @@ function useChat(sessionId, initialMessages = []) {
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let assistantContent = '';
+            let assistantTools = [];
             while(true){
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -2556,11 +2558,45 @@ function useChat(sessionId, initialMessages = []) {
                             assistantContent += parsed;
                             setMessages((prev)=>prev.map((m)=>m.id === assistantMsgId ? {
                                         ...m,
-                                        content: assistantContent
+                                        content: assistantContent,
+                                        toolInvocations: assistantTools
                                     } : m));
                         } else if (code === '3') {
                             // Error chunk
                             if (parsed.error) throw new Error(parsed.error);
+                        } else if (code === '9') {
+                            // Tool Call chunk
+                            const toolCall = {
+                                toolCallId: parsed.toolCallId,
+                                toolName: parsed.toolName,
+                                args: parsed.args,
+                                state: 'call'
+                            };
+                            assistantTools.push(toolCall);
+                            setMessages((prev)=>prev.map((m)=>m.id === assistantMsgId ? {
+                                        ...m,
+                                        content: assistantContent,
+                                        toolInvocations: [
+                                            ...assistantTools
+                                        ]
+                                    } : m));
+                        } else if (code === 'a') {
+                            // Tool Result chunk
+                            const toolIndex = assistantTools.findIndex((t)=>t.toolCallId === parsed.toolCallId);
+                            if (toolIndex !== -1) {
+                                assistantTools[toolIndex] = {
+                                    ...assistantTools[toolIndex],
+                                    state: 'result',
+                                    result: parsed.result
+                                };
+                                setMessages((prev)=>prev.map((m)=>m.id === assistantMsgId ? {
+                                            ...m,
+                                            content: assistantContent,
+                                            toolInvocations: [
+                                                ...assistantTools
+                                            ]
+                                        } : m));
+                            }
                         }
                     } catch (e) {
                     // Ignore parsing errors for individual lines
@@ -3228,10 +3264,12 @@ __turbopack_context__.s([
     ()=>ToolStatus
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$chat$2f$ImagePreview$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/web_client/components/chat/ImagePreview.tsx [app-ssr] (ecmascript)");
 ;
 ;
-const ToolStatus = ({ tool, onImageClick })=>{
+;
+const ToolStatus = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].memo(({ tool, onImageClick })=>{
     // Loading state: Tool is being called
     if (tool.state === 'call') {
         if (tool.toolName === 'generate_render') {
@@ -3243,14 +3281,14 @@ const ToolStatus = ({ tool, onImageClick })=>{
                         children: "🎨"
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                        lineNumber: 27,
+                        lineNumber: 28,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0)),
                     "Generando rendering..."
                 ]
             }, void 0, true, {
                 fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                lineNumber: 26,
+                lineNumber: 27,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0));
         }
@@ -3260,7 +3298,7 @@ const ToolStatus = ({ tool, onImageClick })=>{
                 children: "📝 Salvando i tuoi dati..."
             }, void 0, false, {
                 fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                lineNumber: 35,
+                lineNumber: 36,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0));
         }
@@ -3280,12 +3318,12 @@ const ToolStatus = ({ tool, onImageClick })=>{
                     className: "w-full"
                 }, void 0, false, {
                     fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                    lineNumber: 52,
+                    lineNumber: 53,
                     columnNumber: 21
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                lineNumber: 51,
+                lineNumber: 52,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0));
         }
@@ -3299,26 +3337,26 @@ const ToolStatus = ({ tool, onImageClick })=>{
                         children: "Errore generazione immagine:"
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                        lineNumber: 66,
+                        lineNumber: 67,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: result?.error || 'Si è verificato un errore sconosciuto.'
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                        lineNumber: 67,
+                        lineNumber: 68,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/web_client/components/chat/ToolStatus.tsx",
-                lineNumber: 65,
+                lineNumber: 66,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0));
         }
     }
     return null;
-};
+});
 }),
 "[project]/web_client/components/chat/MessageItem.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -3328,6 +3366,7 @@ __turbopack_context__.s([
     ()=>MessageItem
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/framer-motion/dist/es/render/components/motion/proxy.mjs [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/user.js [app-ssr] (ecmascript) <export default as User>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$markdown$2f$lib$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__Markdown__as__default$3e$__ = __turbopack_context__.i("[project]/node_modules/react-markdown/lib/index.js [app-ssr] (ecmascript) <export Markdown as default>");
@@ -3343,7 +3382,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$lib$2f$utils$2
 ;
 ;
 ;
-const MessageItem = ({ message, index, onImageClick })=>{
+;
+const MessageItem = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].memo(({ message, index, onImageClick })=>{
     // Helper: Extract text from both old (content) and new (parts[]) formats
     const getMessageText = (msg)=>{
         if (msg.parts && Array.isArray(msg.parts)) {
@@ -3353,6 +3393,20 @@ const MessageItem = ({ message, index, onImageClick })=>{
     };
     const text = getMessageText(message);
     const hasTools = message.toolInvocations?.length ?? 0 > 0;
+    // ✅ Memoize ReactMarkdown components to prevent re-creation on every render
+    const markdownComponents = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>({
+            img: ({ node, ...props })=>props.src ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$chat$2f$ImagePreview$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ImagePreview"], {
+                    src: String(props.src),
+                    alt: String(props.alt || 'Generated image'),
+                    onClick: onImageClick
+                }, void 0, false, {
+                    fileName: "[project]/web_client/components/chat/MessageItem.tsx",
+                    lineNumber: 55,
+                    columnNumber: 13
+                }, ("TURBOPACK compile-time value", void 0)) : null
+        }), [
+        onImageClick
+    ]);
     // Hide empty assistant placeholders
     if (message.role === 'assistant' && !text && !hasTools) {
         return null;
@@ -3374,18 +3428,18 @@ const MessageItem = ({ message, index, onImageClick })=>{
                     className: "w-4 h-4"
                 }, void 0, false, {
                     fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                    lineNumber: 69,
+                    lineNumber: 81,
                     columnNumber: 21
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                lineNumber: 68,
+                lineNumber: 80,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$ArchitectAvatar$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                 className: "w-8 h-8 mt-1 shrink-0"
             }, void 0, false, {
                 fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                lineNumber: 72,
+                lineNumber: 84,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3400,12 +3454,12 @@ const MessageItem = ({ message, index, onImageClick })=>{
                                 className: "w-full rounded-lg"
                             }, imgIdx, false, {
                                 fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                                lineNumber: 86,
+                                lineNumber: 98,
                                 columnNumber: 29
                             }, ("TURBOPACK compile-time value", void 0)))
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                        lineNumber: 84,
+                        lineNumber: 96,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3413,21 +3467,11 @@ const MessageItem = ({ message, index, onImageClick })=>{
                         children: [
                             text ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$markdown$2f$lib$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__Markdown__as__default$3e$__["default"], {
                                 urlTransform: (value)=>value,
-                                components: {
-                                    img: ({ node, ...props })=>props.src ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$chat$2f$ImagePreview$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ImagePreview"], {
-                                            src: String(props.src),
-                                            alt: String(props.alt || 'Generated image'),
-                                            onClick: onImageClick
-                                        }, void 0, false, {
-                                            fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                                            lineNumber: 104,
-                                            columnNumber: 37
-                                        }, void 0) : null
-                                },
+                                components: markdownComponents,
                                 children: text
                             }, void 0, false, {
                                 fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                                lineNumber: 100,
+                                lineNumber: 112,
                                 columnNumber: 25
                             }, ("TURBOPACK compile-time value", void 0)) : null,
                             message.toolInvocations?.map((tool, toolIdx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$chat$2f$ToolStatus$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ToolStatus"], {
@@ -3435,28 +3479,28 @@ const MessageItem = ({ message, index, onImageClick })=>{
                                     onImageClick: onImageClick
                                 }, toolIdx, false, {
                                     fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                                    lineNumber: 118,
+                                    lineNumber: 122,
                                     columnNumber: 25
                                 }, ("TURBOPACK compile-time value", void 0)))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                        lineNumber: 98,
+                        lineNumber: 110,
                         columnNumber: 17
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-                lineNumber: 76,
+                lineNumber: 88,
                 columnNumber: 13
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, message.id || index, true, {
         fileName: "[project]/web_client/components/chat/MessageItem.tsx",
-        lineNumber: 57,
+        lineNumber: 69,
         columnNumber: 9
     }, ("TURBOPACK compile-time value", void 0));
-};
+});
 }),
 "[project]/web_client/components/chat/ChatMessages.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -3479,13 +3523,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$
  * Chat messages list component - Refactored for maintainability
  * ✅ Delegates individual message rendering to MessageItem
  * ✅ Reduced cyclomatic complexity by extracting tool status logic
- */ const ChatMessagesComponent = ({ messages, isLoading, typingMessage, onImageClick, messagesContainerRef, messagesEndRef })=>{
+ */ const scrollStyle = {
+    WebkitOverflowScrolling: 'touch'
+};
+const ChatMessagesComponent = ({ messages, isLoading, typingMessage, onImageClick, messagesContainerRef, messagesEndRef })=>{
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         ref: messagesContainerRef,
         className: "flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y",
-        style: {
-            WebkitOverflowScrolling: 'touch'
-        },
+        style: scrollStyle,
         children: [
             messages.map((msg, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$chat$2f$MessageItem$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["MessageItem"], {
                     message: msg,
@@ -3493,7 +3538,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$
                     onImageClick: onImageClick
                 }, msg.id || idx, false, {
                     fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                    lineNumber: 53,
+                    lineNumber: 55,
                     columnNumber: 17
                 }, ("TURBOPACK compile-time value", void 0))),
             isLoading && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -3511,7 +3556,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$
                         className: "w-8 h-8 shrink-0"
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                        lineNumber: 68,
+                        lineNumber: 70,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3526,27 +3571,27 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$
                                             className: "w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"
                                         }, void 0, false, {
                                             fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                                            lineNumber: 72,
+                                            lineNumber: 74,
                                             columnNumber: 33
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             className: "w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"
                                         }, void 0, false, {
                                             fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                                            lineNumber: 73,
+                                            lineNumber: 75,
                                             columnNumber: 33
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             className: "w-2 h-2 bg-blue-500 rounded-full animate-bounce"
                                         }, void 0, false, {
                                             fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                                            lineNumber: 74,
+                                            lineNumber: 76,
                                             columnNumber: 33
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                                    lineNumber: 71,
+                                    lineNumber: 73,
                                     columnNumber: 29
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].span, {
@@ -3560,37 +3605,37 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$web_client$2f$components$2f$
                                     children: typingMessage
                                 }, typingMessage, false, {
                                     fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                                    lineNumber: 76,
+                                    lineNumber: 78,
                                     columnNumber: 29
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                            lineNumber: 70,
+                            lineNumber: 72,
                             columnNumber: 25
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                        lineNumber: 69,
+                        lineNumber: 71,
                         columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                lineNumber: 63,
+                lineNumber: 65,
                 columnNumber: 17
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 ref: messagesEndRef
             }, void 0, false, {
                 fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-                lineNumber: 89,
+                lineNumber: 91,
                 columnNumber: 13
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/web_client/components/chat/ChatMessages.tsx",
-        lineNumber: 46,
+        lineNumber: 48,
         columnNumber: 9
     }, ("TURBOPACK compile-time value", void 0));
 };
