@@ -6,7 +6,16 @@ export type Message = {
     role: 'user' | 'assistant' | 'system' | 'data';
     content: string;
     parts?: any[];
+    toolInvocations?: ToolInvocation[];
 };
+
+export interface ToolInvocation {
+    toolCallId: string;
+    toolName: string;
+    state: 'call' | 'result';
+    args?: any;
+    result?: any;
+}
 
 export function useChat(sessionId: string, initialMessages: any[] = []) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -95,6 +104,8 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let assistantContent = '';
+            let assistantTools: ToolInvocation[] = [];
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -122,11 +133,36 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
                             // Text chunk
                             assistantContent += parsed;
                             setMessages(prev => prev.map(m =>
-                                m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+                                m.id === assistantMsgId ? { ...m, content: assistantContent, toolInvocations: assistantTools } : m
                             ));
                         } else if (code === '3') {
                             // Error chunk
                             if (parsed.error) throw new Error(parsed.error);
+                        } else if (code === '9') {
+                            // Tool Call chunk
+                            const toolCall = {
+                                toolCallId: parsed.toolCallId,
+                                toolName: parsed.toolName,
+                                args: parsed.args,
+                                state: 'call' as const
+                            };
+                            assistantTools.push(toolCall);
+                            setMessages(prev => prev.map(m =>
+                                m.id === assistantMsgId ? { ...m, content: assistantContent, toolInvocations: [...assistantTools] } : m
+                            ));
+                        } else if (code === 'a') {
+                            // Tool Result chunk
+                            const toolIndex = assistantTools.findIndex(t => t.toolCallId === parsed.toolCallId);
+                            if (toolIndex !== -1) {
+                                assistantTools[toolIndex] = {
+                                    ...assistantTools[toolIndex],
+                                    state: 'result',
+                                    result: parsed.result
+                                };
+                                setMessages(prev => prev.map(m =>
+                                    m.id === assistantMsgId ? { ...m, content: assistantContent, toolInvocations: [...assistantTools] } : m
+                                ));
+                            }
                         }
                     } catch (e) {
                         // Ignore parsing errors for individual lines
