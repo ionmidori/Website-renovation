@@ -27,6 +27,9 @@
       "prettier --write"
     ]
   },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "*"
+  },
   "dependencies": {
     "@ai-sdk/google": "^3.0.2",
     "@ai-sdk/react": "^3.0.5",
