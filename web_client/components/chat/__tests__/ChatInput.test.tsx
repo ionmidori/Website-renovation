@@ -4,31 +4,38 @@ import { RefObject } from 'react';
 import { ChatInput } from '../ChatInput';
 
 // Mock VoiceRecorder
-jest.mock('@/components/chat/VoiceRecorder', () => {
-    return function VoiceRecorder({ onVoiceRecorded }: { onVoiceRecorded: (file: File) => void }) {
+jest.mock('@/components/VoiceRecorder', () => ({
+    VoiceRecorder: ({ onRecordingComplete, disabled }: { onRecordingComplete: (file: File) => void; disabled?: boolean }) => {
         return (
             <button
                 data-testid="voice-recorder"
+                disabled={disabled}
                 onClick={() => {
                     const mockFile = new File(['audio'], 'test.webm', { type: 'audio/webm' });
-                    onVoiceRecorded(mockFile);
+                    onRecordingComplete(mockFile);
                 }}
             >
                 Record Voice
             </button>
         );
-    };
-});
+    }
+}));
+
+// Mock Lucide React
+jest.mock('lucide-react', () => ({
+    Send: () => <div data-testid="icon-send" />,
+    Paperclip: () => <div data-testid="icon-paperclip" />,
+    Loader2: () => <div data-testid="icon-loader" />,
+}));
 
 describe('ChatInput', () => {
-    const mockFileInputRef: RefObject<HTMLInputElement> = {
+    const mockFileInputRef = {
         current: null,
-    };
+    } as unknown as RefObject<HTMLInputElement>;
 
     const defaultProps = {
         inputValue: '',
         setInputValue: jest.fn(),
-        onInputChange: jest.fn(),
         onSubmit: jest.fn(),
         onFileSelect: jest.fn(),
         onVoiceRecorded: jest.fn(),
@@ -45,7 +52,7 @@ describe('ChatInput', () => {
     it('should render textarea with placeholder', () => {
         render(<ChatInput {...defaultProps} />);
 
-        const textarea = screen.getByPlaceholderText(/scrivi un messaggio/i);
+        const textarea = screen.getByPlaceholderText(/descrivi cosa vuoi ristrutturare/i);
         expect(textarea).toBeInTheDocument();
     });
 
@@ -56,20 +63,20 @@ describe('ChatInput', () => {
         expect(textarea).toBeInTheDocument();
     });
 
-    it('should call onInputChange when typing', async () => {
+    it('should call setInputValue when typing', async () => {
         const user = userEvent.setup();
         render(<ChatInput {...defaultProps} />);
 
-        const textarea = screen.getByPlaceholderText(/scrivi un messaggio/i);
-        await user.type(textarea, 'Hello');
+        const textarea = screen.getByPlaceholderText(/descrivi cosa vuoi ristrutturare/i);
+        await user.type(textarea, 'H');
 
-        expect(defaultProps.onInputChange).toHaveBeenCalled();
+        expect(defaultProps.setInputValue).toHaveBeenCalled();
     });
 
     it('should call onSubmit on Enter key', () => {
         render(<ChatInput {...defaultProps} inputValue="Test message" />);
 
-        const textarea = screen.getByPlaceholderText(/scrivi un messaggio/i);
+        const textarea = screen.getByPlaceholderText(/descrivi cosa vuoi ristrutturare/i);
         fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
 
         expect(defaultProps.onSubmit).toHaveBeenCalled();
@@ -78,7 +85,7 @@ describe('ChatInput', () => {
     it('should not submit on Shift+Enter', () => {
         render(<ChatInput {...defaultProps} inputValue="Test message" />);
 
-        const textarea = screen.getByPlaceholderText(/scrivi un messaggio/i);
+        const textarea = screen.getByPlaceholderText(/descrivi cosa vuoi ristrutturare/i);
         fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
 
         expect(defaultProps.onSubmit).not.toHaveBeenCalled();
@@ -98,28 +105,28 @@ describe('ChatInput', () => {
     it('should disable textarea when isLoading is true', () => {
         render(<ChatInput {...defaultProps} isLoading={true} />);
 
-        const textarea = screen.getByPlaceholderText(/scrivi un messaggio/i);
+        const textarea = screen.getByPlaceholderText(/descrivi cosa vuoi ristrutturare/i);
         expect(textarea).toBeDisabled();
     });
 
     it('should disable send button when input is empty', () => {
         render(<ChatInput {...defaultProps} inputValue="" />);
 
-        const sendButton = screen.getByRole('button', { name: /invia/i });
+        const sendButton = screen.getByTestId('icon-send').closest('button');
         expect(sendButton).toBeDisabled();
     });
 
     it('should enable send button when input has value', () => {
         render(<ChatInput {...defaultProps} inputValue="Test" />);
 
-        const sendButton = screen.getByRole('button', { name: /invia/i });
+        const sendButton = screen.getByTestId('icon-send').closest('button');
         expect(sendButton).not.toBeDisabled();
     });
 
     it('should call onSubmit when send button clicked', () => {
         render(<ChatInput {...defaultProps} inputValue="Test" />);
 
-        const sendButton = screen.getByRole('button', { name: /invia/i });
+        const sendButton = screen.getByTestId('icon-send').closest('button')!;
         fireEvent.click(sendButton);
 
         expect(defaultProps.onSubmit).toHaveBeenCalled();
@@ -144,7 +151,8 @@ describe('ChatInput', () => {
 
         render(<ChatInput {...defaultProps} fileInputRef={fileInputRef} />);
 
-        const attachButton = screen.getByRole('button', { name: /allega/i });
+        // Find the button containing the Paperclip icon
+        const attachButton = screen.getByTestId('icon-paperclip').closest('button')!;
         fireEvent.click(attachButton);
 
         expect(mockFileInput.click).toHaveBeenCalled();

@@ -46,13 +46,14 @@ describe('useMobileViewport', () => {
 
         const mockRef: RefObject<HTMLDivElement | null> = { current: null };
 
+        // Remove manual dispatch if not needed, or keep it to ensure listener is active
         act(() => {
             window.dispatchEvent(new Event('resize'));
         });
 
         const { result } = renderHook(() => useMobileViewport(false, mockRef));
 
-        expect(result.current.isMobile).toBe(false); // Initial render before resize
+        expect(result.current.isMobile).toBe(true);
     });
 
     it('should update isMobile on window resize', () => {

@@ -28,7 +28,7 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} isOpen={true} />);
 
         // Badge should not be visible when chat is open
-        const badge = screen.queryByText(/Ciao! Sono SYD/i);
+        const badge = screen.queryByText(/sono SYD/i);
         expect(badge).not.toBeInTheDocument();
     });
 
@@ -36,13 +36,13 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Initially hidden
-        expect(screen.queryByText(/Ciao! Sono SYD/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/sono SYD/i)).not.toBeInTheDocument();
 
         // Fast-forward time past the delay (2 seconds)
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
-            expect(screen.getByText(/Ciao! Sono SYD/i)).toBeInTheDocument();
+            expect(screen.getByText(/sono SYD/i)).toBeInTheDocument();
         });
     });
 
@@ -50,10 +50,10 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Show the badge
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
-            const badge = screen.getByText(/Ciao! Sono SYD/i).closest('div');
+            const badge = screen.getByText(/sono SYD/i).closest('div');
             if (badge) {
                 fireEvent.click(badge);
             }
@@ -66,7 +66,7 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Show the badge
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
             const closeButton = screen.getByRole('button', { name: /chiudi/i });
@@ -75,7 +75,7 @@ describe('WelcomeBadge', () => {
 
         // Badge should be hidden
         await waitFor(() => {
-            expect(screen.queryByText(/Ciao! Sono SYD/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/sono SYD/i)).not.toBeInTheDocument();
         });
     });
 
@@ -83,11 +83,11 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Show the badge
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
             // The full text should eventually be visible
-            const text = screen.getByText(/Ciao! Sono SYD/i);
+            const text = screen.getByText(/sono SYD/i);
             expect(text).toBeInTheDocument();
         });
     });
@@ -96,17 +96,17 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Show the badge (2s delay)
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
-            expect(screen.getByText(/Ciao! Sono SYD/i)).toBeInTheDocument();
+            expect(screen.getByText(/sono SYD/i)).toBeInTheDocument();
         });
 
         // Auto-dismiss after 8 seconds
         jest.advanceTimersByTime(8000);
 
         await waitFor(() => {
-            expect(screen.queryByText(/Ciao! Sono SYD/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/sono SYD/i)).not.toBeInTheDocument();
         });
     });
 
@@ -114,7 +114,7 @@ describe('WelcomeBadge', () => {
         render(<WelcomeBadge {...defaultProps} />);
 
         // Show the badge
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(3100);
 
         await waitFor(() => {
             const closeButton = screen.getByRole('button', { name: /chiudi/i });
@@ -124,6 +124,6 @@ describe('WelcomeBadge', () => {
         // Advance time further - should not reappear
         jest.advanceTimersByTime(10000);
 
-        expect(screen.queryByText(/Ciao! Sono SYD/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/sono SYD/i)).not.toBeInTheDocument();
     });
 });

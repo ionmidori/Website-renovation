@@ -263,11 +263,11 @@ prompt: "Living room with a RED sofa instead of grey" (descrivi la modifica nel 
 
 
 
-
 /**
- * Generate an image using Google's Imagen API (placeholder for now)
- * TODO: Implement actual Imagen 4 API call
+ * POST /api/chat - Main chat endpoint with AI streaming
+ * Handles conversation with Gemini Pro and tool execution
  */
+
 
 export async function POST(req: Request) {
     console.log("---> API /api/chat HIT");

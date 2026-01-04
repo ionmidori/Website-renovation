@@ -19,7 +19,7 @@ describe('ImageLightbox', () => {
     it('should render image when imageUrl is provided', () => {
         render(<ImageLightbox {...defaultProps} />);
 
-        const image = screen.getByAltText(/rendering/i);
+        const image = screen.getByAltText(/preview/i);
         expect(image).toBeInTheDocument();
         expect(image).toHaveAttribute('src', defaultProps.imageUrl);
     });
@@ -55,7 +55,7 @@ describe('ImageLightbox', () => {
     it('should not close when clicking on image', () => {
         render(<ImageLightbox {...defaultProps} />);
 
-        const image = screen.getByAltText(/rendering/i);
+        const image = screen.getByAltText(/preview/i);
         fireEvent.click(image);
 
         // Should not call onClose

@@ -1,6 +1,6 @@
 {
   "name": "renovation-ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,10 @@
     "prepare": "husky",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
-    "lint:fix": "eslint --fix ."
+    "lint:fix": "eslint --fix .",
+    "analyze": "cross-env ANALYZE=true next build --webpack",
+    "analyze:server": "cross-env ANALYZE=true BUNDLE_ANALYZE=server next build --webpack",
+    "analyze:browser": "cross-env ANALYZE=true BUNDLE_ANALYZE=browser next build --webpack"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -51,6 +54,7 @@
   },
   "devDependencies": {
     "@imgly/background-removal-node": "^1.4.3",
+    "@next/bundle-analyzer": "^16.1.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.3.1",
@@ -60,6 +64,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "husky": "^9.1.7",

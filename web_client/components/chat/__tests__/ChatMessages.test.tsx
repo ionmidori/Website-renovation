@@ -64,8 +64,10 @@ describe('ChatMessages', () => {
         expect(screen.getByText('Sto pensando...')).toBeInTheDocument();
 
         // Check for dots animation
-        const loadingDots = screen.getAllByText('•');
-        expect(loadingDots.length).toBeGreaterThan(0);
+        // Check for dots animation (using spans with class instead of text bullets)
+        const loadingContainer = screen.getByText('Sto pensando...').parentElement?.parentElement;
+        const dots = loadingContainer?.querySelectorAll('.animate-bounce');
+        expect(dots?.length).toBe(3);
     });
 
     it('should render markdown content correctly', () => {

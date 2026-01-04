@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useImageUpload } from '../useImageUpload';
 import React from 'react';
 
@@ -17,6 +17,39 @@ describe('useImageUpload', () => {
 
     afterEach(() => {
         global.FileReader = originalFileReader;
+        jest.restoreAllMocks();
+    });
+
+    beforeAll(() => {
+        // Mock window.alert
+        window.alert = jest.fn();
+
+        // Mock URL.createObjectURL
+        global.URL.createObjectURL = jest.fn(() => 'mock-url');
+        global.URL.revokeObjectURL = jest.fn();
+
+        // Mock Image
+        global.Image = class {
+            onload: () => void = () => { };
+            onerror: (err: any) => void = () => { };
+            src: string = '';
+            width: number = 100;
+            height: number = 100;
+            constructor() {
+                // Trigger onload async to simulate loading
+                setTimeout(() => {
+                    if (this.onload) this.onload();
+                }, 10);
+            }
+        } as any;
+
+        // Mock Canvas
+        HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+            drawImage: jest.fn(),
+        } as any));
+        HTMLCanvasElement.prototype.toBlob = jest.fn((callback: any) => {
+            callback(new Blob(['mock-blob-content'], { type: 'image/jpeg' }));
+        });
     });
 
     it('should initialize with empty selectedImages', () => {
@@ -89,13 +122,17 @@ describe('useImageUpload', () => {
             result.current.handleFileSelect(mockEvent);
         });
 
-        await act(async () => {
+        await waitFor(() => {
             if (finalReaderOnLoadEnd) {
                 finalReaderOnLoadEnd();
+            } else {
+                throw new Error('Reader not ready');
             }
         });
 
-        expect(result.current.selectedImages).toHaveLength(1);
+        await waitFor(() => {
+            expect(result.current.selectedImages).toHaveLength(1);
+        });
         expect(result.current.selectedImages[0]).toBe('data:image/png;base64,testimage123');
     });
 
@@ -127,9 +164,11 @@ describe('useImageUpload', () => {
                 result.current.handleFileSelect(mockEvent);
             });
 
-            await act(async () => {
+            await waitFor(() => {
                 if (readerOnLoadEnd) {
                     readerOnLoadEnd();
+                } else {
+                    throw new Error('Reader not ready');
                 }
             });
         };
@@ -138,7 +177,9 @@ describe('useImageUpload', () => {
         await addImage('data:image/png;base64,image1');
         await addImage('data:image/png;base64,image2');
 
-        expect(result.current.selectedImages).toHaveLength(3);
+        await waitFor(() => {
+            expect(result.current.selectedImages).toHaveLength(3);
+        });
 
         act(() => {
             result.current.removeImage(1);
@@ -177,9 +218,11 @@ describe('useImageUpload', () => {
                 result.current.handleFileSelect(mockEvent);
             });
 
-            await act(async () => {
+            await waitFor(() => {
                 if (readerOnLoadEnd) {
                     readerOnLoadEnd();
+                } else {
+                    throw new Error('Reader not ready');
                 }
             });
         };
@@ -187,7 +230,9 @@ describe('useImageUpload', () => {
         await uploadImage('data:image/png;base64,first');
         await uploadImage('data:image/png;base64,second');
 
-        expect(result.current.selectedImages).toHaveLength(2);
+        await waitFor(() => {
+            expect(result.current.selectedImages).toHaveLength(2);
+        });
         expect(result.current.selectedImages[0]).toBe('data:image/png;base64,first');
         expect(result.current.selectedImages[1]).toBe('data:image/png;base64,second');
     });

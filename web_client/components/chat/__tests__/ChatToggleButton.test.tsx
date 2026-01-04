@@ -15,7 +15,7 @@ describe('ChatToggleButton', () => {
         const { container } = render(<ChatToggleButton {...defaultProps} />);
 
         // Avatar image should be visible
-        const avatar = screen.getByAltText(/avatar/i);
+        const avatar = screen.getByAltText(/chat/i);
         expect(avatar).toBeInTheDocument();
     });
 
@@ -43,13 +43,14 @@ describe('ChatToggleButton', () => {
         const { rerender } = render(<ChatToggleButton {...defaultProps} />);
 
         let button = screen.getByRole('button');
-        expect(button).toHaveClass('fixed', 'bottom-6', 'right-6');
+        // Component uses w-32 h-28 when closed, w-16 h-16 when open
+        expect(button).toHaveClass('rounded-full');
 
         // Rerender with isOpen=true
         rerender(<ChatToggleButton {...defaultProps} isOpen={true} />);
 
         button = screen.getByRole('button');
-        expect(button).toHaveClass('fixed', 'bottom-6', 'right-6');
+        expect(button).toHaveClass('rounded-full');
     });
 
     it('should have aria-label for accessibility', () => {

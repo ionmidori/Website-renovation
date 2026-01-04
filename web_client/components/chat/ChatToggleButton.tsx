@@ -19,6 +19,7 @@ export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
             <Button
                 onClick={onClick}
                 size="icon"
+                aria-label={isOpen ? "Chiudi chat" : "Apri chat"}
                 className={cn(
                     "w-32 h-28 rounded-full transition-all duration-300 relative flex items-center justify-center !overflow-visible",
                     isOpen

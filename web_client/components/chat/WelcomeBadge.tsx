@@ -77,6 +77,7 @@ export function WelcomeBadge({ isOpen, onOpenChat }: WelcomeBadgeProps) {
                             e.stopPropagation();
                             setShowWelcomeBadge(false);
                         }}
+                        aria-label="Chiudi"
                         className="absolute -top-2 -right-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full p-0.5 transition-colors"
                     >
                         <X className="w-3 h-3" />

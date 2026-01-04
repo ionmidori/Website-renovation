@@ -21,6 +21,8 @@ export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
+                    role="dialog"
+                    aria-label="Anteprima immagine"
                     className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
                 >
                     <div
@@ -38,6 +40,7 @@ export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
                             <Button
                                 onClick={onClose}
                                 variant="outline"
+                                aria-label="Chiudi anteprima"
                                 className="border-white/20 text-white hover:bg-white/10"
                             >
                                 <X className="w-4 h-4 mr-2" />
@@ -46,6 +49,7 @@ export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
                             <a
                                 href={imageUrl}
                                 download={`renovation-ai-vision-${Date.now()}.png`}
+                                aria-label="Scarica immagine"
                                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
                             >
                                 <Send className="w-4 h-4 mr-2 rotate-180" />

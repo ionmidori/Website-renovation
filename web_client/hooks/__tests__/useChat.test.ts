@@ -21,6 +21,27 @@ describe('useChat', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Reset to default mock that handles history
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+
+            if (url.includes('/api/chat/history')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({ messages: [] }),
+                });
+            }
+
+            return Promise.resolve({
+                ok: true,
+                body: {
+                    getReader: () => ({
+                        read: jest.fn().mockResolvedValue({ done: true, value: undefined }),
+                    }),
+                },
+            });
+        });
     });
 
     it('should initialize with provided messages', () => {
@@ -44,18 +65,21 @@ describe('useChat', () => {
     });
 
     it('should add user message optimistically when append is called', async () => {
-        // Mock successful response
         const mockReader = {
             read: jest.fn()
                 .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('Hello') })
                 .mockResolvedValueOnce({ done: true, value: undefined }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: {
-                getReader: () => mockReader,
-            },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -81,9 +105,15 @@ describe('useChat', () => {
             ),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -92,7 +122,6 @@ describe('useChat', () => {
             result.current.append({ role: 'user', content: 'Test' });
         });
 
-        // Check that loading is true during fetch
         await waitFor(() => {
             expect(result.current.isLoading).toBe(true);
         });
@@ -112,9 +141,15 @@ describe('useChat', () => {
                 .mockResolvedValueOnce({ done: true }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -127,7 +162,6 @@ describe('useChat', () => {
             expect(result.current.isLoading).toBe(false);
         });
 
-        // Should have accumulated the streamed content
         const assistantMessage = result.current.messages.find(m => m.role === 'assistant');
         expect(assistantMessage?.content).toBe('Hello world!');
     });
@@ -147,9 +181,15 @@ describe('useChat', () => {
                 .mockResolvedValueOnce({ done: true }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -180,9 +220,15 @@ describe('useChat', () => {
                 .mockResolvedValueOnce({ done: true }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -218,9 +264,15 @@ describe('useChat', () => {
                 .mockResolvedValueOnce({ done: true }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -234,18 +286,22 @@ describe('useChat', () => {
         });
 
         const assistantMessage = result.current.messages.find(m => m.role === 'assistant');
-        // Should only contain the regular text, not the JSON data
         expect(assistantMessage?.content).toBe('Regular text');
     });
 
     it('should handle fetch errors', async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: false,
-            status: 500,
-            json: async () => ({ error: 'Server error' }),
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: false,
+                status: 500,
+                json: async () => ({ error: 'Server error' }),
+            });
         });
 
-        // Mock alert
         const alertSpy = jest.spyOn(window, 'alert').mockImplementation();
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -269,9 +325,15 @@ describe('useChat', () => {
             read: jest.fn().mockResolvedValue({ done: true }),
         };
 
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: { getReader: () => mockReader },
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: { getReader: () => mockReader },
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -294,7 +356,13 @@ describe('useChat', () => {
     });
 
     it('should handle network errors', async () => {
-        (global.fetch as jest.Mock).mockRejectedValue(new Error('Network failed'));
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.reject(new Error('Network failed'));
+        });
 
         const alertSpy = jest.spyOn(window, 'alert').mockImplementation();
 
@@ -313,9 +381,15 @@ describe('useChat', () => {
     });
 
     it('should handle null response body', async () => {
-        (global.fetch as jest.Mock).mockResolvedValue({
-            ok: true,
-            body: null,
+        (global.fetch as jest.Mock).mockImplementation((input) => {
+            const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input?.url || '');
+            if (url.includes('/history')) {
+                return Promise.resolve({ ok: true, json: async () => ({ messages: [] }) });
+            }
+            return Promise.resolve({
+                ok: true,
+                body: null,
+            });
         });
 
         const { result } = renderHook(() => useChat(mockSessionId, []));
@@ -328,7 +402,6 @@ describe('useChat', () => {
             expect(result.current.isLoading).toBe(false);
         });
 
-        // Should handle gracefully without crashing
         expect(result.current.messages).toBeDefined();
     });
 });
