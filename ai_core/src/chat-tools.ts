@@ -10,10 +10,11 @@ import { analyzeRoomStructure } from './vision/analyze-room';
 import { buildPromptFromRoomAnalysis } from './imagen/prompt-builders';
 import { uploadBase64Image } from './imagen/upload-base64-image';
 import { generateArchitecturalPrompt } from './vision/architect';
+import { checkToolQuota, incrementToolQuota } from './tool-quota';
 import crypto from 'node:crypto';
 
-// Factory function to create tools with injected sessionId
-export function createChatTools(sessionId: string) {
+// Factory function to create tools with injected sessionId and IP for quota checks
+export function createChatTools(sessionId: string, ip: string) {
 
     // Define schemas first - ✅ CHAIN OF THOUGHT: Forza l'AI a riflettere sulla struttura prima del prompt
     const GenerateRenderParameters = z.object({
@@ -109,7 +110,22 @@ export function createChatTools(sessionId: string) {
                 const { prompt, roomType, style, structuralElements, mode, sourceImageUrl, modificationType, keepElements } = args || {};
 
                 try {
-                    // Use sessionId from closure (injected via factory)
+                    // ✅ CHECK RENDER QUOTA (2 per IP per 24h)
+                    console.log(`[generate_render] Checking quota for IP: ${ip}`);
+                    const quotaCheck = await checkToolQuota(ip, 'render');
+
+                    if (!quotaCheck.allowed) {
+                        const resetTime = quotaCheck.resetAt.toLocaleString('it-IT');
+                        console.warn(`[generate_render] Quota exceeded for IP ${ip}. Reset at: ${resetTime}`);
+                        return {
+                            status: 'error',
+                            error: `Hai raggiunto il limite di ${quotaCheck.currentCount} rendering giornalieri. Potrai generare nuovi rendering dopo le ${resetTime}.`
+                        };
+                    }
+
+                    console.log(`[generate_render] Quota OK. Remaining: ${quotaCheck.remaining} renders`);
+
+                    // Use sessionId and ip from closure (injected via factory)
                     console.log('🏗️ [Chain of Thought] Structural elements detected:', structuralElements);
                     console.log('🛠️ [Hybrid Tool] Mode selected:', mode || 'creation (default)');
                     console.log('🔧 [Hybrid Tool] Modification Type:', modificationType || 'renovation (default)');
@@ -244,6 +260,15 @@ export function createChatTools(sessionId: string) {
                     // Upload and get Signed URL
                     const imageUrl = await uploadGeneratedImage(imageBuffer, sessionId, safeSlug);
 
+                    // ✅ INCREMENT QUOTA COUNTER (render successful)
+                    try {
+                        await incrementToolQuota(ip, 'render', { roomType: safeRoomType, style: safeStyle, imageUrl });
+                        console.log(`[generate_render] ✅ Quota incremented for IP ${ip}`);
+                    } catch (quotaError) {
+                        // ⚠️ Non-blocking: Log but don't fail the entire operation
+                        console.error(`[generate_render] ❌ Failed to increment quota:`, quotaError);
+                    }
+
                     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     // 💾 PERSISTENCE (Save Quote if JIT data exists)
                     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -262,7 +287,7 @@ export function createChatTools(sessionId: string) {
                         promptUsed: enhancedPrompt
                     };
                 } catch (error) {
-                    console.error('[generate_render] Error:', error);
+                    console.error('[generate_render] ❌ Error:', error);
                     return {
                         status: 'error',
                         error: error instanceof Error ? error.message : 'Image generation failed'
@@ -276,6 +301,21 @@ export function createChatTools(sessionId: string) {
             parameters: SubmitLeadParameters,
             execute: async (data: any) => {
                 try {
+                    // ✅ CHECK QUOTE QUOTA (2 per IP per 24h)
+                    console.log(`[submit_lead_data] Checking quota for IP: ${ip}`);
+                    const quotaCheck = await checkToolQuota(ip, 'quote');
+
+                    if (!quotaCheck.allowed) {
+                        const resetTime = quotaCheck.resetAt.toLocaleString('it-IT');
+                        console.warn(`[submit_lead_data] Quota exceeded for IP ${ip}. Reset at: ${resetTime}`);
+                        return {
+                            success: false,
+                            message: `Hai raggiunto il limite di ${quotaCheck.currentCount} preventivi giornalieri. Potrai richiedere nuovi preventivi dopo le ${resetTime}.`
+                        };
+                    }
+
+                    console.log(`[submit_lead_data] Quota OK. Remaining: ${quotaCheck.remaining} quotes`);
+
                     console.log('[submit_lead_data] Saving lead to Firestore:', data);
 
                     const { getFirestore, Timestamp, FieldValue } = await import('firebase-admin/firestore');
@@ -291,6 +331,14 @@ export function createChatTools(sessionId: string) {
 
                     console.log('[submit_lead_data] ✅ Lead saved successfully');
 
+                    //✅ INCREMENT QUOTA COUNTER (quote successful)
+                    try {
+                        await incrementToolQuota(ip, 'quote', { email: data.email, roomType: data.roomType });
+                        console.log(`[submit_lead_data] ✅ Quota incremented for IP ${ip}`);
+                    } catch (quotaError) {
+                        // ⚠️ Non-blocking: Log but don't fail the entire operation
+                        console.error(`[submit_lead_data] ❌ Failed to increment quota:`, quotaError);
+                    }
 
                     return {
                         success: true,
