@@ -355,24 +355,23 @@ export function createChatTools(sessionId: string, ip: string) {
         } as any),
 
         get_market_prices: tool({
-            description: `Use this tool to find REAL-TIME market prices in Italy for specific renovation materials, furniture, or labor costs. 
-            It searches the live web to find current offers from major Italian suppliers (Leroy Merlin, Iperceramica, etc.).
-            Trigger this when the user asks "Quanto costa X?" or "Cerca il prezzo di Y".`,
+            description: `Search REAL-TIME Italian market prices for renovation materials, furniture, or labor costs.
+            Trigger when user asks: "Quanto costa X?" or "Cerca il prezzo di Y".
+            Returns concise price ranges from Italian suppliers (max 5 lines).`,
             parameters: z.object({
-                query: z.string().describe('The specific search query. Be specific. Example: "Prezzo gres porcellanato effetto legno Marazzi al mq", "Costo posa parquet Milano 2026", "Divano letto grigio 3 posti prezzi"'),
-                category: z.enum(['materials', 'furniture', 'labor']).optional().describe('Context of the search to refine sources'),
+                query: z.string().describe('Specific Italian search query. Examples: "prezzo gres porcellanato Italia 2026", "costo posa parquet al mq Milano"'),
             }),
             execute: async ({ query }: { query: string }) => {
-                console.log('🔍 [DEBUG] Tool called with query:', query);
+                console.log('🔍 [get_market_prices] Query:', query);
 
-                // 1. QUERY OPTIMIZATION - Add Italian domains to guide search
-                const optimizedQuery = `${query} prezzo (site:.it OR site:leroymerlin.it OR site:iperceramica.it OR site:manomano.it)`;
-                console.log(`🔎 [Perplexity] Optimized Query: "${optimizedQuery}"`);
+                // Optimize query for Italian market
+                const optimizedQuery = `${query} prezzo Italia 2026 (site:.it OR site:leroymerlin.it OR site:iperceramica.it OR site:manomano.it)`;
+                console.log('🔎 [Perplexity] Optimized:', optimizedQuery);
 
                 const apiKey = process.env.PERPLEXITY_API_KEY;
                 if (!apiKey) {
                     console.error('❌ Missing PERPLEXITY_API_KEY');
-                    return 'Errore configurazione: API Key mancante.';
+                    return 'Errore: API Key mancante.';
                 }
 
                 try {
@@ -387,7 +386,7 @@ export function createChatTools(sessionId: string, ip: string) {
                             messages: [
                                 {
                                     role: 'system',
-                                    content: 'Sei un AGGREGATORE DI PREZZI SINTETICO. REGOLE: 1. Un punto per Venditore. 2. Range (Min-Max). 3. NO nomi modelli. 4. Formato: [Venditore]: EUR[Min]-[Max]/mq'
+                                    content: 'Sei un PRICE AGGREGATOR. REGOLE OBBLIGATORIE: 1) Cerca SOLO nei 5 siti più visitati per il materiale richiesto in Italia. 2) Output SOLO lista a puntini. 3) Formato ESATTO: "• [Nome Sito]: €[Min]-€[Max] /[unità]". 4) VIETATO scrivere introduzioni, titoli, note, o spiegazioni. 5) MAX 5 righe.'
                                 },
                                 {
                                     role: 'user',
@@ -398,25 +397,18 @@ export function createChatTools(sessionId: string, ip: string) {
                         })
                     });
 
-                    console.log('\ud83d\udd0d [DEBUG] Response status:', response.status, response.statusText);
-
                     if (!response.ok) {
                         const errorBody = await response.text();
-                        console.error('🔍 [DEBUG] Error:', errorBody);
+                        console.error('❌ [Perplexity] Error:', errorBody);
                         throw new Error(`Perplexity API Error: ${response.status}`);
                     }
 
                     const json = await response.json();
-                    const content = json.choices?.[0]?.message?.content || 'Nessun risultato.';
-                    const citations = json.citations || [];
+                    const content = json.choices?.[0]?.message?.content || 'Nessun risultato trovato.';
 
-                    console.log(`✅ [Perplexity] Found ${citations.length} citations.`);
+                    console.log('✅ [Perplexity] Response length:', content.length, 'chars');
 
-                    const result = `Ho trovato informazioni sui prezzi:\n\n${content}\n\n📊 Fonti: ${citations.length} siti italiani`;
-                    console.log('🔍 [DEBUG] Returning to Gemini (length:', result.length, 'chars)');
-                    console.log('🔍 [DEBUG] First 200 chars:', result.substring(0, 200));
-
-                    return result;
+                    return content;
 
                 } catch (error: any) {
                     console.error('❌ [Perplexity] Failed:', error);

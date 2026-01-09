@@ -453,6 +453,42 @@ Example 4: Minor Variation (Anti-Pattern)
   User: "Show lighter floors"
   AI: Recognizes MINOR → generates new render
   AI: "Ecco la variante!" ← Don't propose anything ❌
+
+═══════════════════════════════════════════════════════════════
+💸 PROTOCOLLO PREZZI & GROUNDING (GOOGLE SEARCH)
+═══════════════════════════════════════════════════════════════
+
+IDENTITY: Sei un PRICE BOT. Il tuo unico scopo è estrarre numeri dai risultati di ricerca.
+
+QUANDO L'UTENTE CHIEDE PREZZI:
+
+1. **Cerca su Google** i prezzi italiani 2025-2026.
+
+2. **OUTPUT FORMAT (MAX 5 RIGHE totali):**
+   
+   Formato: * **[Fornitore]:** €[Min]-€[Max] /[unità]
+   
+   Esempio CORRETTO:
+   * **Leroy Merlin:** €18-€35 /mq
+   * **Iperceramica:** €22-€50 /mq
+   * **Bricoman:** €15-€28 /mq
+   
+   Esempio SBAGLIATO:
+   Ecco i prezzi di mercato aggiornati:
+   Il gres porcellanato varia da €15 a €60 al mq...
+   Note: I prezzi dipendono dalla qualità
+
+3. **REGOLE FERREE:**
+   ⛔ VIETATO scrivere più di 5 righe totali
+   ⛔ VIETATO aggiungere titoli o introduzioni
+   ⛔ VIETATO spiegare perché i prezzi variano
+   ⛔ VIETATO sezioni Note o Suggerimenti
+   
+   ✅ SOLO: Fornitore + Numeri + Unità
+
+4. **TOLLERANZA ZERO:** Oltre 5 righe = FALLIMENTO.
+
+═══════════════════════════════════════════════════════════════
 `;
 
 
@@ -636,12 +672,10 @@ export async function POST(req: Request) {
                         async onToolCall({ toolCall, toolResult }: { toolCall: any; toolResult: any }) {
                             console.log('🔧 [Tool Call]', toolCall.toolName);
 
-                            // For market prices, write result directly to stream
+                            // 💸 PERPLEXITY: Stream market prices directly to chat
                             if (toolCall.toolName === 'get_market_prices' && toolResult) {
                                 const resultText = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
-                                console.log('📤 [Direct Stream] Writing market prices directly to chat');
-
-                                // Write as text delta to appear in chat
+                                console.log('📤 [Market Prices] Streaming to chat');
                                 writeData('0', resultText);
                                 streamedContent += resultText;
                             }
@@ -670,6 +704,13 @@ export async function POST(req: Request) {
 
                     // 2. Consume the FULL stream to capture tools and text
                     // We iterate over the full event stream to manually inject tool outputs (images) as text
+                    // 
+                    // 🔍 GOOGLE SEARCH GROUNDING: When the model uses google_search,
+                    // results are automatically incorporated into text-delta responses.
+                    // The AI SDK handles grounding metadata internally, including:
+                    // - webSearchQueries: Search queries used
+                    // - searchEntryPoint: Main search result content
+                    // - groundingSupports: Citations and confidence scores
                     for await (const part of result.fullStream) {
                         if (part.type === 'text-delta') {
                             streamedContent += part.text;
@@ -679,20 +720,16 @@ export async function POST(req: Request) {
                         // Check for tool results (specifically our generation tool)
                         // ✅ SECURITY FIX: Robust error handling for tool failures
 
-                        // ✅ MARKET PRICES: Write directly to stream
+                        // 💸 PERPLEXITY: Write market prices to stream  
                         if (part.type === 'tool-result' && part.toolName === 'get_market_prices') {
                             try {
                                 const result = (part as any).result || (part as any).output;
                                 const resultText = typeof result === 'string' ? result : JSON.stringify(result);
-
-                                console.log('📤 [Market Prices] Writing directly to stream');
-                                console.log('📤 [Market Prices] Content length:', resultText.length);
-
-                                // Write to chat
+                                console.log('📤 [Market Prices] Writing to stream:', resultText.substring(0, 100));
                                 writeData('0', resultText);
                                 streamedContent += resultText;
                             } catch (error) {
-                                console.error('❌ [Market Prices] Failed to write to stream:', error);
+                                console.error('❌ [Market Prices] Stream error:', error);
                             }
                         }
 
