@@ -84,13 +84,13 @@ export function Hero() {
                     transition={{ duration: 0.8, delay: 0.2 }}
                     className="relative px-4 sm:px-0"
                 >
-                    {/* Abstract Shapes/Blobs behind */}
-                    <div className="absolute -top-20 -right-20 w-72 h-72 bg-blue-500/20 rounded-full blur-[80px] -z-10" />
-                    <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-cyan-500/20 rounded-full blur-[80px] -z-10" />
+                    {/* Abstract Light Glows - Minimalist */}
+                    <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-[60px] -z-10" />
 
-                    {/* Main Video Container - Asymmetric Dynamic Shape */}
+
+                    {/* Main Video Container - 'The Architect's Lens' */}
                     <div
-                        className="relative rounded-3xl rounded-tr-[100px] rounded-bl-[40px] overflow-hidden border border-white/10 shadow-2xl shadow-blue-900/40 group cursor-pointer"
+                        className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-blue-900/30 group cursor-pointer"
                         onClick={() => {
                             const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
                                 detail: { message: "voglio creare un render 3D" }
@@ -105,28 +105,51 @@ export function Hero() {
                                 muted
                                 loop
                                 playsInline
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                             />
-                            {/* Subtle inner shadow and gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/20 pointer-events-none" />
+
+                            {/* Inner Glow - Tech Vibe */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-slate-950/10 pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none" />
 
                             {/* Play overlay on hover */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-black/20 backdrop-blur-[2px]">
-                                <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                                    <Zap className="w-8 h-8 text-white fill-current" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-black/10 backdrop-blur-[1px]">
+                                <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center border border-white/20 shadow-2xl">
+                                    <Zap className="w-8 h-8 text-white fill-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    {/* Stats Glass Bar - Moved Below Video */}
+                    <div className="mt-6 mx-4 sm:mx-0 h-16 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-between px-6 transition-all duration-500 hover:bg-white/10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 bg-green-500/20 rounded-lg text-green-400">
+                                <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Risparmio</span>
+                                <span className="text-sm font-bold text-white">€1.200</span>
+                            </div>
+                        </div>
 
+                        <div className="h-8 w-px bg-white/10" />
 
-
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Design Score</span>
+                                <span className="text-sm font-bold text-white">98/100</span>
+                            </div>
+                            <div className="p-1.5 bg-amber-500/20 rounded-lg text-amber-400">
+                                <Star className="w-5 h-5" />
+                            </div>
+                        </div>
+                    </div>
                 </motion.div>
             </div >
 
             {/* Glow backing */}
-            < div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-20 -z-10" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-20 -z-10" />
         </section >
     );
 }
