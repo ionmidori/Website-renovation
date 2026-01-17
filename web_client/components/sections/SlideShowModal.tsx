@@ -113,7 +113,32 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                         </button>
 
                         {/* Image Carousel */}
+                        {/* Image Carousel */}
                         <div className="relative w-full h-full overflow-hidden rounded-xl shadow-2xl bg-black">
+
+                            {/* Ambient Background (Mobile/Fill effect) */}
+                            <AnimatePresence initial={false} custom={direction} mode='popLayout'>
+                                <motion.div
+                                    key={`bg-${currentIndex}`}
+                                    custom={direction}
+                                    variants={variants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    transition={{ opacity: { duration: 0.5 } }}
+                                    className="absolute inset-0 w-full h-full"
+                                >
+                                    <Image
+                                        src={SLIDES[currentIndex]}
+                                        alt=""
+                                        fill
+                                        className="object-cover blur-3xl opacity-50 scale-110"
+                                        aria-hidden="true"
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Main Slide */}
                             <AnimatePresence initial={false} custom={direction} mode='popLayout'>
                                 <motion.div
                                     key={currentIndex}
@@ -126,7 +151,7 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                                         x: { type: "spring", stiffness: 300, damping: 30 },
                                         opacity: { duration: 0.2 }
                                     }}
-                                    className="absolute inset-0 w-full h-full"
+                                    className="absolute inset-0 w-full h-full z-10"
                                 >
                                     <Image
                                         src={SLIDES[currentIndex]}
