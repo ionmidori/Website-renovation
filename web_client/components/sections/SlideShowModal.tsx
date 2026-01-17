@@ -74,7 +74,7 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                     </button>
 
                     {/* Content Container */}
-                    <div className="relative w-full h-[90vh] md:h-auto md:max-w-6xl md:aspect-video mx-4 z-[105] flex items-center justify-center">
+                    <div className="relative w-full h-[90vh] md:w-[90vw] md:h-[90vh] mx-4 z-[105] flex items-center justify-center">
 
                         {/* Image Carousel */}
                         <div className="relative w-full h-full overflow-hidden rounded-xl shadow-2xl bg-black">
