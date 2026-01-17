@@ -3,6 +3,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from src.auth.jwt_handler import verify_token
 from src.utils.stream_protocol import stream_text
+from src.graph.agent import agent_graph
+from src.graph.state import AgentState
+from langchain_core.messages import HumanMessage
 import asyncio
 
 app = FastAPI(title="SYD Brain 🧠", version="0.1.0")
@@ -19,14 +22,33 @@ def health_check():
     return {"status": "ok", "service": "syd-brain"}
 
 async def chat_stream_generator(request: ChatRequest, user_email: str):
-    """Simulates streaming chat response using Vercel AI SDK protocol."""
-    # Simulate a streaming response (will be replaced with real AI logic)
-    message = f"Hello {user_email}! This is a streaming test from Python backend. "
+    """Real AI agent streaming using LangGraph."""
     
-    for word in message.split():
-        async for chunk in stream_text(word + " "):
-            yield chunk
-        await asyncio.sleep(0.1)  # Simulate processing delay
+    # Convert messages to LangChain format
+    lc_messages = []
+    for msg in request.messages:
+        if msg.get("role") == "user":
+            lc_messages.append(HumanMessage(content=msg.get("content", "")))
+    
+    # Prepare agent state
+    state: AgentState = {
+        "messages": lc_messages,
+        "session_id": request.session_id
+    }
+    
+    # Invoke agent
+    result = agent_graph.invoke(state)
+    
+    # Extract response
+    if result and "messages" in result:
+        last_message = result["messages"][-1]
+        response_text = last_message.content
+        
+        # Stream word by word
+        for word in response_text.split():
+            async for chunk in stream_text(word + " "):
+                yield chunk
+            await asyncio.sleep(0.05)
 
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest, user_payload: dict = Depends(verify_token)):
