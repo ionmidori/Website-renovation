@@ -64,3 +64,10 @@ firebase-service-account.json
 !tailwind.config.json
 !package-root.json
 
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
