@@ -1,13 +1,15 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, PlayCircle, Star, ShieldCheck, Zap } from 'lucide-react';
+import { SlideShowModal } from './SlideShowModal';
 
 export function Hero() {
     // Track video loops
     const loopCountRef = useRef(0);
+    const [isSlideShowOpen, setIsSlideShowOpen] = useState(false);
 
     return (
         <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -60,7 +62,12 @@ export function Hero() {
                             Richiedi Preventivo Gratuito
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>
-                        <Button variant="outline" size="lg" className="h-14 px-8 text-base border-slate-700 hover:bg-slate-800 text-slate-300">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            className="h-14 px-8 text-base border-slate-700 hover:bg-slate-800 text-slate-300"
+                            onClick={() => setIsSlideShowOpen(true)}
+                        >
                             <PlayCircle className="mr-2 w-5 h-5" />
                             Guarda come funziona
                         </Button>
@@ -130,13 +137,13 @@ export function Hero() {
                             </div>
                         </div>
                     </div>
-
-
                 </motion.div>
-            </div >
+            </div>
 
             {/* Glow backing */}
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-20 -z-10" />
-        </section >
+
+            <SlideShowModal isOpen={isSlideShowOpen} onClose={() => setIsSlideShowOpen(false)} />
+        </section>
     );
 }
