@@ -1,10 +1,14 @@
 'use client';
 
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, PlayCircle, Star, ShieldCheck, Zap } from 'lucide-react';
 
 export function Hero() {
+    // Track video loops
+    const loopCountRef = useRef(0);
+
     return (
         <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
             {/* Background Elements */}
@@ -103,8 +107,14 @@ export function Hero() {
                                 src="/videos/ai-visualization.mp4"
                                 autoPlay
                                 muted
-                                loop
                                 playsInline
+                                onEnded={(e) => {
+                                    // Play one more time (total 2 loops) then stop at last frame
+                                    if (loopCountRef.current < 1) {
+                                        e.currentTarget.play();
+                                        loopCountRef.current++;
+                                    }
+                                }}
                                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                             />
 
