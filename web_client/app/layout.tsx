@@ -11,7 +11,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Renovation AI - Il Futuro della Ristrutturazione",
+  title: "SYD BIOEDILIZIA - Il Futuro della Ristrutturazione",
   description: "Trasforma la tua casa con il potere dell'Intelligenza Artificiale. Design premium, esecuzione impeccabile.",
 };
 

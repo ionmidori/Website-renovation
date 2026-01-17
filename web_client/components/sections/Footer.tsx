@@ -174,7 +174,7 @@ export function Footer() {
 
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-slate-500 text-sm">
-                        © {currentYear} Renovation AI. Tutti i diritti riservati.
+                        © {currentYear} SYD BIOEDILIZIA. Tutti i diritti riservati.
                     </p>
                     <div className="flex gap-6 text-sm text-slate-500">
                         <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
