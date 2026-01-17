@@ -2,7 +2,7 @@
 
 export function SydLogo({ className = "" }: { className?: string }) {
     return (
-        <div className={`flex items-center gap-3 ${className} drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] filter`}>
+        <div className={`flex items-center gap-3 ${className} drop-shadow-[0_0_12px_rgba(255,255,255,0.8)] filter`}>
             {/* Metallic Bars */}
             <div className="flex flex-col gap-1">
                 <div className="h-1.5 w-12 rounded-sm bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300" />
