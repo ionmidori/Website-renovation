@@ -107,7 +107,7 @@ export function ChatInput({
                         }}
                         onFocus={() => setTimeout(() => onScrollToBottom(), 100)}
                         placeholder="Descrivi cosa vuoi ristrutturare..."
-                        className="w-full bg-transparent text-white text-[16px] px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block"
+                        className="w-full bg-slate-900/50 text-slate-50 caret-blue-500 placeholder:text-slate-400 text-[16px] px-3 py-2 max-h-24 min-h-[44px] focus:outline-none resize-none scrollbar-hide block opacity-100"
                         rows={1}
                         disabled={isLoading}
                     />

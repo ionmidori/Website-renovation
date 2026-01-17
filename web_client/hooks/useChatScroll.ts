@@ -9,14 +9,15 @@ export function useChatScroll(messagesLength: number, isOpen: boolean) {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const prevMessagesLengthRef = useRef(messagesLength);
 
-    // Auto-scroll logic
+    // Auto-scroll logic - Optimized for iOS Safari compatibility
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
-        }
+        // Use only scrollIntoView for better cross-platform support
+        // iOS Safari handles scrollIntoView more reliably than scrollTop
+        messagesEndRef.current?.scrollIntoView({
+            behavior,
+            block: 'end',
+            inline: 'nearest'
+        });
     };
 
     useEffect(() => {
