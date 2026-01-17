@@ -17,24 +17,23 @@ const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Extract Firebase Token from Authorization header
+        // 1. Extract Firebase Token (Optional for Guest)
         const authHeader = req.headers.get('Authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        let firebaseUser = { uid: `guest-${crypto.randomUUID()}`, email: 'guest@renovation.ai' };
+
+        if (authHeader?.startsWith('Bearer ')) {
+            const firebaseToken = authHeader.replace('Bearer ', '');
+            try {
+                firebaseUser = await admin.auth().verifyIdToken(firebaseToken);
+            } catch (error) {
+                console.error('Firebase token validation failed:', error);
+                // Fallback to guest or return 401? 
+                // Better to return 401 if token provided but invalid.
+                return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+            }
         }
 
-        const firebaseToken = authHeader.replace('Bearer ', '');
-
-        // 2. Validate Firebase Token (ONLY DONE HERE - Python won't re-validate)
-        let firebaseUser;
-        try {
-            firebaseUser = await admin.auth().verifyIdToken(firebaseToken);
-        } catch (error) {
-            console.error('Firebase token validation failed:', error);
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        // 3. Create Internal JWT (signed by Next.js, valid 5 minutes)
+        // 3. Create Internal JWT (signed by Next.js)
         const internalToken = createInternalToken({
             uid: firebaseUser.uid,
             email: firebaseUser.email || 'unknown',
