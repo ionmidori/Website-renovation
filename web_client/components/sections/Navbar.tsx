@@ -8,6 +8,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { cn } from '@/lib/utils';
+import { SydLogo } from '@/components/branding/SydLogo';
 
 export function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -42,17 +43,8 @@ export function Navbar() {
                 transition={{ duration: 0.5 }}
             >
                 <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="relative h-24 w-96">
-                            <Image
-                                src="/syd-logo-v3.png"
-                                alt="SYD BIOEDILIZIA"
-                                fill
-                                className="object-contain object-left"
-                                style={{ mixBlendMode: 'screen', filter: 'brightness(1.1)' }}
-                                priority
-                            />
-                        </div>
+                    <Link href="/" className="group">
+                        <SydLogo className="group-hover:opacity-90 transition-opacity" />
                     </Link>
 
                     {/* Desktop Nav */}
