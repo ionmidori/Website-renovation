@@ -13,7 +13,7 @@ if (!admin.apps.length) {
     });
 }
 
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8080';
+const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8080';
 
 export async function POST(req: NextRequest) {
     try {
