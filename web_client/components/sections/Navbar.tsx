@@ -43,12 +43,13 @@ export function Navbar() {
             >
                 <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className="relative h-16 w-64">
+                        <div className="relative h-24 w-96">
                             <Image
                                 src="/syd-logo-v3.png"
                                 alt="SYD BIOEDILIZIA"
                                 fill
                                 className="object-contain object-left"
+                                style={{ mixBlendMode: 'screen', filter: 'brightness(1.1)' }}
                                 priority
                             />
                         </div>
