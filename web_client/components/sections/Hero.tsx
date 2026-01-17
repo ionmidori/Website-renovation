@@ -86,7 +86,7 @@ export function Hero() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative px-4 sm:px-0"
+                    className="relative"
                 >
                     {/* Abstract Light Glows - Minimalist */}
                     <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-[60px] -z-10" />
