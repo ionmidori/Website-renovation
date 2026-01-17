@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from src.auth.jwt_handler import verify_token
 from src.utils.stream_protocol import stream_text
 import asyncio
@@ -9,7 +9,9 @@ app = FastAPI(title="SYD Brain 🧠", version="0.1.0")
 
 class ChatRequest(BaseModel):
     messages: list[dict]
-    session_id: str
+    session_id: str = Field(..., alias="sessionId")
+    
+    model_config = {"populate_by_name": True}
 
 @app.get("/health")
 def health_check():
