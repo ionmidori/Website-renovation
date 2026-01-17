@@ -1,9 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+
+const DESKTOP_SLIDES = [
+    '/slides/slide-1.jpg',
+    '/slides/slide-2.jpg',
+    '/slides/slide-3.jpg',
+    '/slides/slide-4.jpg',
+    '/slides/slide-5.jpg',
+    '/slides/slide-6.jpg',
+    '/slides/slide-7.jpg',
+    '/slides/slide-8.jpg',
+];
 
 interface SlideShowModalProps {
     isOpen: boolean;
@@ -12,6 +23,7 @@ interface SlideShowModalProps {
 
 export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(0);
 
     // Reset index when opening
     useEffect(() => {
@@ -24,29 +36,44 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
         return () => { document.body.style.overflow = 'unset'; };
     }, [isOpen]);
 
-    // Keyboard navigation (only Escape needed now)
+    const paginate = useCallback((newDirection: number) => {
+        setDirection(newDirection);
+        setCurrentIndex((prev) => {
+            let next = prev + newDirection;
+            if (next < 0) next = DESKTOP_SLIDES.length - 1;
+            if (next >= DESKTOP_SLIDES.length) next = 0;
+            return next;
+        });
+    }, []);
+
+    // Keyboard navigation
     useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') paginate(1);
+            if (e.key === 'ArrowLeft') paginate(-1);
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, paginate]);
 
     // Slide variants for animations
     const variants = {
-        enter: () => ({
+        enter: (direction: number) => ({
+            x: direction > 0 ? 1000 : -1000,
             opacity: 0,
             scale: 0.95
         }),
         center: {
             zIndex: 1,
+            x: 0,
             opacity: 1,
             scale: 1
         },
-        exit: () => ({
+        exit: (direction: number) => ({
             zIndex: 0,
+            x: direction < 0 ? 1000 : -1000,
             opacity: 0,
             scale: 0.95
         })
@@ -76,13 +103,22 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                     {/* Content Container */}
                     <div className="relative w-full h-[90vh] md:w-[90vw] md:h-[90vh] mx-4 z-[105] flex items-center justify-center">
 
+                        {/* Desktop Previous Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); paginate(-1); }}
+                            className="hidden md:block absolute -left-16 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-all"
+                        >
+                            <ChevronLeft className="w-8 h-8" />
+                        </button>
+
                         {/* Image Carousel */}
                         <div className="relative w-full h-full overflow-hidden rounded-xl shadow-2xl bg-black">
 
-                            {/* Ambient Background (Mobile/Fill effect) */}
-                            <AnimatePresence initial={false} mode='popLayout'>
+                            {/* Ambient Background */}
+                            <AnimatePresence initial={false} custom={direction} mode='popLayout'>
                                 <motion.div
                                     key={`bg-${currentIndex}`}
+                                    custom={direction}
                                     variants={variants}
                                     initial="enter"
                                     animate="center"
@@ -90,8 +126,8 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                                     transition={{ opacity: { duration: 0.5 } }}
                                     className="absolute inset-0 w-full h-full"
                                 >
-                                    {/* Mobile Ambient Background Image */}
-                                    <div className="md:hidden relative w-full h-full">
+                                    {/* Mobile Ambient Background */}
+                                    <div className="md:hidden w-full h-full relative">
                                         <Image
                                             src="/slides/summary-mobile.png"
                                             alt=""
@@ -100,38 +136,39 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                                             aria-hidden="true"
                                         />
                                     </div>
-
-                                    {/* Desktop Ambient Background Image */}
-                                    <div className="hidden md:block relative w-full h-full">
+                                    {/* Desktop Ambient Background (Dynamic) */}
+                                    <div className="hidden md:block w-full h-full relative">
                                         <Image
-                                            src="/slides/summary-desktop.png"
+                                            src={DESKTOP_SLIDES[currentIndex]}
                                             alt=""
                                             fill
-                                            className="object-cover blur-3xl opacity-50 scale-110"
+                                            className="object-cover blur-3xl opacity-30 scale-110"
                                             aria-hidden="true"
                                         />
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
 
-                            {/* Main Slide */}
-                            <AnimatePresence initial={false} mode='popLayout'>
+                            {/* Main Slide Content */}
+                            <AnimatePresence initial={false} custom={direction} mode='popLayout'>
                                 <motion.div
                                     key={currentIndex}
+                                    custom={direction}
                                     variants={variants}
                                     initial="enter"
                                     animate="center"
                                     exit="exit"
                                     transition={{
+                                        x: { type: "spring", stiffness: 300, damping: 30 },
                                         opacity: { duration: 0.2 }
                                     }}
                                     className="absolute inset-0 w-full h-full z-10"
                                 >
-                                    {/* Mobile Image */}
-                                    <div className="md:hidden relative w-full h-full">
+                                    {/* Mobile Static Slide */}
+                                    <div className="md:hidden w-full h-full relative">
                                         <Image
                                             src="/slides/summary-mobile.png"
-                                            alt="Come funziona SYD - Mobile"
+                                            alt="Come funziona SYD"
                                             fill
                                             priority
                                             className="object-contain"
@@ -139,19 +176,42 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                                         />
                                     </div>
 
-                                    {/* Desktop Image */}
-                                    <div className="hidden md:block relative w-full h-full">
+                                    {/* Desktop Dynamic Carousel */}
+                                    <div className="hidden md:block w-full h-full relative">
                                         <Image
-                                            src="/slides/summary-desktop.png"
-                                            alt="Come funziona SYD - Desktop"
+                                            src={DESKTOP_SLIDES[currentIndex]}
+                                            alt={`Slide ${currentIndex + 1}`}
                                             fill
                                             priority
                                             className="object-contain"
-                                            sizes="80vw"
+                                            sizes="90vw"
                                         />
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
+                        </div>
+
+                        {/* Desktop Next Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); paginate(1); }}
+                            className="hidden md:block absolute -right-16 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-all"
+                        >
+                            <ChevronRight className="w-8 h-8" />
+                        </button>
+
+                        {/* Desktop Dots Indicator */}
+                        <div className="hidden md:flex absolute -bottom-10 left-0 right-0 justify-center gap-2">
+                            {DESKTOP_SLIDES.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setDirection(idx > currentIndex ? 1 : -1);
+                                        setCurrentIndex(idx);
+                                    }}
+                                    className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30 hover:bg-white/50'
+                                        }`}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
