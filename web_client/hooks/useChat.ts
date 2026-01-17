@@ -101,7 +101,7 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
                 headers['Authorization'] = `Bearer ${idToken}`;
             }
 
-            const res = await fetch('/api/chat', {
+            const res = await fetch('/api/chat-python', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
