@@ -84,7 +84,7 @@ async def analyze_image_triage(image_data: bytes) -> Dict[str, Any]:
         }
 
 
-async def analyze_media_triage(media_data: bytes, mime_type: str) -> Dict[str, Any]:
+async def analyze_media_triage(media_data: bytes, mime_type: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Unified entry point for media triage analysis.
     
@@ -95,6 +95,7 @@ async def analyze_media_triage(media_data: bytes, mime_type: str) -> Dict[str, A
     Args:
         media_data: Raw media file bytes
         mime_type: MIME type (e.g., 'image/jpeg', 'video/mp4')
+        metadata: Optional metadata (e.g. trimRange)
         
     Returns:
         Dict with triage analysis results
@@ -111,7 +112,7 @@ async def analyze_media_triage(media_data: bytes, mime_type: str) -> Dict[str, A
     elif mime_type.startswith("video/"):
         # Import video module only when needed (avoid circular imports)
         from src.vision.video_triage import analyze_video_triage
-        result = await analyze_video_triage(media_data)
+        result = await analyze_video_triage(video_data=media_data, metadata=metadata)
         # Convert VideoTriageResult to dict for compatibility
         return result.model_dump()
     

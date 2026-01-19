@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from src.auth.jwt_handler import verify_token
 from src.utils.stream_protocol import stream_text
-from src.utils.context import set_current_user_id  # ✅ Context for quota tracking
+from src.utils.context import set_current_user_id, set_current_media_metadata  # ✅ Context for quota & metadata
 from src.db.messages import save_message, get_conversation_context, ensure_session  # 🔥 DB persistence
 from src.graph.agent import agent_graph
 from src.graph.state import AgentState
@@ -63,6 +63,7 @@ class ChatRequest(BaseModel):
     media_urls: list[str] | None = Field(None, alias="mediaUrls") 
     image_urls: list[str] | None = Field(None, alias="imageUrls")  # Backward compatibility
     media_types: list[str] | None = Field(None, alias="mediaTypes")  # Optional MIME type hints
+    media_metadata: dict[str, dict] | None = Field(None, alias="mediaMetadata") # New: Trim Ranges
     
     model_config = {"populate_by_name": True}
     
@@ -102,8 +103,10 @@ async def chat_stream_generator(request: ChatRequest, user_payload: dict):
         # ✅ Extract user_id from JWT for quota tracking
         user_id = user_payload.get("uid", "default")
         
-        # ✅ Set context for tools to access user_id
+        # ✅ Set context for tools to access user_id AND media metadata
         set_current_user_id(user_id)
+        if request.media_metadata:
+             set_current_media_metadata(request.media_metadata)
         
         # 🔥 ENSURE SESSION EXISTS
         await ensure_session(request.session_id)

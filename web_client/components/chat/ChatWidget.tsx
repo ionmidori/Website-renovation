@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSessionId } from '@/hooks/useSessionId';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useChat } from '@/hooks/useChat';
-import { useImageUpload } from '@/hooks/useImageUpload';
+import { useMediaUpload, MediaUploadState } from '@/hooks/useMediaUpload';
 import { useChatScroll } from '@/hooks/useChatScroll';
 import { useMobileViewport } from '@/hooks/useMobileViewport';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -80,9 +80,24 @@ export default function ChatWidget() {
         return messages.length === 0 ? [welcomeMessage] : messages;
     }, [historyMessages.length, messages, welcomeMessage]);
 
-    // Image Upload (now with persistent Storage URLs)
-    // Image Upload (now with persistent Storage URLs)
-    const { selectedImages, imageUrls, handleFileSelect, clearImages, isUploading, uploadStatus, removeImage } = useImageUpload(sessionId);
+    // Media Upload (Videos + Images with Progress)
+    const {
+        mediaItems,
+        addFiles,
+        removeMedia,
+        clearMedia,
+        updateMediaItem,
+        isGlobalUploading
+    } = useMediaUpload(sessionId);
+
+    // File Selection Handler
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            addFiles(Array.from(e.target.files));
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        }
+    };
 
     // Scroll Management
     const { messagesContainerRef, messagesEndRef, scrollToBottom } = useChatScroll(displayMessages.length, isOpen);
@@ -99,23 +114,45 @@ export default function ChatWidget() {
     // Submit Message Handler
     const submitMessage = (e?: React.FormEvent) => {
         e?.preventDefault();
-        if ((!inputValue.trim() && selectedImages.length === 0) || isLoading) return;
 
-        if (selectedImages.length > 0) {
+        // Block if uploading or empty
+        const hasActiveUploads = mediaItems.some(i => i.status === 'uploading' || i.status === 'compressing');
+        if (hasActiveUploads || isLoading) return;
+        if (!inputValue.trim() && mediaItems.length === 0) return;
+
+        if (mediaItems.length > 0) {
+            // Extract successfully uploaded URLs
+            const mediaUrls = mediaItems
+                .filter((i: MediaUploadState) => i.status === 'done' && i.publicUrl)
+                .map((i: MediaUploadState) => i.publicUrl!);
+
+            const mediaTypes = mediaItems
+                .filter((i: MediaUploadState) => i.status === 'done' && i.publicUrl)
+                .map((i: MediaUploadState) => i.file.type);
+
+            // Collect metadata (trim ranges)
+            const mediaMetadata: Record<string, any> = {};
+            mediaItems.forEach(i => {
+                if (i.status === 'done' && i.publicUrl && i.trimRange) {
+                    mediaMetadata[i.publicUrl] = { trimRange: i.trimRange };
+                }
+            });
+
             append({
                 role: 'user',
                 content: inputValue,
-                // ✅ NEW: Include attachments for immediate preview in chat
+                // Attachments for UI Preview
                 attachments: {
-                    images: imageUrls.length > 0 ? imageUrls : selectedImages // Prefer public URLs, fallback to base64
+                    images: mediaUrls.length > 0 ? mediaUrls : undefined // Pass URLs for preview
                 }
             } as any, {
                 body: {
-                    images: selectedImages,      // base64 for AI vision
-                    imageUrls: imageUrls          // Public URLs for modification mode
-                }
+                    mediaUrls: mediaUrls,     // Universal Media URLs
+                    mediaTypes: mediaTypes,    // MIME types for backend triage
+                    mediaMetadata: mediaMetadata // New: Trim metadata
+                } as any
             });
-            clearImages();
+            clearMedia();
             setInputValue('');
         } else {
             append({
@@ -195,13 +232,13 @@ export default function ChatWidget() {
                                 setInputValue={setInputValue}
                                 onSubmit={submitMessage}
                                 isLoading={isLoading}
-                                isUploading={isUploading}
-                                uploadStatus={uploadStatus}
-                                selectedImages={selectedImages}
+                                isGlobalUploading={isGlobalUploading}
+                                mediaItems={mediaItems}
                                 onFileSelect={handleFileSelect}
                                 onScrollToBottom={() => scrollToBottom('smooth')}
                                 fileInputRef={fileInputRef}
-                                removeImage={removeImage}
+                                removeMedia={removeMedia}
+                                updateMediaItem={updateMediaItem}
                             />
                         </motion.div>
                     </>

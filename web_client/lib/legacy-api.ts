@@ -110,3 +110,44 @@ export async function getConversationContext(
         return [];
     }
 }
+
+/**
+ * Generate Signed URL for direct client upload (PUT)
+ * Uses V4 signing for maximum compatibility
+ */
+export async function generateUploadUrl(options: {
+    sessionId: string;
+    fileName: string;
+    contentType: string;
+}): Promise<{ uploadUrl: string; publicUrl: string }> {
+    const { sessionId, fileName, contentType } = options;
+    const bucket = storage().bucket();
+
+    // Construct path: user-uploads/{sessionId}/{timestamp}-{fileName}
+    const timestamp = Date.now();
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const storagePath = `user-uploads/${sessionId}/${timestamp}-${cleanFileName}`;
+    const file = bucket.file(storagePath);
+
+    // Generate Signed URL for PUT
+    const [uploadUrl] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        contentType: contentType,
+    });
+
+    // Public URL (requires storage to be public or Token - sticking to public pattern for now)
+    // Alternatively we could generate a Read Signed URL here too if needed.
+    // For now, let's generate a long-lived Read Signed URL for the backend to use.
+    const [readUrl] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return {
+        uploadUrl,
+        publicUrl: readUrl
+    };
+}

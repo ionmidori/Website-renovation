@@ -11,7 +11,8 @@ from src.models.lead import LeadData
 from src.api.perplexity import fetch_market_prices
 from src.tools.generate_render import generate_render_wrapper
 from src.tools.quota import check_quota, increment_quota, QuotaExceededError
-from src.utils.context import get_current_user_id  # ✅ Context-based user tracking
+from src.tools.quota import check_quota, increment_quota, QuotaExceededError
+from src.utils.context import get_current_user_id, get_current_media_metadata  # ✅ Context-based tracking
 
 logger = logging.getLogger(__name__)
 
@@ -203,11 +204,9 @@ def analyze_room_sync(image_url: str) -> str:
     
     try:
         from src.vision.analyze import analyze_room_structure
+        from src.vision.triage import analyze_media_triage
         import httpx
-        
-        # Download image bytes first
-        # Note: In a real scenario, we might want to pass bytes directly if we have them,
-        # but the tool interface usually passes URLs.
+        import mimetypes
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -217,16 +216,49 @@ def analyze_room_sync(image_url: str) -> str:
                 async with httpx.AsyncClient() as client:
                     resp = await client.get(image_url)
                     resp.raise_for_status()
-                    image_bytes = resp.content
+                    media_bytes = resp.content
+                    headers = resp.headers
                 
-                # 2. Analyze
-                return await analyze_room_structure(image_bytes)
+                # Detect MIME type
+                content_type = headers.get("content-type", "")
+                if not content_type:
+                    # Fallback to extension
+                    content_type, _ = mimetypes.guess_type(image_url)
+                
+                logger.info(f"[Tool] Detected MIME type: {content_type}")
+                
+                # Check for Video
+                if content_type and content_type.startswith("video/"):
+                    # Retrieve metadata (Trim Range)
+                    all_metadata = get_current_media_metadata()
+                    media_meta = None
+                    if all_metadata:
+                         # Try exacting match first
+                         media_meta = all_metadata.get(image_url)
+                         if not media_meta:
+                             # Try matching by filename if signed URL differs
+                             # (Simple heuristic)
+                             for k, v in all_metadata.items():
+                                 if k in image_url or image_url in k:
+                                     media_meta = v
+                                     break
+                    
+                    if media_meta:
+                        logger.info(f"[Tool] Found metadata for video: {media_meta}")
+                    
+                    # Call Video Triage
+                    result = await analyze_media_triage(media_bytes, content_type, metadata=media_meta)
+                    return json.dumps(result, indent=2)
 
-            analysis = loop.run_until_complete(download_and_analyze())
+                # 2. Analyze (Image)
+                analysis = await analyze_room_structure(media_bytes)
+                return analysis.model_dump_json(indent=2)
+
+            import json
+            result_json = loop.run_until_complete(download_and_analyze())
             
-            # Format output as string (or return dict if your agent handles it)
-            logger.info(f"[Tool] ✅ analyze_room success: {analysis.room_type}")
-            return analysis.model_dump_json(indent=2)
+            logger.info(f"[Tool] ✅ analyze_room success")
+            return result_json
             
         finally:
             loop.close()

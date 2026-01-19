@@ -109,7 +109,7 @@ def get_video_metadata(video_path: str) -> VideoMetadata:
         )
 
 
-def optimize_video(input_path: str, max_duration: float = 30.0) -> str:
+def optimize_video(input_path: str, max_duration: float = 30.0, trim_start: Optional[float] = None, trim_end: Optional[float] = None) -> str:
     """
     Optimize video for Gemini analysis using FFmpeg.
     
@@ -117,25 +117,34 @@ def optimize_video(input_path: str, max_duration: float = 30.0) -> str:
     - Reduces resolution to max 720p
     - Reduces framerate to 5fps (sufficient for triage)
     - Maintains audio track for transcription
+    - APPLES TRIM if trim_start/trim_end provided
     
     Args:
         input_path: Path to original video
         max_duration: Maximum allowed duration in seconds
+        trim_start: Start time in seconds
+        trim_end: End time in seconds
         
     Returns:
         Path to optimized video file
         
     Raises:
-        ValueError: If video exceeds max_duration
+        ValueError: If video exceeds max_duration (and no trim applied)
     """
-    logger.info(f"Optimizing video: {input_path}")
+    logger.info(f"Optimizing video: {input_path} (Trim: {trim_start}-{trim_end})")
     
     # Get metadata first
     metadata = get_video_metadata(input_path)
     
+    # Calculate effective duration
+    if trim_start is not None and trim_end is not None:
+        duration = trim_end - trim_start
+    else:
+        duration = metadata.duration_seconds
+
     # Validate duration
-    if metadata.duration_seconds > max_duration:
-        raise ValueError(f"Video duration ({metadata.duration_seconds:.1f}s) exceeds maximum ({max_duration}s)")
+    if duration > max_duration + 1.0: # Add 1s tolerance
+        raise ValueError(f"Video duration ({duration:.1f}s) exceeds maximum ({max_duration}s). Please trim the video.")
     
     # Create temporary output file
     output_fd, output_path = tempfile.mkstemp(suffix='.mp4', prefix='optimized_video_')
@@ -146,9 +155,15 @@ def optimize_video(input_path: str, max_duration: float = 30.0) -> str:
         # -vf scale: resize to max 720p height while preserving aspect ratio
         # -r 5: reduce to 5 fps
         # -c:a copy: keep audio track as-is
-        cmd = [
-            'ffmpeg',
-            '-i', input_path,
+        cmd = ['ffmpeg', '-i', input_path]
+        
+        # Apply Trim
+        if trim_start is not None:
+            cmd.extend(['-ss', str(trim_start)])
+        if trim_end is not None:
+             cmd.extend(['-to', str(trim_end)])
+             
+        cmd.extend([
             '-vf', 'scale=-2:min(ih\\,720)',  # Max height 720px, preserve aspect ratio
             '-r', '5',  # 5 fps
             '-c:v', 'libx264',  # Re-encode video
@@ -158,7 +173,7 @@ def optimize_video(input_path: str, max_duration: float = 30.0) -> str:
             '-b:a', '64k',  # Reduce audio bitrate
             '-y',  # Overwrite output
             output_path
-        ]
+        ])
         
         subprocess.run(cmd, check=True, capture_output=True)
         logger.info(f"Video optimized successfully: {output_path}")
@@ -275,12 +290,13 @@ async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
         }
 
 
-async def analyze_video_triage(video_data: bytes) -> VideoTriageResult:
+async def analyze_video_triage(video_data: bytes, metadata: Optional[Dict[str, Any]] = None) -> VideoTriageResult:
     """
     Main entry point for video triage analysis.
     
     Args:
         video_data: Raw video file bytes
+        metadata: Optional metadata (e.g. trimRange from frontend)
         
     Returns:
         VideoTriageResult with complete analysis
@@ -288,6 +304,19 @@ async def analyze_video_triage(video_data: bytes) -> VideoTriageResult:
     temp_input = None
     temp_optimized = None
     
+    trim_start = None
+    trim_end = None
+    
+    # Extract trim settings if available
+    if metadata and "trimRange" in metadata:
+        try:
+            trim_range = metadata["trimRange"]
+            trim_start = float(trim_range.get("start", 0))
+            trim_end = float(trim_range.get("end", 0))
+            logger.info(f"Received trim metadata: {trim_start}s - {trim_end}s")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid trim metadata: {e}")
+            
     try:
         # Save video to temporary file
         temp_fd, temp_input = tempfile.mkstemp(suffix='.mp4', prefix='input_video_')
@@ -297,11 +326,16 @@ async def analyze_video_triage(video_data: bytes) -> VideoTriageResult:
             f.write(video_data)
         
         # Get metadata before optimization
-        metadata = get_video_metadata(temp_input)
-        logger.info(f"Video metadata: {metadata.duration_seconds}s, {metadata.format}, {metadata.size_bytes} bytes")
+        vid_meta = get_video_metadata(temp_input)
+        logger.info(f"Video metadata: {vid_meta.duration_seconds}s, {vid_meta.format}, {vid_meta.size_bytes} bytes")
         
-        # Optimize video
-        temp_optimized = optimize_video(temp_input, max_duration=30.0)
+        # Optimize video (with optional trim)
+        temp_optimized = optimize_video(
+            temp_input, 
+            max_duration=30.0,
+            trim_start=trim_start,
+            trim_end=trim_end
+        )
         
         # Analyze with Gemini
         analysis = await analyze_video_with_gemini(temp_optimized)
@@ -309,7 +343,7 @@ async def analyze_video_triage(video_data: bytes) -> VideoTriageResult:
         # Build final result
         return VideoTriageResult(
             **analysis,
-            videoMetadata=metadata
+            videoMetadata=vid_meta
         )
         
     finally:
