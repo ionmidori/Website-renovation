@@ -12,10 +12,10 @@ def _init_firebase():
     """Initialize Firebase Admin SDK if not already initialized."""
     if not firebase_admin._apps:
         # Check for service account JSON file or use environment variables
-        if os.path.exists('/app/service-account.json'):
+        if os.path.exists('/secrets/service-account.json'):
             # Production: mounted secret
-            cred = credentials.Certificate('/app/service-account.json')
-            logger.info("Using production service account: /app/service-account.json")
+            cred = credentials.Certificate('/secrets/service-account.json')
+            logger.info("Using production service account: /secrets/service-account.json")
         elif os.path.exists('firebase-service-account.json'):
             # Development: local file (PRIORITY)
             cred = credentials.Certificate('firebase-service-account.json')
@@ -57,6 +57,14 @@ def validate_firebase_config():
     
     missing = [var for var in required_vars if not os.getenv(var)]
     
+    # Cloud Run: If the secret file is mounted, we don't need all env vars
+    if os.path.exists('/secrets/service-account.json'):
+        # Check if we at least have project ID/Bucket (useful but not strictly required for auth)
+        if not os.getenv('FIREBASE_STORAGE_BUCKET'):
+             logger.warning("⚠️ FIREBASE_STORAGE_BUCKET not set. Storage operations might fail if not inferred.")
+        logger.info("✅ Firebase configuration validated (using mounted secret: /secrets/service-account.json)")
+        return
+
     if missing:
         raise RuntimeError(
             f"❌ Missing Firebase configuration: {', '.join(missing)}\n"

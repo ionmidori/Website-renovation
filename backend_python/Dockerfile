@@ -7,19 +7,19 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
 
-# Copy dependency files first (for layer caching)
-COPY pyproject.toml uv.lock ./
-
-# Install dependencies
-# --frozen: strict lockfile usage
-# --no-dev: exclude development dependencies
-RUN uv sync --frozen --no-dev
-
-# Copy the rest of the application
+# Copy ALL application code first (before creating .venv)
 COPY . .
+
+# Install dependencies (creates .venv with all packages including uvicorn)
+RUN uv sync
 
 # Place the virtual environment in the PATH
 ENV PATH="/app/.venv/bin:$PATH"
@@ -28,4 +28,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8080
 
 # Run the application using uvicorn directly (via the venv)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/app/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

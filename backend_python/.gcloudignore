@@ -1,0 +1,32 @@
+# This file specifies files that are NOT uploaded to Cloud Build.
+# gcloud builds submit uses this file (not .dockerignore)
+
+# Exclude local virtual environments (CRITICAL - this was causing the bug!)
+.venv/
+venv/
+
+# Exclude python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Exclude env files (secrets should be injected at runtime)
+.env
+.env.*
+
+# Exclude git
+.git
+.gitignore
+
+# Exclude IDE settings
+.vscode/
+.idea/
+
+# Exclude tests (not needed in production)
+tests/
