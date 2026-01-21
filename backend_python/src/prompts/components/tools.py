@@ -166,5 +166,49 @@ Example:
 </rules>
 </tool>"""
 
+TOOL_ANALYZE_ROOM = """<tool name="analyze_room">
+<trigger>User uploads an image OR wants "technical analysis", "room dimensions", "list of features"</trigger>
+
+<goal>
+Extract technical data from the image to populate the "Technical Surveyor" context.
+</goal>
+
+<parameters>
+<param name="image_url" required="true">
+The URL of the user's uploaded image.
+</param>
+</parameters>
+
+<workflow>
+1. DETECT image upload.
+2. IMMEDIATELY call `analyze_room(image_url="...")`. Do not ask for permission.
+3. WAIT for the tool result (JSON with room details).
+4. SYNTHESIZE the result into a friendly confirmation:
+   "Ho analizzato la foto! Vedo un [room_type] di circa [mq]mq con [details]. Confermi?"
+</workflow>
+</tool>"""
+
+TOOL_SAVE_QUOTE = """<tool name="save_quote">
+<trigger>When surveyor interview is complete ("Technical Surveyor" mode)</trigger>
+<goal>Save the structured draft quote to the database.</goal>
+<parameters>
+<param name="user_id" required="true">Current user ID.</param>
+<param name="ai_data" required="true">
+JSON object containing the 4 pillars gathered:
+{ "vision": "...", "scope": "...", "metrics": "...", "contact": "..." }
+</param>
+</parameters>
+</tool>"""
+
+TOOL_PLAN_RENOVATION = """<tool name="plan_renovation">
+<trigger>User asks for a "plan", "layout proposal", or "architectural advice" WITHOUT a render request.</trigger>
+<goal>Generate a text-based architectural plan/strategy.</goal>
+<parameters>
+<param name="image_url" conditional="true">Image URL if available.</param>
+<param name="style" required="true">Desired style.</param>
+<param name="keepElements" type="array">Elements to preserve.</param>
+</parameters>
+</tool>"""
+
 # Combined export
-TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}"
+TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}\n\n{TOOL_ANALYZE_ROOM}\n\n{TOOL_SAVE_QUOTE}\n\n{TOOL_PLAN_RENOVATION}"

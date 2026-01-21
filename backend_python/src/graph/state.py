@@ -6,4 +6,10 @@ class AgentState(TypedDict):
     """State for the conversational AI agent."""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     session_id: str
-    user_id: str  # ✅ Added for quota tracking
+    user_id: str
+    
+    # 🧠 Deterministic State Tracking
+    phase: str          # "TRIAGE", "DESIGN", "QUOTE", "COMPLETE"
+    active_image_url: str  # URL being analyzed/modified
+    generated_render_url: str # Last render URL (to prevent duplicates)
+    quote_data: dict    # Partial quote data collected

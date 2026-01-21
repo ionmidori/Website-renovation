@@ -73,8 +73,8 @@ def save_quote(
 @tool
 def analyze_room(image_url: str) -> str:
     """
+    CRITICAL: You MUST call this tool IMMEDIATELY when the user uploads an image, even if they say nothing.
     Analyze room structure, dimensions, and features from an image.
-    Use this when the user asks technical questions about the room (e.g. "How big is it?", "List windows").
     """
     return analyze_room_sync(image_url)
 
@@ -135,20 +135,29 @@ def create_agent_graph():
         
         # Traverse messages backwards to find most recent image(s)
         for msg in reversed(messages):
-            # Case 1: Legacy Text Marker
+            # Case 1: Text Content (String)
             if hasattr(msg, 'content') and isinstance(msg.content, str):
-                match = re.search(r'\[Immagine allegata: (https?://[^\]]+)\]', msg.content)
-                if match:
-                    found_images.append(match.group(1))
+                # Regex for both Image and Video markers
+                # Matches: [Immagine allegata: URL] or [Video allegato: URL]
+                matches = re.findall(r'\[(?:Immagine|Video) allegat[oa]: (https?://[^\]]+)\]', msg.content)
+                for url in matches:
+                    found_images.append(url)
             
             # Case 2: Multimodal Content (List)
             elif hasattr(msg, 'content') and isinstance(msg.content, list):
                 for part in msg.content:
+                    # Sub-case A: Native Image Block
                     if isinstance(part, dict) and part.get("type") == "image_url":
                         img_field = part.get("image_url")
-                        # Handle {"url": "..."} or string
                         url = img_field.get("url") if isinstance(img_field, dict) else img_field
                         if url:
+                            found_images.append(url)
+                    
+                    # Sub-case B: Text Block containing markers (common for Videos)
+                    elif isinstance(part, dict) and part.get("type") == "text":
+                        text = part.get("text", "")
+                        matches = re.findall(r'\[(?:Immagine|Video) allegat[oa]: (https?://[^\]]+)\]', text)
+                        for url in matches:
                             found_images.append(url)
             
             if found_images:
@@ -188,10 +197,83 @@ If the user specifically asks for another image from the list, use that URL inst
                 for msg in messages
             ]
         
-        # Invoke LLM with tools
-        response = llm_with_tools.invoke(messages)
+        # 🐛 DEBUG PROMPT SCRIPT
+        with open("debug_prompt.txt", "w", encoding="utf-8") as f:
+            f.write(active_system_instruction)
         
-        return {"messages": [response]}
+        # Invoke LLM with tools
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        # 🛡️ DETERMINISTIC CONTROL LOGIC (The "Python Brain")
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+        # 1. Determine Current Phase & Allowable Tools
+        current_phase = state.get("phase", "TRIAGE") # Default
+        allowed_tools = tools[:] # Default: all tools
+        
+        # Check for image upload in THIS turn
+        latest_msg = messages[-1]
+        is_new_image_upload = False
+        if isinstance(latest_msg.content, str):
+            if "[Immagine allegata:" in latest_msg.content:
+                is_new_image_upload = True
+        elif isinstance(latest_msg.content, list):
+             for part in latest_msg.content:
+                if isinstance(part, dict) and part.get("type") == "image_url":
+                    is_new_image_upload = True
+                    break
+                elif isinstance(part, dict) and part.get("type") == "text" and "[Immagine allegata:" in part.get("text", ""):
+                    is_new_image_upload = True
+                    break
+
+        # 2. Apply Strict Rules based on events
+        forced_tool = None
+        
+        if is_new_image_upload:
+            logger.info("⚡ RULE: New image -> Phase TRIAGE -> Force analyze_room")
+            current_phase = "TRIAGE"
+            forced_tool = "analyze_room"
+            
+        elif state.get("has_analyzed_room"):
+             # If analyzed, move to design/survey
+             if current_phase == "TRIAGE":
+                 current_phase = "DESIGN"
+        
+        # 3. Filter Tools to Prevent Loops/Hallucinations
+        if current_phase == "TRIAGE" and not forced_tool:
+             # If in triage but no forced tool (e.g. follow up chat), restrict to basic tools
+             # logic could be expanded here
+             pass
+
+        # 4. Invoke LLM
+        if forced_tool:
+            logger.info(f"⚡ FORCE MODE: {forced_tool}")
+            response = llm.bind_tools(tools, tool_choice=forced_tool).invoke(messages)
+        else:
+            # Bind only allowed tools (future: strictly filter `allowed_tools` list)
+            # For now, binding all is safe as long as key triggers are handled above
+            response = llm_with_tools.invoke(messages)
+        
+        logger.info(f"🐛 RAW LLM RESPONSE: {response}")
+        
+        # 5. Update State (Post-Invoke)
+        # Check if analyze_room was just called
+        did_analyze = False
+        if hasattr(response, 'tool_calls') and response.tool_calls:
+            for tc in response.tool_calls:
+                if tc.get('name') == 'analyze_room':
+                    did_analyze = True
+                    break
+        
+        # Inherit previous state or set true if just did it
+        is_analyzed = state.get("has_analyzed_room", False) or did_analyze
+
+        return {
+            "messages": [response],
+            "phase": current_phase,
+            "active_image_url": last_image_url if found_images else state.get("active_image_url"),
+            "has_uploaded_image": bool(found_images),
+            "has_analyzed_room": is_analyzed
+        }
     
     # Build graph
     workflow = StateGraph(AgentState)

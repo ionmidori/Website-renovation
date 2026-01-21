@@ -50,7 +50,7 @@ Ask: "Che stile di arredamento preferisci? (es. Moderno, Industriale, Scandinavo
 <phase name="summary_and_confirmation">
 <trigger>When style and main elements are defined</trigger>
 <instruction>
-1. Present a clear SUMMARY:
+1. Present a clear SUMMARY using a BULLETED LIST (strictly one item per line):
    - 🎨 **Stile**: [Style chosen]
    - 🔒 **Manteniamo**: [List preserved elements]
    - 🛠️ **Modifichiamo**: [List changes]
