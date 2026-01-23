@@ -71,9 +71,47 @@ const ChatMessagesComponent = ({
                     <div className="bg-luxury-bg/80 border border-luxury-gold/10 p-4 rounded-2xl rounded-tl-none">
                         <div className="flex items-center gap-3">
                             <div className="flex gap-1">
-                                <span className="w-2 h-2 bg-luxury-teal rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                <span className="w-2 h-2 bg-luxury-teal rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                <span className="w-2 h-2 bg-luxury-teal rounded-full animate-bounce" />
+                                <motion.span
+                                    className="w-2 h-2 bg-luxury-teal rounded-full"
+                                    animate={{
+                                        y: [0, -8, 0],
+                                        scale: [1, 1.1, 1]
+                                    }}
+                                    transition={{
+                                        duration: 1.2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        times: [0, 0.5, 1]
+                                    }}
+                                />
+                                <motion.span
+                                    className="w-2 h-2 bg-luxury-teal rounded-full"
+                                    animate={{
+                                        y: [0, -8, 0],
+                                        scale: [1, 1.1, 1]
+                                    }}
+                                    transition={{
+                                        duration: 1.2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        times: [0, 0.5, 1],
+                                        delay: 0.15
+                                    }}
+                                />
+                                <motion.span
+                                    className="w-2 h-2 bg-luxury-teal rounded-full"
+                                    animate={{
+                                        y: [0, -8, 0],
+                                        scale: [1, 1.1, 1]
+                                    }}
+                                    transition={{
+                                        duration: 1.2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        times: [0, 0.5, 1],
+                                        delay: 0.3
+                                    }}
+                                />
                             </div>
                             <motion.span
                                 key={typingMessage}

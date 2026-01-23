@@ -213,7 +213,8 @@ export default function ChatWidget() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[90] bg-[#0f172a] touch-none md:bg-black/40 md:backdrop-blur-sm transition-all duration-300"
+                            transition={{ type: "spring", stiffness: 400, damping: 40 }}
+                            className="fixed inset-0 z-[90] bg-[#0f172a]/80 touch-none md:bg-black/40 backdrop-blur-md md:backdrop-blur-xl backdrop-saturate-150"
                         />
 
                         {/* Chat Container */}
@@ -222,10 +223,18 @@ export default function ChatWidget() {
                             initial={{ opacity: 0, y: 50, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            drag={isMobile ? "y" : false}
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={{ top: 0, bottom: 0.5 }}
+                            onDragEnd={(_, info) => {
+                                if (isMobile && (info.offset.y > 100 || info.velocity.y > 500)) {
+                                    setIsOpen(false);
+                                }
+                            }}
                             ref={chatContainerRef}
                             style={{ height: isMobile ? '100dvh' : undefined, top: isMobile ? 0 : undefined }}
-                            className="fixed inset-0 md:inset-auto md:bottom-4 md:right-6 w-full md:w-[450px] md:h-[850px] md:max-h-[calc(100vh-40px)] bg-luxury-bg/95 backdrop-blur-xl border-none md:border border-luxury-gold/20 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none touch-none z-[100] origin-bottom-right"
+                            className="fixed inset-0 md:inset-auto md:bottom-4 md:right-6 w-full md:w-[450px] md:h-[850px] md:max-h-[calc(100vh-40px)] bg-luxury-bg/95 backdrop-blur-xl border-none md:border border-luxury-gold/20 rounded-none md:rounded-3xl shadow-none md:shadow-2xl flex flex-col overflow-hidden overscroll-none z-[100] origin-bottom-right"
                         >
                             <ChatHeader onMinimize={() => setIsOpen(false)} />
 

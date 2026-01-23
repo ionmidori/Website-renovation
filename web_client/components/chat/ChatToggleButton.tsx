@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WelcomeBadge } from './WelcomeBadge';
+import { triggerHaptic } from '@/lib/haptics';
 
 interface ChatToggleButtonProps {
     isOpen: boolean;
@@ -33,6 +34,7 @@ export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
 
     const handleClick = (e: React.MouseEvent) => {
         if (!isDraggingRef.current) {
+            triggerHaptic();
             onClick();
         } else {
             e.preventDefault();

@@ -9,6 +9,26 @@ jest.mock('lucide-react', () => ({
     Send: () => <div data-testid="icon-send" />,
     Paperclip: () => <div data-testid="icon-paperclip" />,
     Loader2: () => <div data-testid="icon-loader" />,
+    FileVideo: () => <div data-testid="icon-file-video" />,
+    X: () => <div data-testid="icon-x" />,
+    Scissors: () => <div data-testid="icon-scissors" />,
+}));
+
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+    motion: {
+        button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    },
+}));
+
+// Mock haptics
+jest.mock('@/lib/haptics', () => ({
+    triggerHaptic: jest.fn(),
+}));
+
+// Mock VideoTrimmer
+jest.mock('@/components/chat/VideoTrimmer', () => ({
+    VideoTrimmer: () => null,
 }));
 
 describe('ChatInput', () => {
@@ -23,7 +43,10 @@ describe('ChatInput', () => {
         onFileSelect: jest.fn(),
         onScrollToBottom: jest.fn(),
         isLoading: false,
-        selectedImages: [],
+        isGlobalUploading: false,
+        mediaItems: [],
+        removeMedia: jest.fn(),
+        updateMediaItem: jest.fn(),
         fileInputRef: mockFileInputRef,
     };
 
@@ -109,7 +132,7 @@ describe('ChatInput', () => {
 
         const fileInput = container.querySelector('input[type="file"]');
         expect(fileInput).toBeInTheDocument();
-        expect(fileInput).toHaveAttribute('accept', 'image/*');
+        expect(fileInput).toHaveAttribute('accept', 'image/*,video/mp4,video/webm,video/quicktime,video/x-m4v');
     });
 
     it('should trigger file input click when attachment button clicked', () => {

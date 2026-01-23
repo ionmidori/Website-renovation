@@ -1,9 +1,11 @@
 import React, { RefObject, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Send, Paperclip, Loader2, FileVideo, X, Scissors } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaUploadState } from '@/hooks/useMediaUpload';
 import { VideoTrimmer } from '@/components/chat/VideoTrimmer';
+import { triggerHaptic } from '@/lib/haptics';
 
 interface ChatInputProps {
     inputValue: string;
@@ -67,15 +69,18 @@ export function ChatInput({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="text-luxury-text/60 hover:text-luxury-gold shrink-0 relative hover:bg-luxury-gold/5"
+                    className="text-luxury-text/60 hover:text-luxury-gold shrink-0 relative hover:bg-luxury-gold/5 transition-all"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading || isGlobalUploading || authLoading}
+                    asChild
                 >
-                    {isGlobalUploading ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-luxury-teal" />
-                    ) : (
-                        <Paperclip className="w-5 h-5" />
-                    )}
+                    <motion.button whileTap={{ scale: 0.9 }}>
+                        {isGlobalUploading ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-luxury-teal" />
+                        ) : (
+                            <Paperclip className="w-5 h-5" />
+                        )}
+                    </motion.button>
                 </Button>
 
                 <input
@@ -200,7 +205,10 @@ export function ChatInput({
                 )}
 
                 <Button
-                    onClick={() => onSubmit()}
+                    onClick={() => {
+                        triggerHaptic();
+                        onSubmit();
+                    }}
                     disabled={isSendDisabled}
                     className={cn(
                         "rounded-xl transition-all duration-300 shrink-0 mb-1",
@@ -209,8 +217,11 @@ export function ChatInput({
                             : "bg-luxury-gold/10 text-luxury-text/20"
                     )}
                     size="icon"
+                    asChild
                 >
-                    <Send className="w-5 h-5" />
+                    <motion.button whileTap={{ scale: isSendDisabled ? 1 : 0.9 }}>
+                        <Send className="w-5 h-5" />
+                    </motion.button>
                 </Button>
             </div>
         </div>

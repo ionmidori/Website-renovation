@@ -68,8 +68,14 @@ export const MessageItem = React.memo<MessageItemProps>(({ message, index, onIma
     return (
         <motion.div
             key={message.id || index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 35,
+                delay: index * 0.05  // Stagger effect
+            }}
             className={cn(
                 "flex gap-3 max-w-[90%]",
                 message.role === 'user' ? "ml-auto flex-row-reverse" : ""
