@@ -59,9 +59,7 @@ async def startup_event():
 from src.api.upload import router as upload_router
 app.include_router(upload_router)
 
-# Register magic link router
-from src.api.magic_link import router as magic_link_router
-app.include_router(magic_link_router)
+
 
 # Register passkey router
 from src.api.passkey import router as passkey_router
