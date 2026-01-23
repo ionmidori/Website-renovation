@@ -13,12 +13,8 @@ from src.auth.jwt_handler import verify_token
 
 logger = logging.getLogger(__name__)
 
-# Initialize Gemini File API
+# Gemini initialization is handled lazily in the route handler to prevent import-time side effects
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY not found in environment variables")
-
-genai.configure(api_key=GEMINI_API_KEY)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
@@ -51,6 +47,11 @@ async def upload_video(
         HTTPException: If upload fails or file type is invalid
     """
     try:
+        # Lazy config
+        if not GEMINI_API_KEY:
+             raise RuntimeError("GEMINI_API_KEY not found")
+        genai.configure(api_key=GEMINI_API_KEY)
+        
         # Validate file type
         if not file.content_type or not file.content_type.startswith('video/'):
             raise HTTPException(
