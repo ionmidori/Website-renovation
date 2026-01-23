@@ -46,14 +46,22 @@ app = FastAPI(title="SYD Brain 🧠", version="0.3.0")
 
 @app.on_event("startup")
 async def startup_event():
-    """Validate Firebase configuration on startup."""
+    """Non-blocking startup - validation happens after server binds to port."""
+    logger.info("🚀 Starting SYD Brain API...")
+    # Defer Firebase validation to avoid blocking port binding
+    import asyncio
+    asyncio.create_task(validate_firebase_async())
+
+async def validate_firebase_async():
+    """Validate Firebase config asynchronously after startup."""
+    await asyncio.sleep(1)  # Let server bind to port first
     from src.db.firebase_client import validate_firebase_config
     try:
         validate_firebase_config()
+        logger.info("✅ Firebase configuration validated")
     except RuntimeError as e:
-        import sys
-        print(f"\n{'='*60}\n{e}\n{'='*60}\n")
-        sys.exit(1)
+        logger.error(f"❌ Firebase validation failed: {e}")
+        logger.error("Server will continue but Firebase features may not work")
 
 # Register upload router
 from src.api.upload import router as upload_router
