@@ -20,11 +20,13 @@ logger = logging.getLogger(__name__)
 QUOTA_LIMITS_ANONYMOUS = {
     "generate_render": 1,
     "get_market_prices": 2,
+    "upload_video": 1,  # Expensive operation
 }
 
 QUOTA_LIMITS_AUTHENTICATED = {
     "generate_render": 3,
     "get_market_prices": 5,
+    "upload_video": 1,  # Expensive operation
 }
 
 QUOTA_WINDOW_HOURS = 24

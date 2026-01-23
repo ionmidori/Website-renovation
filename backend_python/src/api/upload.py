@@ -45,8 +45,23 @@ async def upload_video(
         
     Raises:
         HTTPException: If upload fails or file type is invalid
-    """
     try:
+        # 🛡️ RATE LIMITING CHECK
+        user_id = user_payload.get("uid", "unknown")
+        # Use simple IP-based ID if unknown (fallback handled by quota module logic if we pass it)
+        # But here we probably want strictly the UID or a session ID if available.
+        # user_payload comes from verify_token, so it should be a real user or at least a known session.
+        
+        from src.tools.quota import check_quota, increment_quota
+        allowed, remaining, reset_at = check_quota(user_id, "upload_video")
+        
+        if not allowed:
+            reset_time = reset_at.strftime("%H:%M")
+            raise HTTPException(
+                status_code=429,
+                detail=f"⏳ Upload limit reached (1 video/day). Resets at {reset_time}."
+            )
+
         # Lazy config
         if not GEMINI_API_KEY:
              raise RuntimeError("GEMINI_API_KEY not found")
@@ -59,8 +74,6 @@ async def upload_video(
                 detail=f"Invalid file type: {file.content_type}. Only video files are accepted."
             )
         
-        # Get user ID for logging
-        user_id = user_payload.get("uid", "unknown")
         logger.info(f"📹 User {user_id} uploading video: {file.filename} ({file.content_type})")
         
         # Read file content
@@ -103,6 +116,9 @@ async def upload_video(
                 status_code=500,
                 detail=f"File processing failed. State: {uploaded_file.state.name}"
             )
+        
+        # ✅ INCREMENT QUOTA (Only on success)
+        increment_quota(user_id, "upload_video")
         
         logger.info(f"🎬 Video ready for inference: {uploaded_file.uri}")
         
