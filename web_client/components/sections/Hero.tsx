@@ -1,15 +1,81 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useRef, useState, useEffect } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, PlayCircle, Star, ShieldCheck, Zap, Palette, FileText } from 'lucide-react';
 import { SlideShowModal } from './SlideShowModal';
 
-export function Hero() {
-    // Track video loops
+/**
+ * Internal Hero Video Component
+ * Handles auto-restart on mobile when entering viewport
+ */
+function HeroVideo({ className = '', isMobile = false }: { className?: string; isMobile?: boolean }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
     const loopCountRef = useRef(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const inView = useInView(containerRef, { margin: "-20% 0px -20% 0px" });
+
+    // Auto-restart video when entering viewport on mobile
+    useEffect(() => {
+        if (isMobile && inView && videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(() => {
+                // Autoplay might be blocked, ignore
+            });
+        }
+    }, [isMobile, inView]);
+
+    return (
+        <div
+            ref={containerRef}
+            className={`relative rounded-2xl overflow-hidden border-2 border-luxury-gold shadow-[0_0_40px_rgba(42,157,143,0.3)] group cursor-pointer bg-slate-950 ${className}`}
+            onClick={() => {
+                const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
+                    detail: {}
+                });
+                window.dispatchEvent(event);
+            }}
+        >
+            <div className="aspect-[4/3] md:aspect-video relative">
+                <video
+                    ref={videoRef}
+                    src="/videos/ai-interior-design.mp4"
+                    autoPlay
+                    muted
+                    playsInline
+                    onEnded={(e) => {
+                        if (loopCountRef.current < 1) {
+                            e.currentTarget.play();
+                            loopCountRef.current++;
+                        }
+                    }}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-luxury-bg/40 via-transparent to-transparent pointer-events-none" />
+
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-luxury-bg/20 backdrop-blur-[2px]">
+                    <div className="w-20 h-20 rounded-full bg-luxury-teal/20 backdrop-blur-xl flex items-center justify-center border border-luxury-teal/50 shadow-2xl">
+                        <Zap className="w-8 h-8 text-luxury-text fill-luxury-text drop-shadow-[0_0_10px_rgba(42,157,143,0.8)]" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function Hero() {
     const [isSlideShowOpen, setIsSlideShowOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Mobile detection
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-luxury-bg">
@@ -48,6 +114,11 @@ export function Hero() {
                     <p className="text-lg md:text-xl text-luxury-text/80 mb-10 max-w-xl leading-relaxed font-light">
                         Dall'idea alla realtà in pochi click. Ottieni preventivi istantanei, visualizzazioni 3D fotorealistiche e un team di esperti pronto a realizzare il tuo progetto.
                     </p>
+
+                    {/* Mobile Video - Between Text and Buttons */}
+                    <div className="md:hidden mb-8">
+                        <HeroVideo isMobile={isMobile} />
+                    </div>
 
                     <div className="flex flex-col gap-6 mb-12">
                         {/* Primary CTA - Quote */}
@@ -120,50 +191,14 @@ export function Hero() {
                     </div>
                 </motion.div>
 
-                {/* Media Content - Framed Render */}
+                {/* Desktop Video - Right Column */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative"
+                    className="relative hidden md:block"
                 >
-                    {/* Media Container */}
-                    <div
-                        className="relative rounded-2xl overflow-hidden border-2 border-luxury-gold shadow-[0_0_40px_rgba(42,157,143,0.3)] group cursor-pointer bg-slate-950"
-                        onClick={() => {
-                            const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
-                                detail: {}
-                            });
-                            window.dispatchEvent(event);
-                        }}
-                    >
-                        {/* Aspect Ratio Wrapper */}
-                        <div className="aspect-[4/3] md:aspect-video relative">
-                            <video
-                                src="/videos/ai-interior-design.mp4"
-                                autoPlay
-                                muted
-                                playsInline
-                                onEnded={(e) => {
-                                    if (loopCountRef.current < 1) {
-                                        e.currentTarget.play();
-                                        loopCountRef.current++;
-                                    }
-                                }}
-                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                            />
-
-                            {/* Overlay Gradient for consistency */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-luxury-bg/40 via-transparent to-transparent pointer-events-none" />
-
-                            {/* Play overlay on hover */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-luxury-bg/20 backdrop-blur-[2px]">
-                                <div className="w-20 h-20 rounded-full bg-luxury-teal/20 backdrop-blur-xl flex items-center justify-center border border-luxury-teal/50 shadow-2xl">
-                                    <Zap className="w-8 h-8 text-luxury-text fill-luxury-text drop-shadow-[0_0_10px_rgba(42,157,143,0.8)]" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <HeroVideo />
                 </motion.div>
             </div>
 
