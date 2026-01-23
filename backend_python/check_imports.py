@@ -14,7 +14,8 @@ required_packages = [
     "google.genai",
     "langchain_core",
     "langgraph",
-    "dotenv"
+    "dotenv",
+    "multipart"  # Required by FastAPI for UploadFile
 ]
 
 failed = []
