@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const testimonials = [
     {
@@ -37,6 +39,17 @@ const testimonials = [
 ];
 
 export function Testimonials() {
+    const [hoveredTestimonial, setHoveredTestimonial] = useState<number | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Mobile detection
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <section id="testimonials" className="py-24 relative bg-luxury-bg overflow-hidden">
 
@@ -77,11 +90,22 @@ export function Testimonials() {
                             key={t.id}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: true, margin: "-20% 0px -20% 0px" }}
                             transition={{ delay: idx * 0.1 }}
-                            className="relative p-8 rounded-3xl bg-white/5 border border-luxury-gold/10 shadow-xl group hover:border-luxury-gold/30 transition-colors backdrop-blur-sm"
+                            whileHover={{ scale: 1.02 }}
+                            onViewportEnter={() => isMobile && setHoveredTestimonial(t.id)}
+                            onViewportLeave={() => isMobile && setHoveredTestimonial(null)}
+                            onMouseEnter={() => !isMobile && setHoveredTestimonial(t.id)}
+                            onMouseLeave={() => !isMobile && setHoveredTestimonial(null)}
+                            className={cn(
+                                "relative p-8 rounded-3xl bg-white/5 border border-luxury-gold/10 shadow-xl group hover:border-luxury-gold/30 transition-all backdrop-blur-sm hover:scale-[1.02]",
+                                hoveredTestimonial === t.id && "border-luxury-gold/30 scale-[1.02]"
+                            )}
                         >
-                            <Quote className="absolute top-8 right-8 w-12 h-12 text-luxury-gold/10 group-hover:text-luxury-gold/20 transition-colors" />
+                            <Quote className={cn(
+                                "absolute top-8 right-8 w-12 h-12 text-luxury-gold/10 group-hover:text-luxury-gold/20 transition-colors",
+                                hoveredTestimonial === t.id && "text-luxury-gold/20"
+                            )} />
 
                             <div className="relative z-10">
                                 <div className="flex items-center gap-4 mb-6">

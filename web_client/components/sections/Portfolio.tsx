@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,15 @@ const categories = ['Tutti', 'Soggiorno', 'Cucina', 'Bagno', 'Esterni'];
 export function Portfolio() {
     const [activeCategory, setActiveCategory] = useState('Tutti');
     const [hoveredProject, setHoveredProject] = useState<number | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Mobile detection
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const filteredProjects = activeCategory === 'Tutti'
         ? projects
@@ -120,35 +129,59 @@ export function Portfolio() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.3 }}
-                                className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer bg-slate-950 border border-luxury-gold/10 hover:border-luxury-gold/50 transition-colors"
-                                onMouseEnter={() => setHoveredProject(project.id)}
-                                onMouseLeave={() => setHoveredProject(null)}
+                                viewport={{ margin: "-20% 0px -20% 0px" }}
+                                onViewportEnter={() => isMobile && setHoveredProject(project.id)}
+                                onViewportLeave={() => isMobile && setHoveredProject(null)}
+                                className={cn(
+                                    "relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer bg-slate-950 border border-luxury-gold/10 hover:border-luxury-gold/50 transition-colors",
+                                    hoveredProject === project.id && "border-luxury-gold/50"
+                                )}
+                                onMouseEnter={() => !isMobile && setHoveredProject(project.id)}
+                                onMouseLeave={() => !isMobile && setHoveredProject(null)}
                             >
                                 <Image
                                     src={project.image}
                                     alt={project.title}
                                     fill
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className={cn(
+                                        "object-cover transition-transform duration-700 group-hover:scale-110",
+                                        hoveredProject === project.id && "scale-110"
+                                    )}
                                 />
 
                                 {/* Overlay Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-luxury-bg via-luxury-bg/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                                <div className={cn(
+                                    "absolute inset-0 bg-gradient-to-t from-luxury-bg via-luxury-bg/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500",
+                                    hoveredProject === project.id && "opacity-80"
+                                )} />
 
                                 {/* Content */}
-                                <div className="absolute inset-0 p-6 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                <div className={cn(
+                                    "absolute inset-0 p-6 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-transform duration-300",
+                                    hoveredProject === project.id && "translate-y-0"
+                                )}>
                                     <div className="relative z-20">
-                                        <p className="text-white text-sm font-medium mb-2 transform -translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75">
+                                        <p className={cn(
+                                            "text-white text-sm font-medium mb-2 transform -translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75",
+                                            hoveredProject === project.id && "translate-y-0 opacity-100"
+                                        )}>
                                             {project.category}
                                         </p>
 
                                         <h3 className="text-2xl font-bold text-luxury-text mb-2">{project.title}</h3>
 
-                                        <p className="text-luxury-text/80 text-sm line-clamp-2 max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 delay-100 mb-4 font-light">
+                                        <p className={cn(
+                                            "text-luxury-text/80 text-sm line-clamp-2 max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 delay-100 mb-4 font-light",
+                                            hoveredProject === project.id && "max-h-20 opacity-100"
+                                        )}>
                                             {project.description}
                                         </p>
 
-                                        <div className="flex gap-4 border-t border-luxury-text/10 pt-4 mt-2 max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 delay-150">
+                                        <div className={cn(
+                                            "flex gap-4 border-t border-luxury-text/10 pt-4 mt-2 max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-all duration-300 delay-150",
+                                            hoveredProject === project.id && "max-h-20 opacity-100"
+                                        )}>
                                             <div>
                                                 <p className="text-[10px] text-luxury-gold/80 uppercase tracking-wider">Area</p>
                                                 <p className="text-xs text-luxury-text font-medium">{project.stats.area}</p>
@@ -166,7 +199,10 @@ export function Portfolio() {
                                 </div>
 
                                 {/* Corner Button */}
-                                <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200">
+                                <div className={cn(
+                                    "absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200",
+                                    hoveredProject === project.id && "opacity-100"
+                                )}>
                                     <div className="w-10 h-10 rounded-full bg-luxury-teal/20 backdrop-blur-md flex items-center justify-center border border-luxury-teal/50 text-luxury-text hover:bg-luxury-teal hover:text-white transition-colors">
                                         <ArrowUpRight className="w-5 h-5" />
                                     </div>

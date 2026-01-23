@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Wand2,
@@ -60,6 +60,16 @@ const services = [
 
 export function Services() {
     const [authDialogOpen, setAuthDialogOpen] = useState(false);
+    const [hoveredService, setHoveredService] = useState<number | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Mobile detection
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <section id="services" className="py-20 relative bg-luxury-bg">
@@ -104,6 +114,8 @@ export function Services() {
                             transition={{ delay: index * 0.1 }}
                             whileHover={{ y: -5 }}
                             whileTap={{ scale: 0.98 }}
+                            onViewportEnter={() => isMobile && setHoveredService(index)}
+                            onViewportLeave={() => isMobile && setHoveredService(null)}
                             onClick={() => {
                                 if (service.title === 'Gestione Dashboard') {
                                     setAuthDialogOpen(true);
@@ -112,30 +124,41 @@ export function Services() {
                                     window.dispatchEvent(event);
                                 }
                             }}
+                            onMouseEnter={() => !isMobile && setHoveredService(index)}
+                            onMouseLeave={() => !isMobile && setHoveredService(null)}
                             className={cn(
-                                "group relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 active:border-luxury-gold/50 transition-all duration-300 backdrop-blur-sm",
-                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20 active:shadow-md active:bg-white/10"
+                                "relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 active:border-luxury-gold/50 transition-all duration-300 backdrop-blur-sm",
+                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20 active:shadow-md active:bg-white/10",
+                                hoveredService === index && "border-luxury-gold/30 shadow-lg shadow-luxury-teal/20"
                             )}
                         >
                             {/* Card Gradient Background on Hover/Active */}
                             <div className={cn(
                                 "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300",
-                                service.gradient
+                                service.gradient,
+                                hoveredService === index && "opacity-10"
                             )} />
 
                             <div className="relative z-10">
                                 <div className={cn(
                                     "w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-luxury-bg/50 border border-luxury-gold/10 group-hover:scale-110 transition-transform duration-300",
-                                    service.iconColor
+                                    service.iconColor,
+                                    hoveredService === index && "scale-110"
                                 )}>
                                     <service.icon className="w-6 h-6" />
                                 </div>
 
-                                <h3 className="text-xl font-semibold text-luxury-text mb-3 group-hover:text-luxury-gold transition-colors">
+                                <h3 className={cn(
+                                    "text-xl font-semibold text-luxury-text mb-3 group-hover:text-luxury-gold transition-colors",
+                                    hoveredService === index && "text-luxury-gold"
+                                )}>
                                     {service.title}
                                 </h3>
 
-                                <p className="text-luxury-text/60 text-sm leading-relaxed group-hover:text-luxury-text/80 transition-colors font-light">
+                                <p className={cn(
+                                    "text-luxury-text/60 text-sm leading-relaxed group-hover:text-luxury-text/80 transition-colors font-light",
+                                    hoveredService === index && "text-luxury-text/80"
+                                )}>
                                     {service.description}
                                 </p>
                             </div>
