@@ -129,7 +129,7 @@ export function Portfolio() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.3 }}
-                                viewport={{ margin: "-20% 0px -20% 0px" }}
+                                viewport={{ margin: "-45% 0px -45% 0px" }}
                                 onViewportEnter={() => isMobile && setHoveredProject(project.id)}
                                 onViewportLeave={() => isMobile && setHoveredProject(null)}
                                 className={cn(

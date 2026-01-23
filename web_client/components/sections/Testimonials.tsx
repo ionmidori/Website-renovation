@@ -90,7 +90,7 @@ export function Testimonials() {
                             key={t.id}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-20% 0px -20% 0px" }}
+                            viewport={{ once: true, margin: "-45% 0px -45% 0px" }}
                             transition={{ delay: idx * 0.1 }}
                             whileHover={{ scale: 1.02 }}
                             onViewportEnter={() => isMobile && setHoveredTestimonial(t.id)}
