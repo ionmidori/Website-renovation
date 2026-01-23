@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
 
 interface WelcomeBadgeProps {
     isOpen: boolean;
@@ -72,16 +71,6 @@ export function WelcomeBadge({ isOpen, onOpenChat }: WelcomeBadgeProps) {
                         className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 backdrop-blur-md rotate-45 border-r-2 border-t-2 border-white/40"
                         style={{ background: 'rgba(255,255,255,0.2)' }}
                     ></div>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowWelcomeBadge(false);
-                        }}
-                        aria-label="Chiudi"
-                        className="absolute -top-2 -right-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full p-0.5 transition-colors"
-                    >
-                        <X className="w-3 h-3" />
-                    </button>
                 </motion.div>
             )}
         </AnimatePresence>

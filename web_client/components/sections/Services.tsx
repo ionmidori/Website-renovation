@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Wand2,
@@ -10,6 +11,7 @@ import {
     Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AuthDialog } from '@/components/auth/AuthDialog';
 
 const services = [
     {
@@ -57,6 +59,8 @@ const services = [
 ];
 
 export function Services() {
+    const [authDialogOpen, setAuthDialogOpen] = useState(false);
+
     return (
         <section id="services" className="py-20 relative bg-luxury-bg">
 
@@ -99,7 +103,18 @@ export function Services() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
                             whileHover={{ y: -5 }}
-                            className="group relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 transition-all duration-300 backdrop-blur-sm"
+                            onClick={() => {
+                                if (service.title === 'Gestione Dashboard') {
+                                    setAuthDialogOpen(true);
+                                } else if (service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') {
+                                    const event = new CustomEvent('OPEN_CHAT');
+                                    window.dispatchEvent(event);
+                                }
+                            }}
+                            className={cn(
+                                "group relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 transition-all duration-300 backdrop-blur-sm",
+                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20"
+                            )}
                         >
                             {/* Card Gradient Background on Hover */}
                             <div className={cn(
@@ -128,6 +143,7 @@ export function Services() {
                 </div>
 
             </div>
+            <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
         </section>
     );
 }

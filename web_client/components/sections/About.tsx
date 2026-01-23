@@ -138,10 +138,7 @@ export function About() {
                                 variant="premium"
                                 className="w-full bg-luxury-gold hover:bg-luxury-gold/80 text-luxury-bg font-bold py-6 text-lg shadow-lg shadow-luxury-gold/20"
                                 onClick={() => {
-                                    const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
-                                        detail: { message: "Vorrei maggiori informazioni sui vostri servizi e un sopralluogo gratuito." }
-                                    });
-                                    window.dispatchEvent(event);
+                                    window.location.href = 'tel:+393755463599';
                                 }}
                             >
                                 Richiedi Sopralluogo Gratuito

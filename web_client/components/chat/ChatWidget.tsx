@@ -163,10 +163,10 @@ export default function ChatWidget() {
         }
     };
 
-
     // External Triggers (for opening chat from other components)
     useEffect(() => {
-        const handleOpenChat = (e: CustomEvent<{ message?: string }>) => {
+        // Handle OPEN_CHAT_WITH_MESSAGE event
+        const handleOpenChatWithMessage = (e: CustomEvent<{ message?: string }>) => {
             setIsOpen(true);
             if (e.detail?.message) {
                 setTimeout(() => {
@@ -174,8 +174,19 @@ export default function ChatWidget() {
                 }, 500);
             }
         };
-        window.addEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChat as any);
-        return () => window.removeEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChat as any);
+
+        // Handle simple OPEN_CHAT event (without message)
+        const handleOpenChat = () => {
+            setIsOpen(true);
+        };
+
+        window.addEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChatWithMessage as any);
+        window.addEventListener('OPEN_CHAT' as any, handleOpenChat);
+
+        return () => {
+            window.removeEventListener('OPEN_CHAT_WITH_MESSAGE' as any, handleOpenChatWithMessage as any);
+            window.removeEventListener('OPEN_CHAT' as any, handleOpenChat);
+        };
     }, [append]);
 
     // 🛑 CRITICAL: Loading Guard - Moved here to follow Rules of Hooks
@@ -188,7 +199,7 @@ export default function ChatWidget() {
         <>
             {/* Floating Toggle Button Area */}
             <div className="fixed bottom-8 right-6 z-50 flex items-center gap-4">
-                <WelcomeBadge isOpen={isOpen} onOpenChat={() => setIsOpen(true)} />
+                {/* Badge is now inside ChatToggleButton for unified dragging */}
                 <ChatToggleButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)} />
             </div>
 

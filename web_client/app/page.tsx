@@ -2,7 +2,6 @@ import { Navbar } from '@/components/sections/Navbar';
 import { Hero } from '@/components/sections/Hero';
 import { Services } from '@/components/sections/Services';
 import { Portfolio } from '@/components/sections/Portfolio';
-import { About } from '@/components/sections/About';
 import { Testimonials } from '@/components/sections/Testimonials';
 import { Footer } from '@/components/sections/Footer';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -14,7 +13,6 @@ export default function Home() {
       <Hero />
       <Services />
       <Portfolio />
-      <About />
       <Testimonials />
       <Footer />
       <ChatWidget />

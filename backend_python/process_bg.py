@@ -1,40 +1,26 @@
-import os
 from rembg import remove
 from PIL import Image
+import os
 
-# Exact absolute paths to avoid confusion
-INPUT_PATH = r"C:/Users/User01/.gemini/antigravity/brain/9b67df8c-2099-475f-aeb5-b9fad8b203eb/uploaded_image_1769023353679.png"
-OUTPUT_PATH = r"c:\Users\User01\.gemini\antigravity\scratch\renovation-next\web_client\public\assets\syd_avatar_v2.png"
-
-def run():
-    print(f"🖼️  Processing image...")
-    print(f"   Input: {INPUT_PATH}")
-    print(f"   Output: {OUTPUT_PATH}")
-
-    if not os.path.exists(INPUT_PATH):
-        print("❌ Error: Input file does not exist")
-        return
-
+def process_image(input_path, output_path):
+    print(f"Processing: {input_path}")
+    
     try:
-        # Open source
-        with open(INPUT_PATH, 'rb') as i:
-            input_data = i.read()
-            
-        # Process
-        output_data = remove(input_data)
+        input_image = Image.open(input_path)
         
-        # Ensure output directory exists (redundant check)
-        os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+        # Remove background using U-2-Net (default in rembg)
+        output_image = remove(input_image)
         
-        # Save result
-        with open(OUTPUT_PATH, 'wb') as o:
-            o.write(output_data)
-            
-        print("✅ Success! Background removed.")
+        output_image.save(output_path)
+        print(f"Success! Saved to: {output_path}")
         
     except Exception as e:
-        print(f"❌ Error processing image: {e}")
-        raise e
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
-    run()
+    # Original uploaded image
+    input_file = r"C:\Users\User01\.gemini\antigravity\brain\42553532-c9fb-4974-b1fb-6ffba470f0bf\uploaded_image_1769122849432.png"
+    # Target asset path
+    output_file = r"c:\Users\User01\.gemini\antigravity\scratch\renovation-next\web_client\public\assets\syd_final_v6.png"
+    
+    process_image(input_file, output_file)
