@@ -100,9 +100,10 @@ export function Services() {
                             key={index}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: true, margin: "-50px" }}
                             transition={{ delay: index * 0.1 }}
                             whileHover={{ y: -5 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => {
                                 if (service.title === 'Gestione Dashboard') {
                                     setAuthDialogOpen(true);
@@ -112,13 +113,13 @@ export function Services() {
                                 }
                             }}
                             className={cn(
-                                "group relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 transition-all duration-300 backdrop-blur-sm",
-                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20"
+                                "group relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 active:border-luxury-gold/50 transition-all duration-300 backdrop-blur-sm",
+                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20 active:shadow-md active:bg-white/10"
                             )}
                         >
-                            {/* Card Gradient Background on Hover */}
+                            {/* Card Gradient Background on Hover/Active */}
                             <div className={cn(
-                                "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500",
+                                "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-10 group-active:opacity-20 transition-opacity duration-300",
                                 service.gradient
                             )} />
 
