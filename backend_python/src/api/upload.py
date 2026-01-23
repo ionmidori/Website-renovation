@@ -68,12 +68,15 @@ async def upload_video(
              raise RuntimeError("GEMINI_API_KEY not found")
         genai.configure(api_key=GEMINI_API_KEY)
         
-        # Validate file type
-        if not file.content_type or not file.content_type.startswith('video/'):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file type: {file.content_type}. Only video files are accepted."
-            )
+        # 🛡️ SECURITY: Magic Bytes Validation (Defense against MIME spoofing)
+        from src.utils.security import validate_video_magic_bytes, sanitize_filename
+        
+        # Step 1: Validate file is actually a video (not exploit.exe renamed to .mp4)
+        detected_mime = await validate_video_magic_bytes(file)
+        logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")
+        
+        # Step 2: Sanitize filename to prevent path traversal
+        safe_filename = await sanitize_filename(file.filename or "upload.mp4")
         
         logger.info(f"📹 User {user_id} uploading video: {file.filename} ({file.content_type})")
         
