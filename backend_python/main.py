@@ -42,7 +42,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SYD Brain 🧠", version="0.3.0")
+app = FastAPI(title="SYD Brain 🧠", version="0.4.0")
 
 # 🔒 App Check Middleware
 from src.middleware.app_check import validate_app_check_token
