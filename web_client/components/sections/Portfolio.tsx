@@ -129,9 +129,9 @@ export function Portfolio() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.3 }}
-                                viewport={{ margin: "-45% 0px -45% 0px" }}
+                                viewport={{ margin: "-30% 0px -30% 0px" }}
                                 onViewportEnter={() => isMobile && setHoveredProject(project.id)}
-                                onViewportLeave={() => isMobile && setHoveredProject(null)}
+                                onViewportLeave={() => isMobile && setHoveredProject(prev => prev === project.id ? null : prev)}
                                 className={cn(
                                     "relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer bg-slate-950 border border-luxury-gold/10 hover:border-luxury-gold/50 transition-colors snap-center scroll-mt-32",
                                     hoveredProject === project.id && "border-luxury-gold/50"
