@@ -117,12 +117,12 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
             try {
                 if (process.env.NEXT_PUBLIC_ENABLE_APP_CHECK === 'true') {
                     // Dynamically import to avoid SSR issues
-                    const { getToken, getAppCheck } = await import('firebase/app-check');
-                    const { app } = await import('@/lib/firebase');
+                    // Dynamically import to avoid SSR issues
+                    const { getToken } = await import('firebase/app-check');
+                    const { app, appCheck } = await import('@/lib/firebase');
 
-                    // Get the existing App Check instance initialized in lib/firebase.ts or AppCheckProvider
-                    // Use getAppCheck instead of initializeAppCheck to avoid re-init errors
-                    const appCheckInstance = getAppCheck(app);
+                    // Get the existing App Check instance initialized in lib/firebase.ts
+                    const appCheckInstance = appCheck;
 
                     if (appCheckInstance) {
                         // Get token (forceRefresh = false to use cached token if valid)
