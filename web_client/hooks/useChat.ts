@@ -113,9 +113,14 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
                 'Authorization': `Bearer ${freshToken}`, // ✅ Fresh token for every request
             };
 
-            // ✅ PYTHON BACKEND (Default): Uses new Python/LangGraph implementation
-            // Legacy TypeScript endpoint available at /api/chat if needed for rollback
-            const res = await fetch('/api/chat', {
+            // ✅ VERCEL TIMEOUT FIX: Direct connection to Cloud Run
+            // This bypasses the Vercel Proxy (which kills requests > 60s)
+            // Use environment variable for backend URL (must be set in .env.local)
+            const BACKEND_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8080';
+
+            console.log(`[useChat] Connecting directly to backend: ${BACKEND_URL}`);
+
+            const res = await fetch(`${BACKEND_URL}/chat/stream`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
@@ -126,7 +131,7 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
                     mediaUrls: options?.body?.mediaUrls,
                     mediaTypes: options?.body?.mediaTypes,
                     mediaMetadata: options?.body?.mediaMetadata,
-                    videoFileUris: options?.body?.videoFileUris  // 🎬 NEW
+                    videoFileUris: options?.body?.videoFileUris
                 }),
                 signal: abortControllerRef.current.signal
             });

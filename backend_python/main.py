@@ -44,6 +44,20 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SYD Brain 🧠", version="0.4.0")
 
+# 🔒 CORS Middleware (Vercel Timeout Bypass)
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://website-renovation.vercel.app",
+        "https://website-renovation-git-main-ionmidori.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # 🔒 App Check Middleware
 from src.middleware.app_check import validate_app_check_token
 from fastapi.responses import JSONResponse

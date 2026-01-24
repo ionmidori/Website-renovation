@@ -118,3 +118,23 @@ If Cloud Run enters a "Crash Loop":
 - `Request` import fixed in `main.py`.
 - Server verified locally.
 - Ready for re-deployment.
+
+---
+
+## ⏳ Vercel Timeout (I2I / Generative AI)
+
+**Symptoms:**
+- Log Error: `Vercel Runtime Timeout Error: Task timed out after 60 seconds`
+- Endpoint: `/api/chat` fails during long-running tasks (e.g. Image-to-Image generation).
+
+**Root Cause:**
+- Default Vercel Serverless Function timeout is **60 seconds** (Pro Plan) or 10s (Hobby).
+- The I2I pipeline (Download -> Analyze -> Architect -> Imagen -> Upload) can take 50-90 seconds cold.
+
+**Solution:**
+- Increase `maxDuration` in `web_client/app/api/chat/route.ts` (Requires **Pro Plan**).
+```typescript
+// app/api/chat/route.ts
+export const maxDuration = 300; // 5 minutes
+```
+- If on **Hobby Plan**, you CANNOT proxy this request. The client must call Cloud Run directly (requires setting specific CORS headers).
