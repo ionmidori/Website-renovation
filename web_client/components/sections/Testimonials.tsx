@@ -90,11 +90,11 @@ export function Testimonials() {
                             key={t.id}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-45% 0px -45% 0px" }}
+                            viewport={{ once: true, margin: "-30% 0px -30% 0px" }}
                             transition={{ delay: idx * 0.1 }}
                             whileHover={{ scale: 1.02 }}
                             onViewportEnter={() => isMobile && setHoveredTestimonial(t.id)}
-                            onViewportLeave={() => isMobile && setHoveredTestimonial(null)}
+                            onViewportLeave={() => isMobile && setHoveredTestimonial(prev => prev === t.id ? null : prev)}
                             onMouseEnter={() => !isMobile && setHoveredTestimonial(t.id)}
                             onMouseLeave={() => !isMobile && setHoveredTestimonial(null)}
                             className={cn(

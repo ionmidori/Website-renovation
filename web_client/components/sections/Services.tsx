@@ -110,12 +110,12 @@ export function Services() {
                             key={index}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-45% 0px -45% 0px" }}
+                            viewport={{ once: true, margin: "-30% 0px -30% 0px" }}
                             transition={{ delay: index * 0.1 }}
                             whileHover={{ y: -5 }}
                             whileTap={{ scale: 0.98 }}
                             onViewportEnter={() => isMobile && setHoveredService(index)}
-                            onViewportLeave={() => isMobile && setHoveredService(null)}
+                            onViewportLeave={() => isMobile && setHoveredService(prev => prev === index ? null : prev)}
                             onClick={() => {
                                 if (service.title === 'Gestione Dashboard') {
                                     setAuthDialogOpen(true);

@@ -125,7 +125,7 @@ export function Hero() {
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Button
                                 size="lg"
-                                className="h-14 px-8 text-base min-w-[300px] bg-luxury-teal hover:bg-luxury-teal/90 text-white rounded-lg shadow-lg shadow-luxury-teal/20 transition-all hover:scale-[1.02]"
+                                className="h-14 px-8 text-base min-w-[300px] bg-luxury-teal hover:bg-luxury-teal/90 text-white rounded-lg shadow-lg shadow-luxury-teal/20 transition-all duration-200 hover:scale-[1.02] active:scale-95 active:shadow-none"
                                 onClick={() => {
                                     const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
                                         detail: { message: "Vorrei richiedere un preventivo gratuito per la mia ristrutturazione." }
@@ -139,7 +139,7 @@ export function Hero() {
                             <Button
                                 variant="outline"
                                 size="lg"
-                                className="h-14 px-8 text-base min-w-[300px] border-luxury-gold/50 text-luxury-gold hover:bg-luxury-gold/10 hover:border-luxury-gold rounded-lg"
+                                className="h-14 px-8 text-base min-w-[300px] border-luxury-gold/50 text-luxury-gold hover:bg-luxury-gold/10 hover:border-luxury-gold rounded-lg transition-all duration-200 active:scale-95 active:bg-luxury-gold/20"
                                 onClick={() => setIsSlideShowOpen(true)}
                             >
                                 <PlayCircle className="mr-2 w-5 h-5" />
@@ -151,7 +151,7 @@ export function Hero() {
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Button
                                 size="lg"
-                                className="h-14 px-8 text-base min-w-[300px] bg-luxury-teal hover:bg-luxury-teal/90 text-white rounded-lg shadow-lg shadow-luxury-teal/20 transition-all hover:scale-[1.02]"
+                                className="h-14 px-8 text-base min-w-[300px] bg-luxury-teal hover:bg-luxury-teal/90 text-white rounded-lg shadow-lg shadow-luxury-teal/20 transition-all duration-200 hover:scale-[1.02] active:scale-95 active:shadow-none"
                                 onClick={() => {
                                     const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
                                         detail: {}
@@ -165,7 +165,7 @@ export function Hero() {
                             <Button
                                 variant="outline"
                                 size="lg"
-                                className="h-14 px-8 text-base min-w-[300px] border-luxury-gold/50 text-luxury-gold hover:bg-luxury-gold/10 hover:border-luxury-gold rounded-lg"
+                                className="h-14 px-8 text-base min-w-[300px] border-luxury-gold/50 text-luxury-gold hover:bg-luxury-gold/10 hover:border-luxury-gold rounded-lg transition-all duration-200 active:scale-95 active:bg-luxury-gold/20"
                                 onClick={() => setIsSlideShowOpen(true)}
                             >
                                 <PlayCircle className="mr-2 w-5 h-5" />

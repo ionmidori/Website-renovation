@@ -174,7 +174,7 @@ export function Navbar() {
                                 transition={{ delay: 0.5 }}
                                 className="mt-8"
                             >
-                                <Button className="w-full py-6 text-lg bg-luxury-teal hover:bg-luxury-teal/90 text-white">
+                                <Button className="w-full py-6 text-lg bg-luxury-teal hover:bg-luxury-teal/90 text-white transition-all duration-200 active:scale-95 shadow-lg shadow-luxury-teal/20">
                                     Inizia Progetto
                                 </Button>
                                 <div className="mt-4 flex justify-center">

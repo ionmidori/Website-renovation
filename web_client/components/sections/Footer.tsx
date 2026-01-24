@@ -71,7 +71,7 @@ export function Footer() {
                                 <a
                                     key={i}
                                     href="#"
-                                    className="w-10 h-10 rounded-full bg-black/20 border border-luxury-gold/10 flex items-center justify-center text-luxury-teal hover:text-white hover:border-luxury-teal/50 hover:bg-luxury-teal hover:scale-110 transition-all duration-300"
+                                    className="w-10 h-10 rounded-full bg-black/20 border border-luxury-gold/10 flex items-center justify-center text-luxury-teal hover:text-white hover:border-luxury-teal/50 hover:bg-luxury-teal hover:scale-110 active:scale-110 active:bg-luxury-teal active:text-white transition-all duration-300"
                                     aria-label={`Social Media Link ${i}`}
                                 >
                                     <Icon className="w-4 h-4" />
