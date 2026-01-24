@@ -8,7 +8,7 @@ import firebase_admin
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK (singleton pattern)
-def _init_firebase():
+def init_firebase():
     """Initialize Firebase Admin SDK if not already initialized."""
     if not firebase_admin._apps:
         # Check for service account JSON file or use environment variables
@@ -38,7 +38,7 @@ def _init_firebase():
 
 def get_firestore_client():
     """Get Firestore client, initializing Firebase if needed."""
-    _init_firebase()
+    init_firebase()
     return firestore.client()
 
 def validate_firebase_config():

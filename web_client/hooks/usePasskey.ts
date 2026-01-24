@@ -209,7 +209,13 @@ export function usePasskey() {
 
             const result = await verifyRes.json();
 
-            // Token received - Firebase will handle the rest via onAuthStateChanged
+            // Sign in with the custom token returned by backend
+            if (result.token) {
+                const { signInWithCustomToken } = await import('firebase/auth');
+                const { auth } = await import('@/lib/firebase');
+                await signInWithCustomToken(auth, result.token);
+            }
+
             return result;
 
         } catch (error: any) {

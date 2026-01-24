@@ -14,12 +14,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8080';
-const SECRET_PREFIX = process.env.INTERNAL_JWT_SECRET ? process.env.INTERNAL_JWT_SECRET.substring(0, 3) : 'UNDEFINED';
 
 console.log('[Proxy Config] URL:', PYTHON_BACKEND_URL);
-const secret = process.env.INTERNAL_JWT_SECRET;
-console.log('[Proxy Config] Secret starts with:', secret ? secret.substring(0, 3) : 'UNDEFINED');
-console.log('[Proxy Config] Secret length:', secret ? secret.length : 0);
 
 export async function POST(req: Request) {
     console.log('----> [Proxy] Chat request received');
@@ -61,40 +57,24 @@ export async function POST(req: Request) {
         };
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🔒 AUTH: Validate Firebase Token & Mint Internal JWT
+        // 🔒 AUTH: Validate Firebase Token
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const { createInternalToken } = await import('@/lib/auth/jwt');
         const { auth } = await import('@/lib/firebase-admin');
 
         const authHeader = req.headers.get('Authorization');
-
-        // ✅ Best Practice: Require auth header for ALL requests (including anonymous users)
         if (!authHeader?.startsWith('Bearer ')) {
             return new Response(JSON.stringify({
                 error: 'Authentication required',
-                details: 'Missing or invalid Authorization header. Please ensure Firebase authentication is enabled.'
-            }), {
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
+                details: 'Missing or invalid Authorization header.'
+            }), { status: 401 });
         }
 
-        let internalToken: string;
+        const idToken = authHeader.split('Bearer ')[1];
 
         try {
-            // Verify Firebase ID Token (works for both anonymous and authenticated users)
-            const idToken = authHeader.split('Bearer ')[1];
+            // Verify token here (Next.js) to reject early
             const decodedToken = await auth().verifyIdToken(idToken);
-
-            // Create Internal JWT
-            internalToken = createInternalToken({
-                uid: decodedToken.uid,
-                email: decodedToken.email || 'anonymous',
-            });
-
-            const userType = decodedToken.firebase?.sign_in_provider === 'anonymous' ? 'Anonymous' : 'Authenticated';
-            console.log(`[Proxy] ${userType} user: ${decodedToken.uid}`);
-            console.log('[Proxy] DEBUG Internal Token:', internalToken);
+            console.log(`[Proxy] Authenticated user: ${decodedToken.uid}`);
         } catch (authError) {
             console.error('[Proxy] Auth verification failed:', authError);
             return new Response(JSON.stringify({
@@ -110,7 +90,7 @@ export async function POST(req: Request) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${internalToken}`, // ✅ Send Internal JWT
+                'Authorization': `Bearer ${idToken}`, // ✅ Forward original Firebase ID Token
             },
             body: JSON.stringify(pythonPayload)
         });

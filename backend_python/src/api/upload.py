@@ -8,12 +8,13 @@ import os
 import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from src.auth.jwt_handler import verify_token
 
 logger = logging.getLogger(__name__)
 
-# Gemini initialization is handled lazily in the route handler to prevent import-time side effects
+# Gemini initialization is handled lazily in the route handler
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 router = APIRouter(prefix="/upload", tags=["upload"])
@@ -49,9 +50,6 @@ async def upload_video(
     try:
         # 🛡️ RATE LIMITING CHECK
         user_id = user_payload.get("uid", "unknown")
-        # Use simple IP-based ID if unknown (fallback handled by quota module logic if we pass it)
-        # But here we probably want strictly the UID or a session ID if available.
-        # user_payload comes from verify_token, so it should be a real user or at least a known session.
         
         from src.tools.quota import check_quota, increment_quota
         allowed, remaining, reset_at = check_quota(user_id, "upload_video")
@@ -66,25 +64,26 @@ async def upload_video(
         # Lazy config
         if not GEMINI_API_KEY:
              raise RuntimeError("GEMINI_API_KEY not found")
-        genai.configure(api_key=GEMINI_API_KEY)
         
-        # 🛡️ SECURITY: Magic Bytes Validation (Defense against MIME spoofing)
+        # Initialize new SDK Client
+        client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1beta'})
+        
+        # 🛡️ SECURITY: Magic Bytes Validation
         from src.utils.security import validate_video_magic_bytes, sanitize_filename
         
-        # Step 1: Validate file is actually a video (not exploit.exe renamed to .mp4)
         detected_mime = await validate_video_magic_bytes(file)
         logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")
         
-        # Step 2: Sanitize filename to prevent path traversal
         safe_filename = await sanitize_filename(file.filename or "upload.mp4")
+        logger.info(f"📹 User {user_id} uploading video: {safe_filename} ({file.content_type})")
         
-        logger.info(f"📹 User {user_id} uploading video: {file.filename} ({file.content_type})")
+        # Write to temp file because new SDK upload (and most robust uploads) prefer file path or proper stream
+        # FastAPI UploadFile exposes SpooledTemporaryFile which might need read().
+        # For simplicity and reliability with the SDK, allow reading into memory if size checked.
         
-        # Read file content
         content = await file.read()
         file_size = len(content)
         
-        # Check file size (limit to 100MB as per best practices)
         MAX_SIZE = 100 * 1024 * 1024  # 100MB
         if file_size > MAX_SIZE:
             raise HTTPException(
@@ -92,45 +91,47 @@ async def upload_video(
                 detail=f"File too large: {file_size / 1024 / 1024:.2f}MB. Maximum size is 100MB."
             )
         
-        logger.info(f"📹 File size: {file_size / 1024 / 1024:.2f}MB")
+        # Upload using new SDK
+        # Support passing bytes directly via parameter if supported, or temp file.
+        # The new SDK `client.files.upload` accepts `path` or `file` (io.IOBase).
+        import io
+        file_stream = io.BytesIO(content)
         
-        # Upload to Google AI File API
-        # Note: Files are automatically deleted after 48 hours
-        uploaded_file = genai.upload_file(
-            path=file.file,
-            display_name=file.filename,
-            mime_type=file.content_type
+        uploaded_file = client.files.upload(
+            file=file_stream,
+            config=types.UploadFileConfig(
+                display_name=safe_filename,
+                mime_type=file.content_type
+            )
         )
         
         logger.info(f"✅ Video uploaded successfully: {uploaded_file.uri}")
-        logger.info(f"   State: {uploaded_file.state.name}")
+        logger.info(f"   State: {uploaded_file.state}")
         
-        # Wait for file to be processed (ACTIVE state)
-        # For large files, this may take a few seconds
+        # Wait for processing
         import time
-        max_wait = 30  # seconds
+        max_wait = 30
         elapsed = 0
-        while uploaded_file.state.name == "PROCESSING" and elapsed < max_wait:
+        
+        while uploaded_file.state == "PROCESSING" and elapsed < max_wait:
             time.sleep(1)
-            uploaded_file = genai.get_file(uploaded_file.name)
+            uploaded_file = client.files.get(name=uploaded_file.name)
             elapsed += 1
             
-        if uploaded_file.state.name != "ACTIVE":
+        if uploaded_file.state != "ACTIVE":
             raise HTTPException(
                 status_code=500,
-                detail=f"File processing failed. State: {uploaded_file.state.name}"
+                detail=f"File processing failed. State: {uploaded_file.state}"
             )
         
         # ✅ INCREMENT QUOTA (Only on success)
         increment_quota(user_id, "upload_video")
         
-        logger.info(f"🎬 Video ready for inference: {uploaded_file.uri}")
-        
         return UploadResponse(
             file_uri=uploaded_file.uri,
             mime_type=uploaded_file.mime_type,
             display_name=uploaded_file.display_name,
-            state=uploaded_file.state.name,
+            state=uploaded_file.state,
             size_bytes=file_size
         )
         

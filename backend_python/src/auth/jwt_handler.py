@@ -1,32 +1,50 @@
-import os
-import jwt
+import logging
+from typing import Dict, Any
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from typing import Dict, Any
-from dotenv import load_dotenv
+from firebase_admin import auth
+from src.db.firebase_client import init_firebase
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-INTERNAL_JWT_SECRET = os.getenv("INTERNAL_JWT_SECRET")
 security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict[str, Any]:
     """
-    Validates the Internal JWT shared with Next.js.
-    Rejects requests with invalid or expired tokens.
+    Validates the Firebase ID Token.
+    
+    Verifies the token signature and expiration using Firebase Admin SDK.
+    Also checks if the token has been revoked (check_revoked=True).
     """
-    if not INTERNAL_JWT_SECRET:
-        raise HTTPException(status_code=500, detail="INTERNAL_JWT_SECRET not configured")
-
     token = credentials.credentials
+    
     try:
-        payload = jwt.decode(token, INTERNAL_JWT_SECRET, algorithms=["HS256"])
-        return payload
-    except jwt.ExpiredSignatureError:
+        # Ensure Firebase is initialized
+        init_firebase()
+        
+        # Verify the ID token
+        # check_revoked=True enforces that the user is still active (handles bans/logout)
+        decoded_token = auth.verify_id_token(token, check_revoked=True)
+        
+        return decoded_token
+        
+    except auth.RevokedIdTokenError:
+        logger.warning("Revoked Firebase ID token provided")
+        raise HTTPException(status_code=401, detail="Token revoked")
+    except auth.ExpiredIdTokenError:
+        logger.warning("Expired Firebase ID token provided")
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except auth.InvalidIdTokenError as e:
+        logger.warning(f"Invalid Firebase ID token: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 def get_current_user(payload: Dict[str, Any] = Security(verify_token)) -> str:
     """Helper to extract user email from validated token."""
     return payload.get("email", "unknown")
+
+def get_current_user_id(payload: Dict[str, Any] = Security(verify_token)) -> str:
+    """Helper to extract user ID from validated token."""
+    return payload.get("uid")

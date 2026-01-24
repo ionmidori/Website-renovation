@@ -9,8 +9,8 @@ Implements FIDO2/WebAuthn protocol for biometric authentication:
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
-from firebase_admin import firestore
-from src.auth.jwt_handler import verify_token
+from firebase_admin import firestore, auth
+from src.auth.jwt_handler import verify_token, get_current_user_id
 from src.db.firebase_client import get_firestore_client
 import secrets
 import base64
@@ -71,7 +71,7 @@ class PasskeyAssertion(BaseModel):
 @router.post("/register/options", response_model=PasskeyRegistrationOptions)
 async def get_registration_options(
     request: PasskeyRegistrationRequest,
-    user_id: str = Depends(verify_token)
+    user_id: str = Depends(get_current_user_id)
 ) -> PasskeyRegistrationOptions:
     """
     Generate WebAuthn registration options.
@@ -128,7 +128,7 @@ async def get_registration_options(
 @router.post("/register/verify")
 async def verify_registration(
     credential: PasskeyCredential,
-    user_id: str = Depends(verify_token)
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Verify and store passkey credential.
@@ -273,8 +273,14 @@ async def verify_authentication(assertion: PasskeyAssertion):
         )
     
     # Generate JWT token
-    from src.auth.jwt_handler import create_token
-    token = create_token(user_id)
+    # Generate Firebase Custom Token
+    # Client will use this to signInWithCustomToken()
+    try:
+        custom_token_bytes = auth.create_custom_token(user_id)
+        token = custom_token_bytes.decode('utf-8')
+    except Exception as e:
+        logger.error(f"Error creating custom token: {e}")
+        raise HTTPException(status_code=500, detail="Token generation failed")
     
     logger.info(f"Passkey authentication successful for user {user_id}")
     

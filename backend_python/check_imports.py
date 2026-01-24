@@ -15,7 +15,7 @@ required_packages = [
     "langchain_core",
     "langgraph",
     "dotenv",
-    "multipart"  # Required by FastAPI for UploadFile
+    "multipart.multipart"  # Required by FastAPI for UploadFile (python-multipart package)
 ]
 
 failed = []
