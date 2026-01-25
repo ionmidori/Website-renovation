@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
+    // Bypass maintenance mode in development
+    if (process.env.NODE_ENV === 'development') {
+        return NextResponse.next()
+    }
+
     // Check for maintenance mode via environment variable (optional) or hardcoded enforcement
     // For this task, we enforce it everywhere except internal routes/maintenance page
 
     if (
         request.nextUrl.pathname.startsWith('/_next') ||
         request.nextUrl.pathname.startsWith('/static') ||
-        request.nextUrl.pathname.startsWith('/api') || // Optional: keep API alive? User said "site not function", usually means UI.
+        request.nextUrl.pathname.startsWith('/api') ||
         request.nextUrl.pathname === '/maintenance' ||
         request.nextUrl.pathname.includes('.') // file extensions (images, etc)
     ) {
