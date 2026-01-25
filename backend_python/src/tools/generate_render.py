@@ -4,8 +4,9 @@ from typing import Optional
 from src.api.gemini_imagen import generate_image_t2i, generate_image_i2i
 from src.storage.upload import upload_base64_image
 from src.vision.triage import analyze_image_triage
-import httpx
+from src.utils.download import download_image_smart
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +55,8 @@ async def generate_render_wrapper(
         
         # MODE: MODIFICATION (I2I)
         if mode == "modification" and source_image_url:
-            # Download source image
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(source_image_url)
-                source_bytes = response.content
-                source_mime_type = response.headers.get("content-type", "image/jpeg")
+            # Download source image (Smart Download)
+            source_bytes, source_mime_type = await download_image_smart(source_image_url)
             
             # VALIDATION: Check if we got an actual image (not error XML/HTML)
             if not source_mime_type.startswith("image/"):

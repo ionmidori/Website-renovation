@@ -13,6 +13,7 @@ from src.tools.generate_render import generate_render_wrapper
 from src.tools.quota import check_quota, increment_quota, QuotaExceededError
 from src.tools.quota import check_quota, increment_quota, QuotaExceededError
 from src.utils.context import get_current_user_id, get_current_media_metadata  # ✅ Context-based tracking
+from src.utils.download import download_image_smart
 
 logger = logging.getLogger(__name__)
 
@@ -198,32 +199,27 @@ def save_quote_sync(user_id: str, image_url: Optional[str], ai_data: dict) -> st
         return f"❌ Errore nel salvare il preventivo: {str(e)}"
 
 
+
+# ... imports ...
+from src.utils.download import download_image_smart
+
+# ... (previous code unchanged) ...
+
 def analyze_room_sync(image_url: str) -> str:
     """Sync wrapper for analyze_room tool."""
-    logger.info(f"[Tool] 📐 analyze_room called for {image_url}")
+    logger.info(f"[Tool]  analyze_room called for {image_url}")
     
     try:
         from src.vision.analyze import analyze_room_structure
         from src.vision.triage import analyze_media_triage
-        import httpx
-        import mimetypes
+        import json
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             # 1. Download
             async def download_and_analyze():
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(image_url)
-                    resp.raise_for_status()
-                    media_bytes = resp.content
-                    headers = resp.headers
-                
-                # Detect MIME type
-                content_type = headers.get("content-type", "")
-                if not content_type:
-                    # Fallback to extension
-                    content_type, _ = mimetypes.guess_type(image_url)
+                media_bytes, content_type = await download_image_smart(image_url)
                 
                 logger.info(f"[Tool] Detected MIME type: {content_type}")
                 
@@ -254,7 +250,6 @@ def analyze_room_sync(image_url: str) -> str:
                 analysis = await analyze_room_structure(media_bytes)
                 return analysis.model_dump_json(indent=2)
 
-            import json
             result_json = loop.run_until_complete(download_and_analyze())
             
             logger.info(f"[Tool] ✅ analyze_room success")
@@ -273,17 +268,13 @@ def plan_renovation_sync(image_url: str, style: str, keep_elements: list = None)
     
     try:
         from src.vision.architect import generate_architectural_prompt
-        import httpx
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             # 1. Download
             async def download_and_plan():
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(image_url)
-                    resp.raise_for_status()
-                    image_bytes = resp.content
+                image_bytes, mime_type = await download_image_smart(image_url)
                 
                 # 2. Plan
                 return await generate_architectural_prompt(image_bytes, style, keep_elements)
@@ -307,3 +298,4 @@ def plan_renovation_sync(image_url: str, style: str, keep_elements: list = None)
     except Exception as e:
         logger.error(f"[Tool] ❌ plan_renovation failed: {e}")
         return f"❌ Errore nel piano architettonico: {str(e)}"
+
