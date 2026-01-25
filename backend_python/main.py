@@ -42,7 +42,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SYD Brain 🧠", version="0.4.0")
+app = FastAPI(title="SYD Brain", version="0.4.0")
 
 # 🔒 CORS Middleware (Vercel Timeout Bypass)
 from fastapi.middleware.cors import CORSMiddleware
@@ -96,7 +96,7 @@ async def app_check_middleware(request: Request, call_next):
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup - just log. All heavy init is lazy-loaded on first request."""
-    logger.info("🚀 SYD Brain API starting on port 8080...")
+    logger.info("SYD Brain API starting on port 8080...")
     # NOTE: Firebase validation and Agent Graph initialization happen lazily on first request
     # This ensures the container binds to port 8080 immediately for Cloud Run health checks
 

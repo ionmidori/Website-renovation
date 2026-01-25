@@ -82,11 +82,15 @@ async def generate_render_wrapper(
                     image_bytes=source_bytes,
                     target_style=style,
                     keep_elements=keep_elements or [],
-                    mime_type=source_mime_type
+                    mime_type=source_mime_type,
+                    user_instructions=prompt
                 )
                 
                 # Combine structured fields into final prompt
                 full_prompt = f"{arch_output.structural_skeleton} {arch_output.material_plan} {arch_output.furnishing_strategy} {arch_output.technical_notes}"
+                
+                # ✍️ DEBUG LOG: Log full prompt for verification
+                logger.info(f"[Render] 📝 FULL PROMPT (I2I):\n{'-'*40}\n{full_prompt}\n{'-'*40}")
                 
             except Exception as arch_error:
                 # Fallback to simple prompt if Architect fails

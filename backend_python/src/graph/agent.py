@@ -12,11 +12,14 @@ from src.graph.state import AgentState
 from src.tools.sync_wrappers import (
     submit_lead_sync, 
     get_market_prices_sync, 
-    generate_render_sync,
-    save_quote_sync,      # 🆕
-    analyze_room_sync,    # 🆕
-    plan_renovation_sync  # 🆕
+    # generate_render_sync,  <-- REMOVED (Migrated to native async)
+    save_quote_sync,
+    analyze_room_sync,
+    plan_renovation_sync
 )
+from src.tools.generate_render import generate_render_wrapper
+from src.tools.quota import check_quota, increment_quota
+from src.utils.context import get_current_user_id
 from src.prompts.system_instruction import SYSTEM_INSTRUCTION
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ def get_market_prices(query: str, user_id: str = "default") -> str:
     return get_market_prices_sync(query, user_id)
 
 @tool
-def generate_render(
+async def generate_render(
     prompt: str, 
     room_type: str, 
     style: str,
@@ -46,17 +49,44 @@ def generate_render(
     user_id: str = "default"
 ) -> str:
     """Generate photorealistic interior design rendering (T2I or I2I mode)."""
-    logger.info(f"[Tool] 🎨 generate_render called:")
-    logger.info(f"  - prompt: {prompt[:50]}...")
-    logger.info(f"  - room_type: {room_type}")
-    logger.info(f"  - style: {style}")
+    logger.info(f"[Tool] 🎨 generate_render called (ASYNC):")
     logger.info(f"  - mode: {mode}")
-    logger.info(f"  - source_image_url: {source_image_url}")
-    logger.info(f"  - keep_elements: {keep_elements}")
     
-    return generate_render_sync(
-        prompt, room_type, style, session_id, mode, source_image_url, keep_elements, user_id
+    # 1. Quota Check
+    # 1. Quota Check
+    effective_user_id = user_id if user_id != "default" else get_current_user_id()
+    try:
+        allowed, remaining, reset_at = check_quota(effective_user_id, "generate_render")
+        if not allowed:
+            reset_time = reset_at.strftime("%H:%M")
+            # Suggest login if anonymous
+            if effective_user_id.startswith("guest_") or len(effective_user_id) < 10:
+                 return f"⏳ Hai raggiunto il limite gratuito. 🔐 Accedi per ottenerne di più! Riprova alle {reset_time}."
+            return f"⏳ Hai raggiunto il limite giornaliero. Riprova alle {reset_time}."
+    except Exception as e:
+        # Only catch external errors (Firestore/Network), let logic bugs crash
+        if "Quota" in str(e) or "Firestore" in str(e) or "Network" in str(e):
+             logger.error(f"[Quota] Service Check failed: {e}")
+             pass # Fail open for reliability
+        else:
+             logger.error(f"[Quota] 🛑 LOGIC ERROR: {e}", exc_info=True)
+             pass # Still fail open but log aggressively as BUG
+
+    # 2. Execute Async Core Logic
+    # No more event loops! Just await the coroutine.
+    result = await generate_render_wrapper(
+        prompt, room_type, style, session_id, mode, source_image_url, keep_elements
     )
+    
+    # 3. Increment Quota (if successful)
+    if "✅" in result:
+        try:
+            increment_quota(effective_user_id, "generate_render")
+            logger.info(f"[Quota] Incremented for {effective_user_id}")
+        except Exception as e:
+            logger.error(f"[Quota] Increment failed: {e}")
+            
+    return result
 
 @tool
 def save_quote(

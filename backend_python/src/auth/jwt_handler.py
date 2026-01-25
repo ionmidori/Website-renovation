@@ -24,7 +24,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Security(security))
         
         # Verify the ID token
         # check_revoked=True enforces that the user is still active (handles bans/logout)
-        decoded_token = auth.verify_id_token(token, check_revoked=True)
+        decoded_token = auth.verify_id_token(token, check_revoked=True, clock_skew_seconds=60)
         
         return decoded_token
         

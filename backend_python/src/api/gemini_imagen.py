@@ -1,9 +1,11 @@
 import os
 import logging
+import asyncio
 import base64
 from typing import Optional, Dict, Any, List
 from google import genai
 from google.genai import types
+from google.api_core import exceptions as google_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +47,10 @@ async def generate_image_t2i(
     Raises:
         Exception: If API call fails or no API key configured
     """
-    client = _get_client()
-    if not client:
+    # Create fresh client for this request (avoids Event Loop conflicts in sync wrappers)
+    if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY not configured in environment")
+    client = genai.Client(api_key=GEMINI_API_KEY)
     
     try:
         # Build full prompt
@@ -62,8 +65,8 @@ async def generate_image_t2i(
         
         logger.info(f"Generating T2I image with prompt length: {len(full_prompt)} chars")
         
-        # Generate content with new SDK
-        response = client.models.generate_content(
+        # Generate content with new SDK (Async)
+        response = await client.aio.models.generate_content(
             model=T2I_MODEL,
             contents=full_prompt,
             config=types.GenerateContentConfig(
@@ -101,9 +104,18 @@ async def generate_image_t2i(
             }
         }
         
+    except google_exceptions.InvalidArgument as e:
+        logger.error(f"[Gemini] ❌ Invalid Argument (400): {e}")
+        raise Exception("Errore nell'immagine o nel prompt. Riprova con parametri diversi.")
+    except google_exceptions.ResourceExhausted as e:
+        logger.error(f"[Gemini] ❌ Quota Exceeded (429): {e}")
+        raise Exception("Il sistema è molto carico. Riprova tra qualcche minuto.")
     except Exception as e:
-        logger.error(f"T2I generation failed: {str(e)}", exc_info=True)
-        raise Exception(f"Image generation failed: {str(e)}")
+        logger.error(f"[Gemini] ❌ T2I generation failed: {str(e)}", exc_info=True)
+        raise Exception(f"Errore di sistema nella generazione immagine: {str(e)}")
+    finally:
+        # Crucial: Close the client to release resources before loop closes
+        client.close()
 
 
 async def generate_image_i2i(
@@ -129,9 +141,10 @@ async def generate_image_i2i(
     Raises:
         Exception: If API call fails or no API key configured
     """
-    client = _get_client()
-    if not client:
+    # Create fresh client for this request
+    if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY not configured in environment")
+    client = genai.Client(api_key=GEMINI_API_KEY)
     
     try:
         # Build I2I prompt with geometry preservation instructions
@@ -152,39 +165,59 @@ async def generate_image_i2i(
         
         logger.info(f"Generating I2I image with prompt length: {len(full_prompt)} chars")
         
-        # Create image part for multimodal input
-        source_base64 = base64.b64encode(source_image_bytes).decode('utf-8')
-        
-        # Build multimodal content
+        # Build multimodal content - Aligned with working triage.py
         contents = [
-            types.Part(text=full_prompt),
-            types.Part(inline_data=types.Blob(mime_type=mime_type, data=source_image_bytes))
+            types.Content(
+                parts=[
+                    types.Part(text=full_prompt),
+                    types.Part(inline_data=types.Blob(mime_type=mime_type, data=source_image_bytes))
+                ]
+            )
         ]
         
-        # Generate content with new SDK
-        response = client.models.generate_content(
-            model=I2I_MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                response_modalities=["IMAGE", "TEXT"],
-                temperature=0.4,
+        logger.info(f"[Gemini] ⏳ Sending I2I request line... model={I2I_MODEL}")
+        
+        # Call API Async with explicit configuration and timeout
+        try:
+            response = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=I2I_MODEL,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["IMAGE", "TEXT"],
+                        temperature=0.4,
+                    )
+                ),
+                timeout=90.0  # Generative tasks can be slow, 90s is safe
             )
-        )
+        except asyncio.TimeoutError:
+            logger.error("[Gemini] ❌ I2I Request timed out after 90s")
+            raise Exception("La generazione dell'immagine ha impiegato troppo tempo. Riprova.")
         
-        # Extract image from response
-        if not response.candidates or not response.candidates[0].content.parts:
-            raise Exception("No content returned from Gemini API")
+        logger.info("[Gemini] ✅ API Response received!")
         
-        image_part = None
+        if not response.candidates:
+             raise Exception("No candidates returned from API")
+             
+        if not response.candidates[0].content.parts:
+             raise Exception("Candidate has no parts")
+        
+        image_base64 = None
+        returned_mime_type = mime_type
+        
         for part in response.candidates[0].content.parts:
+            if part.text:
+                logger.info(f"[Gemini] Received text part: {part.text[:100]}...")
+            
             if part.inline_data and part.inline_data.mime_type.startswith('image/'):
-                image_part = part
-                break
+                 logger.info(f"[Gemini] Found IMAGE part ({part.inline_data.mime_type})")
+                 # SDK returns bytes in part.inline_data.data
+                 image_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                 returned_mime_type = part.inline_data.mime_type
+                 break
         
-        if not image_part:
-            raise Exception("No image found in API response")
-        
-        image_base64 = base64.b64encode(image_part.inline_data.data).decode('utf-8')
+        if not image_base64:
+            raise Exception("No image found in API response parts")
         
         image_size_kb = len(image_base64) * 0.75 / 1024
         logger.info(f"I2I generation complete! Image size: ~{image_size_kb:.2f} KB")
@@ -192,13 +225,22 @@ async def generate_image_i2i(
         return {
             "success": True,
             "image_base64": image_base64,
-            "mime_type": image_part.inline_data.mime_type,
+            "mime_type": returned_mime_type,
             "metadata": {
                 "model": I2I_MODEL,
                 "mode": "image-to-image"
             }
         }
         
+    except google_exceptions.InvalidArgument as e:
+        logger.error(f"[Gemini] ❌ Invalid Argument (400): {e}")
+        raise Exception("L'immagine caricata non è valida o il prompt è incorretto.")
+    except google_exceptions.ResourceExhausted as e:
+        logger.error(f"[Gemini] ❌ Quota Exceeded (429): {e}")
+        raise Exception("Server sovraccarico. Riprova tra poco.")
     except Exception as e:
-        logger.error(f"I2I generation failed: {str(e)}", exc_info=True)
-        raise Exception(f"Image to image generation failed: {str(e)}")
+        logger.error(f"[Gemini] ❌ I2I generation failed: {str(e)}", exc_info=True)
+        raise Exception(f"Errore imprevisto durante la generazione: {str(e)}")
+    finally:
+        # Crucial: Close the client to release resources
+        client.close()

@@ -140,12 +140,11 @@ export function useChat(sessionId: string, initialMessages: any[] = []) {
 
 
 
-            // ✅ VERCEL TIMEOUT FIX: Direct connection to Cloud Run
-            // This bypasses the Vercel Proxy (which kills requests > 60s)
-            // Use environment variable for backend URL (must be set in .env.local)
-            const BACKEND_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8080';
+            // ✅ PROXY FIX: Use relative path to bypass CORS/Network issues
+            // Next.js rewrites will handle the routing to 127.0.0.1:8080
+            const BACKEND_URL = ''; // Empty for relative path
 
-            console.log(`[useChat] Connecting directly to backend: ${BACKEND_URL}`);
+            console.log(`[useChat] Connecting via Proxy: ${BACKEND_URL}/chat/stream`);
 
             const res = await fetch(`${BACKEND_URL}/chat/stream`, {
                 method: 'POST',

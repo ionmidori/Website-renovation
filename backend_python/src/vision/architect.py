@@ -29,7 +29,8 @@ async def generate_architectural_prompt(
     image_bytes: bytes,
     target_style: str,
     keep_elements: Optional[List[str]] = None,
-    mime_type: str = "image/jpeg"
+    mime_type: str = "image/jpeg",
+    user_instructions: str = ""
 ) -> ArchitectOutput:
     """
     The Architect: Generates a narrative-based structural plan for image generation.
@@ -40,6 +41,7 @@ async def generate_architectural_prompt(
         target_style: The desired renovation style (e.g., "Japandi", "Industrial")
         keep_elements: List of elements to explicitly preserve (from user chat)
         mime_type: MIME type of the source image (default: image/jpeg)
+        user_instructions: Specific user requests to override defaults (e.g. "red sofa")
         
     Returns:
         ArchitectOutput object with skeleton, materials, and furnishing separated
@@ -50,6 +52,7 @@ async def generate_architectural_prompt(
     model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-2.5-flash")
     
     logger.info(f"[Architect] Building narrative plan (Style: {target_style}, Keep: {len(keep_elements)})...")
+    logger.info(f"[Architect] User Instructions: {user_instructions[:50]}...")
     logger.info(f"[Architect] Model: {model_name}")
     
     preservation_list = ", ".join(keep_elements) if keep_elements else "None specified (renovate freely)"
@@ -60,6 +63,12 @@ ROLE: You are an Architectural Surveyor and Interior Design Specialist.
 GOAL: Analyze the input room image and generate a structured plan for renovation in the "{target_style}" style.
 
 USER-SPECIFIED PRESERVATION: {preservation_list}
+
+USER REQUEST ANALYSIS (INTERPRETATION LAYER):
+1. Identify explicit constraints in: "{user_instructions}"
+2. Categorize them into: structural, material, or furnishing updates.
+3. CRITICAL: These specific user requests MUST OVERRIDE any default style rules.
+   (e.g., If Style is 'Minimal' but user asks for 'Red Sofa', you MUST include 'Red Sofa' in furnishingStrategy).
 
 YOUR TASK: Generate FOUR FIELDS for a narrative-based image generation prompt.
 

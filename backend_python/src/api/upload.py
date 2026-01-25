@@ -6,6 +6,7 @@ for native multimodal processing with Gemini models.
 """
 import os
 import logging
+import asyncio
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
 from google import genai
@@ -65,76 +66,75 @@ async def upload_video(
         if not GEMINI_API_KEY:
              raise RuntimeError("GEMINI_API_KEY not found")
         
+    try:
         # Initialize new SDK Client
         client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1beta'})
         
-        # 🛡️ SECURITY: Magic Bytes Validation
-        from src.utils.security import validate_video_magic_bytes, sanitize_filename
-        
-        detected_mime = await validate_video_magic_bytes(file)
-        logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")
-        
-        safe_filename = await sanitize_filename(file.filename or "upload.mp4")
-        logger.info(f"📹 User {user_id} uploading video: {safe_filename} ({file.content_type})")
-        
-        # Write to temp file because new SDK upload (and most robust uploads) prefer file path or proper stream
-        # FastAPI UploadFile exposes SpooledTemporaryFile which might need read().
-        # For simplicity and reliability with the SDK, allow reading into memory if size checked.
-        
-        content = await file.read()
-        file_size = len(content)
-        
-        MAX_SIZE = 100 * 1024 * 1024  # 100MB
-        if file_size > MAX_SIZE:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File too large: {file_size / 1024 / 1024:.2f}MB. Maximum size is 100MB."
-            )
-        
-        # Upload using new SDK
-        # Support passing bytes directly via parameter if supported, or temp file.
-        # The new SDK `client.files.upload` accepts `path` or `file` (io.IOBase).
-        import io
-        file_stream = io.BytesIO(content)
-        
-        uploaded_file = client.files.upload(
-            file=file_stream,
-            config=types.UploadFileConfig(
-                display_name=safe_filename,
-                mime_type=file.content_type
-            )
-        )
-        
-        logger.info(f"✅ Video uploaded successfully: {uploaded_file.uri}")
-        logger.info(f"   State: {uploaded_file.state}")
-        
-        # Wait for processing
-        import time
-        max_wait = 30
-        elapsed = 0
-        
-        while uploaded_file.state == "PROCESSING" and elapsed < max_wait:
-            time.sleep(1)
-            uploaded_file = client.files.get(name=uploaded_file.name)
-            elapsed += 1
+        try:
+            # 🛡️ SECURITY: Magic Bytes Validation
+            from src.utils.security import validate_video_magic_bytes, sanitize_filename
             
-        if uploaded_file.state != "ACTIVE":
-            raise HTTPException(
-                status_code=500,
-                detail=f"File processing failed. State: {uploaded_file.state}"
+            detected_mime = await validate_video_magic_bytes(file)
+            logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")
+            
+            safe_filename = await sanitize_filename(file.filename or "upload.mp4")
+            logger.info(f"📹 User {user_id} uploading video: {safe_filename} ({file.content_type})")
+            
+            content = await file.read()
+            file_size = len(content)
+            
+            MAX_SIZE = 100 * 1024 * 1024  # 100MB
+            if file_size > MAX_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large: {file_size / 1024 / 1024:.2f}MB. Maximum size is 100MB."
+                )
+            
+            # Upload using new SDK
+            import io
+            file_stream = io.BytesIO(content)
+            
+            # Using Async upload
+            uploaded_file = await client.aio.files.upload(
+                file=file_stream,
+                config=types.UploadFileConfig(
+                    display_name=safe_filename,
+                    mime_type=file.content_type
+                )
             )
-        
-        # ✅ INCREMENT QUOTA (Only on success)
-        increment_quota(user_id, "upload_video")
-        
-        return UploadResponse(
-            file_uri=uploaded_file.uri,
-            mime_type=uploaded_file.mime_type,
-            display_name=uploaded_file.display_name,
-            state=uploaded_file.state,
-            size_bytes=file_size
-        )
-        
+            
+            logger.info(f"✅ Video uploaded successfully: {uploaded_file.uri}")
+            logger.info(f"   State: {uploaded_file.state}")
+            
+            # Wait for processing
+            max_wait = 30
+            elapsed = 0
+            
+            while uploaded_file.state == "PROCESSING" and elapsed < max_wait:
+                await asyncio.sleep(1)
+                uploaded_file = await client.aio.files.get(name=uploaded_file.name)
+                elapsed += 1
+                
+            if uploaded_file.state != "ACTIVE":
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"File processing failed. State: {uploaded_file.state}"
+                )
+            
+            # ✅ INCREMENT QUOTA (Only on success)
+            increment_quota(user_id, "upload_video")
+            
+            return UploadResponse(
+                file_uri=uploaded_file.uri,
+                mime_type=uploaded_file.mime_type,
+                display_name=uploaded_file.display_name,
+                state=uploaded_file.state,
+                size_bytes=file_size
+            )
+            
+        finally:
+            client.close()
+            
     except HTTPException:
         raise
     except Exception as e:

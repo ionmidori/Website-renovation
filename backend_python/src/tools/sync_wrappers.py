@@ -81,98 +81,12 @@ def get_market_prices_sync(query: str, user_id: str = "default") -> str:
         logger.error(f"[Tool] ❌ get_market_prices failed: {e}")
         return f"❌ Errore nel recuperare i prezzi: {str(e)}"
 
-def generate_render_sync(
-    prompt: str,
-    room_type: str,
-    style: str,
-    session_id: str,
-    mode: str = "creation",
-    source_image_url: Optional[str] = None,
-    keep_elements: Optional[list] = None,
-    user_id: str = "default"
-) -> str:
-    """Sync wrapper for generate_render tool."""
-    logger.info(f"[Tool] 🎨 generate_render called: mode={mode}, style={style}")
-    effective_user_id = user_id if user_id != "default" else get_current_user_id()
-    
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 🔄 FALLBACK: Auto-recover image URL from session if AI forgot
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if mode == "modification" and not source_image_url:
-        logger.warning("[Tool] ⚠️ modification mode but no source_image_url - attempting recovery from session")
-        try:
-            import re
-            from src.db.messages import get_messages
-            messages = get_messages(session_id, limit=20)
-            for msg in reversed(messages):
-                content = msg.get("content", "")
-                if isinstance(content, str):
-                    # Fix: Use a pattern that captures the full URL including query params
-                    # Signed URLs have format: https://...?X-Goog-Algorithm=...&X-Goog-Signature=...
-                    match = re.search(r'\[Immagine allegata: (https?://[^\]]+)\]', content)
-                    if match:
-                        source_image_url = match.group(1)
-                        # Log full URL for debugging
-                        logger.info(f"[Tool] ✅ Recovered image URL from session: {source_image_url[:100]}...")
-                        logger.debug(f"[Tool] 🔗 Full recovered URL: {source_image_url}")
-                        break
-            if not source_image_url:
-                logger.error("[Tool] ❌ Could not recover image URL from session")
-                return "❌ Non ho trovato un'immagine da modificare. Per favore, carica nuovamente la foto."
-        except Exception as e:
-            logger.error(f"[Tool] ❌ Failed to recover image URL: {e}")
-            return "❌ Errore nel recuperare l'immagine. Ricarica la foto e riprova."
-    
-    try:
-        allowed, remaining, reset_at = check_quota(effective_user_id, "generate_render")
-        if not allowed:
-            logger.warning(f"[Tool] Quota exceeded for user {effective_user_id}")
-            reset_time = reset_at.strftime("%H:%M")
-            
-            # Check if user is anonymous - suggest login for more renders
-            from src.tools.quota import _is_authenticated_user
-            if not _is_authenticated_user(effective_user_id):
-                return (
-                    f"⏳ Hai raggiunto il limite gratuito (1 render al giorno). "
-                    f"🔐 **Accedi per ottenere 3 render al giorno!** "
-                    f"Oppure riprova domani alle {reset_time}."
-                )
-            else:
-                return f"⏳ Hai raggiunto il limite giornaliero (3 render). Riprova alle {reset_time}."
-        
-        logger.info(f"[Quota] User {effective_user_id} has {remaining} renders remaining")
-    except Exception as e:
-        logger.error(f"[Quota] Error checking quota: {e}")
-
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            logger.info("[Tool] Starting async generation...")
-            result = loop.run_until_complete(
-                generate_render_wrapper(
-                    prompt=prompt,
-                    room_type=room_type,
-                    style=style,
-                    session_id=session_id,
-                    mode=mode,
-                    source_image_url=source_image_url,
-                    keep_elements=keep_elements or []
-                )
-            )
-            
-            try:
-                increment_quota(effective_user_id, "generate_render")
-            except Exception as e:
-                logger.error(f"[Quota] Error incrementing quota: {e}")
-            
-            logger.info("[Tool] ✅ generate_render success")
-            return result
-        finally:
-            loop.close()
-    except Exception as e:
-        logger.error(f"[Tool] ❌ generate_render failed: {e}")
-        return f"❌ Errore nella generazione del render: {str(e)}"
+# def generate_render_sync(...):
+#     """
+#     DEPRECATED: Replaced by native async tool in src/graph/agent.py
+#     to prevent event loop crashes. Kept for reference only.
+#     """
+#     raise NotImplementedError("Use async generate_render in agent.py")
 
 # 🆕 New Tool Wrappers (Migration Complete)
 
@@ -277,7 +191,7 @@ def plan_renovation_sync(image_url: str, style: str, keep_elements: list = None)
                 image_bytes, mime_type = await download_image_smart(image_url)
                 
                 # 2. Plan
-                return await generate_architectural_prompt(image_bytes, style, keep_elements)
+                return await generate_architectural_prompt(image_bytes, style, keep_elements, user_instructions="")
 
             plan = loop.run_until_complete(download_and_plan())
             

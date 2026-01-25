@@ -22,8 +22,15 @@ export function AppCheckProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            // Initialize App Check
-            // @ts-ignore - Firebase types can be finicky with global augmentation
+            // Enable Debug Token for local development
+            if (process.env.NODE_ENV === 'development') {
+                // @ts-ignore
+                self.FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN || true;
+                console.log('[AppCheck] 🛠️ Debug Mode enabled.');
+            }
+
+            // Initialize App Check (Singleton check via window)
+            // @ts-ignore
             if (!window._firebaseAppCheckInitialized) {
                 initializeAppCheck(app, {
                     provider: new ReCaptchaV3Provider(siteKey),
@@ -31,7 +38,7 @@ export function AppCheckProvider({ children }: { children: React.ReactNode }) {
                 });
                 // @ts-ignore
                 window._firebaseAppCheckInitialized = true;
-                console.log('[AppCheck] Initialized successfully.');
+                console.log('[AppCheck] ✅ Initialized successfully.');
             }
         } catch (error) {
             console.error('[AppCheck] Initialization failed:', error);

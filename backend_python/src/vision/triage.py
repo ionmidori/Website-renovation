@@ -41,17 +41,20 @@ async def analyze_image_triage(image_data: bytes) -> Dict[str, Any]:
         
         logger.info("Performing triage analysis on image (Gemini 2.5 Flash)...")
         
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[
-                types.Content(
-                    parts=[
-                        types.Part(text=TRIAGE_PROMPT),
-                        types.Part(inline_data=types.Blob(mime_type="image/jpeg", data=image_data)),
-                    ]
-                )
-            ]
-        )
+        try:
+            response = await client.aio.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Content(
+                        parts=[
+                            types.Part(text=TRIAGE_PROMPT),
+                            types.Part(inline_data=types.Blob(mime_type="image/jpeg", data=image_data)),
+                        ]
+                    )
+                ]
+            )
+        finally:
+             client.close()
         
         if not response.text:
             raise Exception("No response from vision model")

@@ -7,6 +7,7 @@ using Gemini 2.5 Flash for both visual and audio content.
 import os
 import logging
 import tempfile
+import asyncio
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -211,22 +212,22 @@ async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY not configured")
     
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        
         logger.info("Uploading video to Gemini File API...")
         
-        # Upload video file to Gemini
-        video_file = client.files.upload(path=video_path)
+        # Upload video file to Gemini (Async)
+        # client.aio.files.upload accepts path
+        video_file = await client.aio.files.upload(path=video_path)
         
         # Wait for processing
         logger.info(f"Waiting for video to be processed (file: {video_file.name})...")
-        import time
         max_wait = 60  # Max 60 seconds wait
         elapsed = 0
         while video_file.state.name == "PROCESSING" and elapsed < max_wait:
-            time.sleep(2)
-            video_file = client.files.get(name=video_file.name)
+            await asyncio.sleep(2)
+            video_file = await client.aio.files.get(name=video_file.name)
             elapsed += 2
         
         if video_file.state.name != "ACTIVE":
@@ -235,7 +236,7 @@ async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
         logger.info("Video ready. Performing multimodal analysis (visual + audio)...")
         
         # Generate content using video + prompt
-        response = client.models.generate_content(
+        response = await client.aio.models.generate_content(
             model="gemini-2.5-flash",
             contents=[
                 types.Content(
@@ -252,8 +253,8 @@ async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
         
         # Clean up uploaded file
         try:
-            client.files.delete(name=video_file.name)
-        except:
+            await client.aio.files.delete(name=video_file.name)
+        except Exception:
             pass  # Non-critical
         
         if not response.text:
@@ -288,6 +289,8 @@ async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
             "renovationNotes": f"Unable to perform detailed video analysis: {str(e)}",
             "audioTranscript": None
         }
+    finally:
+        client.close()
 
 
 async def analyze_video_triage(video_data: bytes, metadata: Optional[Dict[str, Any]] = None) -> VideoTriageResult:

@@ -7,7 +7,7 @@ Implements FIDO2/WebAuthn protocol for biometric authentication:
 - Platform authenticator (FaceID/TouchID)
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel, Field
 from firebase_admin import firestore, auth
 from src.auth.jwt_handler import verify_token, get_current_user_id
@@ -81,14 +81,15 @@ def _cleanup_challenges():
 
 @router.post("/register/options", response_model=PasskeyRegistrationOptions)
 async def get_registration_options(
-    request: PasskeyRegistrationRequest,
+    request: Request,
+    body: PasskeyRegistrationRequest,
     user_id: str = Depends(get_current_user_id)
 ) -> PasskeyRegistrationOptions:
     """
     Generate WebAuthn registration options.
     """
     # Verify the requesting user matches the token
-    if user_id != request.user_id:
+    if user_id != body.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot register passkey for another user"
@@ -106,13 +107,37 @@ async def get_registration_options(
         "expires_at": time.time() + 60  # 60s expiration
     }
     
-    logger.info(f"Generated passkey registration challenge for user {user_id}")
+    # DYNAMIC RP_ID RESOLUTION
+    # 1. Prefer env var
+    import os
+    rp_id = os.getenv("RP_ID")
+    
+    # 2. Fallback to extracting from Origin/Host for Dev flexibility
+    if not rp_id:
+        origin = request.headers.get("origin")
+        host = request.headers.get("host")
+        
+        if origin:
+            from urllib.parse import urlparse
+            try:
+                parsed = urlparse(origin)
+                rp_id = parsed.hostname
+            except:
+                pass
+        
+        if not rp_id and host:
+            rp_id = host.split(":")[0]  # Strip port
+            
+    if not rp_id:
+        rp_id = "localhost"
+        
+    logger.info(f"Generated passkey registration challenge for user {user_id} (RP_ID: {rp_id})")
     
     return PasskeyRegistrationOptions(
         challenge=challenge_b64,
         rp={
             "name": "SYD - AI Renovation Assistant",
-            "id": "localhost"  # Change to your domain in production
+            "id": rp_id
         },
         user={
             "id": base64.urlsafe_b64encode(user_id.encode()).decode('utf-8').rstrip('='),
@@ -183,12 +208,13 @@ async def verify_registration(
 
 @router.post("/authenticate/options", response_model=PasskeyAuthenticationOptions)
 async def get_authentication_options(
-    request: PasskeyAuthenticationRequest
+    request: Request,
+    body: PasskeyAuthenticationRequest
 ) -> PasskeyAuthenticationOptions:
     """
     Generate WebAuthn authentication options.
     """
-    user_id = request.user_id
+    user_id = body.user_id
     _cleanup_challenges()
     
     # Generate challenge
@@ -222,11 +248,35 @@ async def get_authentication_options(
                 detail="Nessuna passkey registrata per questo utente"
             )
             
-    logger.info(f"Generated passkey authentication challenge (user_id={user_id})")
+    # DYNAMIC RP_ID RESOLUTION
+    # 1. Prefer env var
+    import os
+    rp_id = os.getenv("RP_ID")
+    
+    # 2. Fallback to extracting from Origin/Host for Dev flexibility
+    if not rp_id:
+        origin = request.headers.get("origin")
+        host = request.headers.get("host")
+        
+        if origin:
+            from urllib.parse import urlparse
+            try:
+                parsed = urlparse(origin)
+                rp_id = parsed.hostname
+            except:
+                pass
+        
+        if not rp_id and host:
+            rp_id = host.split(":")[0]  # Strip port
+            
+    if not rp_id:
+        rp_id = "localhost"
+
+    logger.info(f"Generated passkey authentication challenge (user_id={user_id}) RP_ID: {rp_id}")
     
     return PasskeyAuthenticationOptions(
         challenge=challenge_b64,
-        rpId="localhost",
+        rpId=rp_id,
         allowCredentials=allow_credentials,
         timeout=60000
     )

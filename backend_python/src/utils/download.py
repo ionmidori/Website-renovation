@@ -37,7 +37,10 @@ async def download_image_smart(url: str, timeout: float = 30.0) -> tuple[bytes, 
     # - https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<path>?...
     # - https://storage.googleapis.com/<bucket>/<path>
     
-    firebase_pattern = r"https?://(?:firebasestorage\.googleapis\.com/v0/b|storage\.googleapis\.com)/([^/]+)/o/([^?]+)"
+    # Updated Regex to handle both formats:
+    # 1. client: firebasestorage.googleapis.com/v0/b/<bucket>/o/<path>
+    # 2. signed: storage.googleapis.com/<bucket>/<path>
+    firebase_pattern = r"https?://(?:firebasestorage\.googleapis\.com/v0/b|storage\.googleapis\.com)/([^/]+)(?:/o/|/)(.+?)(?:\?|$)"
     match = re.match(firebase_pattern, url)
     
     if match:

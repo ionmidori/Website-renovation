@@ -60,6 +60,29 @@ const nextConfig: NextConfig = {
         ]
       }
     ];
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // These rewrites are checked before headers/redirects
+        // and before all files including _next/public files which
+        // allows required files to be overridden
+        {
+          source: '/api/py/:path*',
+          destination: process.env.NODE_ENV === 'development'
+            ? 'http://127.0.0.1:8080/api/:path*' // Local Python Backend
+            : 'https://syd-brain-972229558318.europe-west1.run.app/api/:path*', // Cloud Run
+        },
+        {
+          source: '/chat/stream',
+          destination: process.env.NODE_ENV === 'development'
+            ? 'http://127.0.0.1:8080/chat/stream' // Local Python Backend
+            : 'https://syd-brain-972229558318.europe-west1.run.app/chat/stream', // Cloud Run
+        }
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   }
 };
 
