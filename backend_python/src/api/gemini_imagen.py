@@ -25,9 +25,8 @@ def _get_client():
     return _client
 
 # Models for image generation
-T2I_MODEL = "gemini-2.5-flash-image"  # Testing targeted image generation model
-# I2I_MODEL = "gemini-3-pro-image-preview"  # Image-to-Image (Verified available, but EXPENSIVE)
-I2I_MODEL = "gemini-2.5-flash-image" # Switched to cheaper model for cost optimization
+T2I_MODEL = "gemini-3-pro-image-preview"  # User requested: High Quality T2I
+I2I_MODEL = "gemini-3-pro-image-preview"  # User requested: Gemini 3 Pro Image (Multimodal I2I)
 
 
 async def generate_image_t2i(

@@ -49,7 +49,7 @@ async def generate_architectural_prompt(
     if keep_elements is None:
         keep_elements = []
     
-    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-2.5-flash")
+    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-3-flash-preview")
     
     logger.info(f"[Architect] Building narrative plan (Style: {target_style}, Keep: {len(keep_elements)})...")
     logger.info(f"[Architect] User Instructions: {user_instructions[:50]}...")

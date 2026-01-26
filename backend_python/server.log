@@ -4224,3 +4224,230 @@ task: <Task pending name='Task-18' coro=<AsyncClient.aclose() running at C:\User
 2026-01-26 20:50:27 [INFO] SYD Brain API starting on port 8080...
 2026-01-26 20:57:39 [INFO] SYD Brain API starting on port 8080...
 2026-01-26 20:58:02 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:02:37 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:13:30 [INFO] Using local service account: firebase-service-account.json
+2026-01-26 21:13:30 [INFO] Firebase Admin SDK initialized
+2026-01-26 21:13:31 [INFO] [Firestore] Created new session session-1769458042558-opwjq
+2026-01-26 21:13:31 [INFO] [Firestore] Retrieved 0 messages for session session-1769458042558-opwjq
+2026-01-26 21:13:32 [INFO] [Firestore] Saved user message to session session-1769458042558-opwjq
+2026-01-26 21:13:40 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:13:40 [INFO] Event received: ['agent']
+2026-01-26 21:13:40 [INFO] Checking NODE: agent
+2026-01-26 21:13:40 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:13:40 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:13:40 [INFO]    Found 1 messages
+2026-01-26 21:13:40 [INFO]    Last message type: AIMessage
+2026-01-26 21:13:40 [INFO]    RAW CONTENT: ''
+2026-01-26 21:13:40 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:13:40 [INFO]    TOOL_CALLS: [{'name': 'analyze_room', 'args': {'image_url': 'https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769458042558-opwjq/1769458401124-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T201321Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=9516af43e9019a948574810ebee37c7149157d27d517a605fc69bd21310c9c92229bbcc5f7cbc70622bebedbc96528cc3fcc87be60d48d2c53a8c664b67ad4b4428b777cbb392839915cef19ee03939e268c4cada022b1f9fb9fe2a6f923064e64fd6dd1db36cabd4ad1eee51ac84861edf5cc3b474c3b7cfeb3ed1ac48516ad9925e0b00548c0965d3030c81d7ddf91846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931874ded41a455a144f4'}, 'id': 'b00828da-8302-4a72-bcd0-2e3193104ee4', 'type': 'tool_call'}]
+2026-01-26 21:13:40 [INFO]    ADDITIONAL_KWARGS: {'function_call': {'name': 'analyze_room', 'arguments': '{"image_url": "https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769458042558-opwjq/1769458401124-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T201321Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=9516af43e9019a948574810ebee37c7149157d27d517a605fc69bd21310c9c92229bbcc5f7cbc70622bebedbc96528cc3fcc87be60d48d2c53a8c664b67ad4b4428b777cbb392839915cef19ee03939e268c4cada022b1f9fb9fe2a6f923064e64fd6dd1db36cabd4ad1eee51ac84861edf5cc3b474c3b7cfeb3ed1ac48516ad9925e0b00548c0965d3030c81d7ddf91846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931874ded41a455a144f4"}'}, '__gemini_function_call_thought_signatures__': {'b00828da-8302-4a72-bcd0-2e3193104ee4': 'CucCAXLI2nyIrxzxvX/8y2jLQ+nk1N1BZFIvApEV/ANEQu6WWAmTT/vLd9xKK6huXem6VvfpRCz9whB3GiYjEzytuCooZLpHQUamXWqTzRvOwX4ZpU071eLNRJHRl65GO1s3tpPD3YP7TVFi8NiCWk/qf+PbTK5C6Uf637QA9dSiqrypmmWHAqgMTpq+obUB3xoXrrIX10TaFjpIajmQsadJuo3eq7rGmSmiLPWK6Dhu6isBr/tkIUBrMivjwPaNzAHMxVxU5QUf1dhk6ZHYrHT+xxYn8CY2JGcuIcNIpPADlDKr9eiuq/v+eapn8uRkyZ7OqsRAq6c4pXB7Lc+2CSiWS9vJkG+AA5H0XRdQxx3LiPWhh7zqpVKbhQxbbpivIUOTYYJPKMfGg7s7lSQzm3LUu/gP2VPDKm8C+7TRCp8w+VaVbGli4NqTTCyDFS5HVpdbBj5V5QPu5k2NnyNtVYGHO6iREi1FKmc='}}
+2026-01-26 21:13:40 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:13:40 [INFO] DETECTED TOOL CALLS: 1
+2026-01-26 21:13:40 [INFO] [Firestore] Saved assistant message to session session-1769458042558-opwjq
+2026-01-26 21:13:40 [INFO] Saved assistant tool call message (1 calls)
+2026-01-26 21:13:40 [INFO] STREAMING TOOL CALL: analyze_room
+2026-01-26 21:13:40 [INFO] [Tool] analyze_room called for https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769458042558-opwjq/1769458401124-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T201321Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=9516af43e9019a948574810ebee37c7149157d27d517a605fc69bd21310c9c92229bbcc5f7cbc70622bebedbc96528cc3fcc87be60d48d2c53a8c664b67ad4b4428b777cbb392839915cef19ee03939e268c4cada022b1f9fb9fe2a6f923064e64fd6dd1db36cabd4ad1eee51ac84861edf5cc3b474c3b7cfeb3ed1ac48516ad9925e0b00548c0965d3030c81d7ddf91846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931846e1a54c7913f919df6aa7f656490161302758b00308db7307ea2e8883e0384a3aec88523ea32e10a5be3b131a539baa7567ef6208f21d43d163827edfbcab36795a5e8441097957bb82057a49a8b069f443dec9dc6b6be8d2b18ddac71f9fdaaea23c613a931874ded41a455a144f4
+2026-01-26 21:13:40 [INFO]   - Bucket: chatbotluca-a8a73.firebasestorage.app
+2026-01-26 21:13:40 [INFO]   - Path: user-uploads/session-1769458042558-opwjq/1769458401124-IMG_20171216_093439.jpg
+2026-01-26 21:13:41 [INFO] [Tool] Detected MIME type: image/jpeg
+2026-01-26 21:13:41 [INFO] [Vision] Initializing Gemini Vision analysis...
+2026-01-26 21:13:41 [INFO] [Vision] Model: gemini-2.5-flash
+2026-01-26 21:13:41 [INFO] AFC is enabled with max remote calls: 10.
+2026-01-26 21:13:53 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:13:53 [INFO] [Vision] Analyzed room: kitchen, 15mq
+2026-01-26 21:13:53 [INFO] Event received: ['tools']
+2026-01-26 21:13:53 [INFO] Checking NODE: tools
+2026-01-26 21:13:53 [INFO]    Node output keys: ['messages']
+2026-01-26 21:13:53 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:13:53 [INFO]    Found 1 messages
+2026-01-26 21:13:53 [INFO]    Last message type: ToolMessage
+2026-01-26 21:13:53 [INFO]    RAW CONTENT: '{\n  "room_type": "kitchen",\n  "approximate_size_sqm": 15,\n  "architectural_features": [\n    "white square ceramic tiles covering lower portion of left and back walls",\n    "structural column in back left corner, clad with white ceramic tiles",\n    "large casement window with white frame on left wall",\n    "wooden base cabinet with double sink and speckled countertop on left wall",\n    "wooden upper cabinets on back wall"\n  ],\n  "flooring_type": "terracotta tiles",\n  "wall_color": "white",\n  "ceiling_type": "flat",\n  "windows": [\n    {\n      "position": "left wall center",\n      "size": "large"\n    }\n  ],\n  "doors": [],\n  "special_features": [\n    "sink",\n    "wall_cabinets",\n    "base_cabinet",\n    "tiled_walls"\n  ]\n}'
+2026-01-26 21:13:53 [INFO]    HAS TOOL_CALLS? False
+2026-01-26 21:13:53 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:13:53 [INFO]    METADATA: {}
+2026-01-26 21:13:53 [INFO] DETECTED TOOL RESULT: b00828da-8302-4a72-bcd0-2e3193104ee4
+2026-01-26 21:13:53 [INFO] [Firestore] Saved tool message to session session-1769458042558-opwjq
+2026-01-26 21:13:59 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:13:59 [INFO] Event received: ['agent']
+2026-01-26 21:13:59 [INFO] Checking NODE: agent
+2026-01-26 21:13:59 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:13:59 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:13:59 [INFO]    Found 1 messages
+2026-01-26 21:13:59 [INFO]    Last message type: AIMessage
+2026-01-26 21:13:59 [INFO]    RAW CONTENT: 'Ho analizzato la foto! Vedo una cucina di circa 15mq con piastrelle in ceramica bianca, un mobile base in legno con doppio lavello e pensili in legno. Il pavimento è in cotto. Confermi?\n\nPrima di iniziare: quali elementi di questa stanza vuoi **conservare** esattamente così come sono? (es. il pavimento, le finestre, il soffitto...)'
+2026-01-26 21:13:59 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:13:59 [INFO]    TOOL_CALLS: []
+2026-01-26 21:13:59 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:13:59 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:13:59 [INFO] AI TEXT RESPONSE: Ho analizzato la foto! Vedo una cucina di circa 15mq con piastrelle in ceramica bianca, un mobile ba...
+2026-01-26 21:14:02 [INFO] [Firestore] Saved assistant message to session session-1769458042558-opwjq
+2026-01-26 21:16:10 [INFO] [Firestore] Retrieved 4 messages for session session-1769458042558-opwjq
+2026-01-26 21:16:10 [INFO] [Firestore] Saved user message to session session-1769458042558-opwjq
+2026-01-26 21:16:13 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:16:13 [INFO] Event received: ['agent']
+2026-01-26 21:16:13 [INFO] Checking NODE: agent
+2026-01-26 21:16:13 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:16:13 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:16:13 [INFO]    Found 1 messages
+2026-01-26 21:16:13 [INFO]    Last message type: AIMessage
+2026-01-26 21:16:13 [INFO]    RAW CONTENT: 'Perfetto. Ora dimmi: come vuoi trasformare il resto? Sii specifico su stile, materiali e arredi.'
+2026-01-26 21:16:13 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:16:13 [INFO]    TOOL_CALLS: []
+2026-01-26 21:16:13 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:16:13 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:16:13 [INFO] AI TEXT RESPONSE: Perfetto. Ora dimmi: come vuoi trasformare il resto? Sii specifico su stile, materiali e arredi....
+2026-01-26 21:16:14 [INFO] [Firestore] Saved assistant message to session session-1769458042558-opwjq
+2026-01-26 21:18:08 [INFO] [Firestore] Retrieved 6 messages for session session-1769458042558-opwjq
+2026-01-26 21:18:08 [INFO] [Firestore] Saved user message to session session-1769458042558-opwjq
+2026-01-26 21:18:18 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:18:18 [INFO] Event received: ['agent']
+2026-01-26 21:18:18 [INFO] Checking NODE: agent
+2026-01-26 21:18:18 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:18:18 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:18:18 [INFO]    Found 1 messages
+2026-01-26 21:18:18 [INFO]    Last message type: AIMessage
+2026-01-26 21:18:18 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:18:18 [INFO]    TOOL_CALLS: []
+2026-01-26 21:18:18 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:18:18 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:18:21 [INFO] [Firestore] Saved assistant message to session session-1769458042558-opwjq
+2026-01-26 21:19:23 [INFO] [Firestore] Retrieved 8 messages for session session-1769458042558-opwjq
+2026-01-26 21:19:23 [INFO] [Firestore] Saved user message to session session-1769458042558-opwjq
+2026-01-26 21:22:56 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:29:11 [INFO] Using local service account: firebase-service-account.json
+2026-01-26 21:29:11 [INFO] Firebase Admin SDK initialized
+2026-01-26 21:29:12 [INFO] [Firestore] Created new session session-1769459061896-zlf2x
+2026-01-26 21:29:12 [INFO] [Firestore] Retrieved 0 messages for session session-1769459061896-zlf2x
+2026-01-26 21:29:12 [INFO] [Firestore] Saved user message to session session-1769459061896-zlf2x
+2026-01-26 21:29:20 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:29:20 [INFO] Event received: ['agent']
+2026-01-26 21:29:20 [INFO] Checking NODE: agent
+2026-01-26 21:29:20 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:29:20 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:29:20 [INFO]    Found 1 messages
+2026-01-26 21:29:20 [INFO]    Last message type: AIMessage
+2026-01-26 21:29:20 [INFO]    RAW CONTENT: ''
+2026-01-26 21:29:20 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:29:20 [INFO]    TOOL_CALLS: [{'name': 'analyze_room', 'args': {'image_url': 'https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T202858Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=33a5be38e16dc8084ea4db096fd8e6c5ab8dc39b9bbddfc98b5a39043eb2af4dab79331edd7a2f5091f3afa9790b68364d4bcb81b26b54e32a762eafb1573c5801d42e4682a1d88b826765e1e497323ad8470670ebf874f661f6c601c95979a2bb763ec14c5b81d5b128ebcd219b08b91b86fe16ea86cf05ec1aaa7b64ec6f39e002203f6737747b4c55468e4413360db55367e9d80099607f6e048ee89c7b9590fb62695814dce990872ffcc19c6b699266ab1730044e5a86450fea6cad55b9384b60b93f6f7f9a82141cddb108b13b2117ba0f66a3c33838af3718dde89fecc293cf50ffb8c56e95dac2d639292ca7057f35ddf03035e577df786fc0d6c0c4'}, 'id': '9ad6559c-0819-4816-bbdb-319fabbab530', 'type': 'tool_call'}]
+2026-01-26 21:29:20 [INFO]    ADDITIONAL_KWARGS: {'function_call': {'name': 'analyze_room', 'arguments': '{"image_url": "https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T202858Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=33a5be38e16dc8084ea4db096fd8e6c5ab8dc39b9bbddfc98b5a39043eb2af4dab79331edd7a2f5091f3afa9790b68364d4bcb81b26b54e32a762eafb1573c5801d42e4682a1d88b826765e1e497323ad8470670ebf874f661f6c601c95979a2bb763ec14c5b81d5b128ebcd219b08b91b86fe16ea86cf05ec1aaa7b64ec6f39e002203f6737747b4c55468e4413360db55367e9d80099607f6e048ee89c7b9590fb62695814dce990872ffcc19c6b699266ab1730044e5a86450fea6cad55b9384b60b93f6f7f9a82141cddb108b13b2117ba0f66a3c33838af3718dde89fecc293cf50ffb8c56e95dac2d639292ca7057f35ddf03035e577df786fc0d6c0c4"}'}, '__gemini_function_call_thought_signatures__': {'9ad6559c-0819-4816-bbdb-319fabbab530': 'CuIFAXLI2ny9eo78HPfJ5Sk90CX6oHhbW+3bVYGZl92Gpi72rZBzlJD1XADuGwne8NYYrY+Qgw7kppFX0cmwf310wP+MifCk3DfaDi8lk95meGMWhDRrwFQ+5mvyZ5XG1DuAOVLwvTHfwLUmCovL3k9mFzsZu1JXFzPSf1i/QX6KrxKc5zF63dpZYJOg9J8o0tCgw1mxHKpbhZsgbZ++jYkahrWXB0vaMrgDTW1XHNDytOUETUMbfHMoWh5aqgb/Yof049FlZ8TqtnPGRRfex5Uf03inYS2fCh4LrQpQ7ZhT4jTYzrpcEp15lawbESxBMjZv2C+h0Lv1J4oG/g48wZpP7w292V2eIMuJIhFOv9Kaq7FAhR4Ru1pNxOF7MdQgZtfpXmOMaZzDWfoqsPE5Qu6IEC0oqdrZj3dw7TIc/n4C8RaTvD8qAxKmNNesBAkVybB99YTJBN9i22S8u6Ca9/QxIOJGZBwuj++OaVEIUTf2JxljR789weqcR42t2BpaEj0+7GjcSpql2QXxXjXxzZFHh/D63VRTr55fxCxZdGaMnlyx8gnFyaF0BmGBuHbS9eZPgJn3IPsDNPT7NRrSHXcFFr9/Jya8yRGETGni16ezkoRpeP1S/fLI9jsMrO5ttP9DZdsH5RAoGt/w75KxrsEAQrc08XTaNfVGEZgIAyRmArk3ZesbEou/njWlkzbvyKtS7KbCiZT3JT2bEUGQOPxFkwPWxYNFxKar7z5Rt2xuM5E9728rQJQR66x44zK0DxvU8vd9keWGd4DkzZKVh7lbDG9Ga2wdasdoE3AofoE7DliUPI54lCfJBwomG3leQ6AqPBH3/qfl5lSgDbChSZIqkAIycQlMMiFe3zFYxY2Hg4opw+rJFEjo9ZzOnth4RUg0uYdUdLOQHjJ4cyn1h3PmZqninnrEjA1+BTOKTe5vV/rOoYwmWeakzKPMTAXSpS/WImcvQ/aIQ+vy9ToN6ozkNL6q'}}
+2026-01-26 21:29:20 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:29:20 [INFO] DETECTED TOOL CALLS: 1
+2026-01-26 21:29:20 [INFO] [Firestore] Saved assistant message to session session-1769459061896-zlf2x
+2026-01-26 21:29:20 [INFO] Saved assistant tool call message (1 calls)
+2026-01-26 21:29:20 [INFO] STREAMING TOOL CALL: analyze_room
+2026-01-26 21:29:20 [INFO] [Tool] analyze_room called for https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T202858Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=33a5be38e16dc8084ea4db096fd8e6c5ab8dc39b9bbddfc98b5a39043eb2af4dab79331edd7a2f5091f3afa9790b68364d4bcb81b26b54e32a762eafb1573c5801d42e4682a1d88b826765e1e497323ad8470670ebf874f661f6c601c95979a2bb763ec14c5b81d5b128ebcd219b08b91b86fe16ea86cf05ec1aaa7b64ec6f39e002203f6737747b4c55468e4413360db55367e9d80099607f6e048ee89c7b9590fb62695814dce990872ffcc19c6b699266ab1730044e5a86450fea6cad55b9384b60b93f6f7f9a82141cddb108b13b2117ba0f66a3c33838af3718dde89fecc293cf50ffb8c56e95dac2d639292ca7057f35ddf03035e577df786fc0d6c0c4
+2026-01-26 21:29:20 [INFO]   - Bucket: chatbotluca-a8a73.firebasestorage.app
+2026-01-26 21:29:20 [INFO]   - Path: user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg
+2026-01-26 21:29:20 [INFO] [Tool] Detected MIME type: image/jpeg
+2026-01-26 21:29:20 [INFO] [Vision] Initializing Gemini Vision analysis...
+2026-01-26 21:29:20 [INFO] [Vision] Model: gemini-2.5-flash
+2026-01-26 21:29:20 [INFO] AFC is enabled with max remote calls: 10.
+2026-01-26 21:29:32 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:29:32 [INFO] [Vision] Analyzed room: kitchen, 25mq
+2026-01-26 21:29:32 [INFO] Event received: ['tools']
+2026-01-26 21:29:32 [INFO] Checking NODE: tools
+2026-01-26 21:29:32 [INFO]    Node output keys: ['messages']
+2026-01-26 21:29:32 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:29:32 [INFO]    Found 1 messages
+2026-01-26 21:29:32 [INFO]    Last message type: ToolMessage
+2026-01-26 21:29:32 [INFO]    RAW CONTENT: '{\n  "room_type": "kitchen",\n  "approximate_size_sqm": 25,\n  "architectural_features": [\n    "structural column/bulkhead at intersection of left and back walls",\n    "white ceramic wall tiles covering lower half of left, back, and right walls"\n  ],\n  "flooring_type": "terracotta tiles",\n  "wall_color": "white",\n  "ceiling_type": "flat",\n  "windows": [\n    {\n      "position": "left wall center",\n      "size": "large"\n    }\n  ],\n  "doors": [],\n  "special_features": [\n    "built-in_base_cabinet_with_double_sink",\n    "wooden_wall_cabinets"\n  ]\n}'
+2026-01-26 21:29:32 [INFO]    HAS TOOL_CALLS? False
+2026-01-26 21:29:32 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:29:32 [INFO]    METADATA: {}
+2026-01-26 21:29:32 [INFO] DETECTED TOOL RESULT: 9ad6559c-0819-4816-bbdb-319fabbab530
+2026-01-26 21:29:32 [INFO] [Firestore] Saved tool message to session session-1769459061896-zlf2x
+2026-01-26 21:29:36 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:29:36 [INFO] Event received: ['agent']
+2026-01-26 21:29:36 [INFO] Checking NODE: agent
+2026-01-26 21:29:36 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:29:36 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:29:36 [INFO]    Found 1 messages
+2026-01-26 21:29:36 [INFO]    Last message type: AIMessage
+2026-01-26 21:29:36 [INFO]    RAW CONTENT: 'Ho analizzato la foto! Vedo una cucina di circa 25mq con piastrelle in cotto e un mobile lavello con pensili in legno. Confermi?\n\nPrima di iniziare: quali elementi di questa stanza vuoi **conservare** esattamente così come sono? (es. il pavimento, le finestre, il soffitto...)'
+2026-01-26 21:29:36 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:29:36 [INFO]    TOOL_CALLS: []
+2026-01-26 21:29:36 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:29:36 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:29:36 [INFO] AI TEXT RESPONSE: Ho analizzato la foto! Vedo una cucina di circa 25mq con piastrelle in cotto e un mobile lavello con...
+2026-01-26 21:29:39 [INFO] [Firestore] Saved assistant message to session session-1769459061896-zlf2x
+2026-01-26 21:30:01 [INFO] [Firestore] Retrieved 4 messages for session session-1769459061896-zlf2x
+2026-01-26 21:30:01 [INFO] [Firestore] Saved user message to session session-1769459061896-zlf2x
+2026-01-26 21:30:05 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:30:05 [INFO] Event received: ['agent']
+2026-01-26 21:30:05 [INFO] Checking NODE: agent
+2026-01-26 21:30:05 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:30:05 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:30:05 [INFO]    Found 1 messages
+2026-01-26 21:30:05 [INFO]    Last message type: AIMessage
+2026-01-26 21:30:05 [INFO]    RAW CONTENT: [{'type': 'text', 'text': 'Perfetto. Ora dimmi: come vuoi trasformare il resto? Sii specifico su stile, materiali e arredi.', 'extras': {'signature': 'CsYBAXLI2nwHgjMJXeCzJRiVIpjIiGwYM7lTEXvAAiRxvPqVtOaBYHiocTaAUOJg3v0AXxvrFANA7KI0HNZOMrw/0pjUHTphkihwm2bIeS/VMYuNxZ+MFF5VE2phJGiK3Yp4XQx7u26e9lsMqBTyZF/4zZo86ANuuFpMEdpOISrQtGtJ4uDVXpfBUM2qqgVS28PiR8ENCxqypEztwGz0p86RKYjCD7sIFmNw90mYebK2f15s78/LqjuJvRp2Tim1EvhK/Mts6Pt2'}}]
+2026-01-26 21:30:05 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:30:05 [INFO]    TOOL_CALLS: []
+2026-01-26 21:30:05 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:30:05 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:30:05 [INFO] AI TEXT RESPONSE: Perfetto. Ora dimmi: come vuoi trasformare il resto? Sii specifico su stile, materiali e arredi....
+2026-01-26 21:30:06 [INFO] [Firestore] Saved assistant message to session session-1769459061896-zlf2x
+2026-01-26 21:36:03 [INFO] [Firestore] Retrieved 6 messages for session session-1769459061896-zlf2x
+2026-01-26 21:36:03 [INFO] [Firestore] Saved user message to session session-1769459061896-zlf2x
+2026-01-26 21:36:08 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:36:08 [INFO] Event received: ['agent']
+2026-01-26 21:36:08 [INFO] Checking NODE: agent
+2026-01-26 21:36:08 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:36:08 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:36:08 [INFO]    Found 1 messages
+2026-01-26 21:36:08 [INFO]    Last message type: AIMessage
+2026-01-26 21:36:08 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:36:08 [INFO]    TOOL_CALLS: []
+2026-01-26 21:36:08 [INFO]    ADDITIONAL_KWARGS: {}
+2026-01-26 21:36:08 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:36:11 [INFO] [Firestore] Saved assistant message to session session-1769459061896-zlf2x
+2026-01-26 21:36:26 [INFO] [Firestore] Retrieved 8 messages for session session-1769459061896-zlf2x
+2026-01-26 21:36:26 [INFO] [Firestore] Saved user message to session session-1769459061896-zlf2x
+2026-01-26 21:36:33 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:36:34 [INFO] Event received: ['agent']
+2026-01-26 21:36:34 [INFO] Checking NODE: agent
+2026-01-26 21:36:34 [INFO]    Node output keys: ['messages', 'phase', 'active_image_url']
+2026-01-26 21:36:34 [INFO]    Type of messages: <class 'list'>
+2026-01-26 21:36:34 [INFO]    Found 1 messages
+2026-01-26 21:36:34 [INFO]    Last message type: AIMessage
+2026-01-26 21:36:34 [INFO]    RAW CONTENT: ''
+2026-01-26 21:36:34 [INFO]    HAS TOOL_CALLS? True
+2026-01-26 21:36:34 [INFO]    TOOL_CALLS: [{'name': 'generate_render', 'args': {'mode': 'modification', 'prompt': 'structural column/bulkhead at intersection of left and back walls, white ceramic wall tiles covering lower half of left, back, and right walls, built-in_base_cabinet_with_double_sink, wooden_wall_cabinets, large window on left wall center, flat ceiling. Modern style kitchen with white cabinets and walls, featuring red neon lighting accents. Terracotta floor is kept as is.', 'style': 'modern', 'keep_elements': ['terracotta floor'], 'room_type': 'kitchen', 'source_image_url': 'https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T202858Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=33a5be38e16dc8084ea4db096fd8e6c5ab8dc39b9bbddfc98b5a39043eb2af4dab79331edd7a2f5091f3afa9790b68364d4bcb81b26b54e32a762eafb1573c5801d42e4682a1d88b826765e1e497323ad8470670ebf874f661f6c601c95979a2bb763ec14c5b81d5b128ebcd219b08b91b86fe16ea86cf05ec1aaa7b64ec6f39e002203f6737747b4c55468e4413360db55367e9d80099607f6e048ee89c7b9590fb62695814dce990872ffcc19c6b699266ab1730044e5a86450fea6cad55b9384b60b93f6f7f9a82141cddb108b13b2117ba0f66a3c33838af3718dde89fecc293cf50ffb8c56e95dac2d639292ca7057f35ddf03035e577df786fc0d6c0c4'}, 'id': '8018e3ca-ad6c-4ec5-a9f0-f49a8cc54cf1', 'type': 'tool_call'}]
+2026-01-26 21:36:34 [INFO]    ADDITIONAL_KWARGS: {'function_call': {'name': 'generate_render', 'arguments': '{"mode": "modification", "prompt": "structural column/bulkhead at intersection of left and back walls, white ceramic wall tiles covering lower half of left, back, and right walls, built-in_base_cabinet_with_double_sink, wooden_wall_cabinets, large window on left wall center, flat ceiling. Modern style kitchen with white cabinets and walls, featuring red neon lighting accents. Terracotta floor is kept as is.", "style": "modern", "keep_elements": ["terracotta floor"], "room_type": "kitchen", "source_image_url": "https://storage.googleapis.com/chatbotluca-a8a73.firebasestorage.app/user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-admin-bot%40chatbotluca-a8a73.iam.gserviceaccount.com%2F20260126%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260126T202858Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=33a5be38e16dc8084ea4db096fd8e6c5ab8dc39b9bbddfc98b5a39043eb2af4dab79331edd7a2f5091f3afa9790b68364d4bcb81b26b54e32a762eafb1573c5801d42e4682a1d88b826765e1e497323ad8470670ebf874f661f6c601c95979a2bb763ec14c5b81d5b128ebcd219b08b91b86fe16ea86cf05ec1aaa7b64ec6f39e002203f6737747b4c55468e4413360db55367e9d80099607f6e048ee89c7b9590fb62695814dce990872ffcc19c6b699266ab1730044e5a86450fea6cad55b9384b60b93f6f7f9a82141cddb108b13b2117ba0f66a3c33838af3718dde89fecc293cf50ffb8c56e95dac2d639292ca7057f35ddf03035e577df786fc0d6c0c4"}'}, '__gemini_function_call_thought_signatures__': {'8018e3ca-ad6c-4ec5-a9f0-f49a8cc54cf1': 'CpcFAXLI2nyWcKrW0N7uqLa5Qif/GxhiEbRuZ1Yc+2Wm+VED2SxOwZsWl+X0HRo40D8z4CgZdOSVs5V1W5faRkW0rXRvUTQYbzh16N/piIxBGum4oV/XBeaH6FTxH/XsxeaKV/maLT3EGm4EkSHQ6kSKaza1jRl/Mk+Qt0G8WHgfENEbiM+c59zrHRkQW6TeJlHvLNQOc7f3CHWWT4SYY5/Ak4rNiotz1EK9XkjfzLeKMv5N/ITCL+fEmrAU7qDqsllCIuzeZL5gW6tUVF+6hUQ5xDAdOT9AjO60tzCSFxiqjlUo5srVm5mmzPUqIhO2M5nhSECn4CLGztlPGVXDFuyYYLHyodktZzcthz6xjHtuyD74POrcLAk2tR112tdNbZzC+FsHi7Wldmuy3u6Gk6d50jlM/n82/0Xbmvh39UdqISic5vBlZgYsRVtpNVJd+ssBjovE4w98W9MSgTJkIYcjuFdmd4YZk9GoGbc4cp/ngccWN2xaK+0sMoK8sJHUJ8xijM1RKNZwYmoeIn/LAX/Oo2fTp+5Qpzk0lJM7bq0CeTkpopd6OO1DOHYbv6KAGu5nGBrAkpY4rB9tl9fHmGhgYHXK79AtmBmmGOetgHg5teYmzjHm/l4V3mu+5QJzssYwJNFL9U8rtC4l72q7/Wiy0/SK0DGG76SwiYciMk6b6IDJo56WSfD8tx6V5KnrmFyviez8gdG3Thcmce2tMFhKVi/5hJ6J7g9oUBhzbYyBCBFLXzuLeZHZHDAR/XQDMyoEDy3AlCEibwtHkDIpjc5iNX0O3831eqaWxhQMv9LO9WyvCnhLsG7YlYtnF+ICjNWC3tDQCDynWzuKntw1vP5srb+cHqVrhRxWQT/oYk2Qzm5Lt3QTdY+o'}}
+2026-01-26 21:36:34 [INFO]    METADATA: {'finish_reason': 'STOP', 'model_name': 'gemini-2.5-flash', 'safety_ratings': [], 'model_provider': 'google_genai'}
+2026-01-26 21:36:34 [INFO] DETECTED TOOL CALLS: 1
+2026-01-26 21:36:34 [INFO] [Firestore] Saved assistant message to session session-1769459061896-zlf2x
+2026-01-26 21:36:34 [INFO] Saved assistant tool call message (1 calls)
+2026-01-26 21:36:34 [INFO] STREAMING TOOL CALL: generate_render
+2026-01-26 21:36:34 [INFO]   - mode: modification
+2026-01-26 21:36:34 [INFO] [Quota] Dev mode active: Bypassing quota for generate_render
+2026-01-26 21:36:34 [INFO]   - Bucket: chatbotluca-a8a73.firebasestorage.app
+2026-01-26 21:36:34 [INFO]   - Path: user-uploads/session-1769459061896-zlf2x/1769459338096-IMG_20171216_093439.jpg
+2026-01-26 21:36:34 [INFO] Performing triage analysis on image (Gemini 2.5 Flash)...
+2026-01-26 21:36:34 [INFO] AFC is enabled with max remote calls: 10.
+2026-01-26 21:36:43 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:36:43 [INFO] Triage complete: Kitchen room detected
+2026-01-26 21:36:43 [INFO] [Architect] Building narrative plan (Style: modern, Keep: 1)...
+2026-01-26 21:36:43 [INFO] [Architect] User Instructions: structural column/bulkhead at intersection of left...
+2026-01-26 21:36:43 [INFO] [Architect] Model: gemini-2.5-flash
+2026-01-26 21:36:43 [INFO] AFC is enabled with max remote calls: 10.
+2026-01-26 21:37:00 [INFO] HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-01-26 21:37:00 [INFO] [Architect] Skeleton: 519 chars
+2026-01-26 21:37:00 [INFO] [Architect] Materials: 890 chars
+2026-01-26 21:37:00 [INFO] [Architect] Furnishing: 844 chars
+2026-01-26 21:37:00 [INFO] Generating I2I image with prompt length: 2832 chars
+2026-01-26 21:37:00 [INFO] AFC is enabled with max remote calls: 10.
+2026-01-26 21:39:58 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:46:30 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:47:35 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:47:50 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:57:35 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:57:55 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 21:59:40 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:26:43 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:28:12 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:28:16 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:29:24 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:31:08 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:34:47 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:34:52 [INFO] SYD Brain API starting on port 8080...
+2026-01-26 22:34:56 [INFO] SYD Brain API starting on port 8080...

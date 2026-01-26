@@ -74,8 +74,9 @@ Tutto corretto? Se mi dai l'ok, procedo subito con la generazione."
 </phase>
 
 <phase name="5_execution">
-<trigger>User says "Sì", "Procedi", "Vai", "Genera" AFTER phase 4</trigger>
+<trigger>User says "Sì", "Procedi", "Vai", "Genera", "Modifica", "Modernizazzalo" AFTER phase 4 OR implies immediate modification ("Fammelo moderno")</trigger>
 <action>
+CRITICAL: You MUST call the `generate_render` tool NOW. Do not ask for more details. Do not just describe what you will do. ACT.
 Call `generate_render` with:
 - mode: "modification"
 - keepElements: [List from Phase 2]

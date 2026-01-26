@@ -42,7 +42,7 @@ async def analyze_room_structure(image_bytes: bytes) -> RoomAnalysis:
     Returns:
         RoomAnalysis object with detailed structural data
     """
-    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-2.5-flash")
+    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-3-flash-preview")
     
     logger.info(f"[Vision] Initializing Gemini Vision analysis...")
     logger.info(f"[Vision] Model: {model_name}")
