@@ -1,6 +1,6 @@
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict, Any
 from src.api.gemini_imagen import generate_image_t2i, generate_image_i2i
 from src.storage.upload import upload_base64_image
 from src.vision.triage import analyze_image_triage
@@ -45,7 +45,7 @@ async def generate_render_wrapper(
     mode: str = "creation",
     source_image_url: Optional[str] = None,
     keep_elements: Optional[list[str]] = None
-) -> str:
+) -> Dict[str, Any]:
     """
     Generate a photorealistic interior design rendering.
     Supports both creation (T2I) and modification (I2I) modes.
@@ -133,10 +133,19 @@ async def generate_render_wrapper(
         )
         
         mode_label = "transformed" if mode == "modification" else "generated"
-        return f"✅ Rendering {mode_label} successfully!\n\n![Design]({image_url})\n\nWhat do you think?"
+        # Return structured object for Frontend (ToolStatus.tsx)
+        return {
+            "imageUrl": image_url,
+            "description": f"Rendering {mode_label} successfully!",
+            "status": "success",
+            "mode": mode_label
+        }
         
     except Exception as e:
-        return f"Error generating render: {str(e)}"
+        return {
+            "error": str(e),
+            "status": "error"
+        }
 
 # Tool definition
 GENERATE_RENDER_TOOL_DEF = {

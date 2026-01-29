@@ -150,7 +150,8 @@ export function useImageUpload(sessionId?: string) {
                     let publicUrl = '';
                     if (sessionId) {
                         try {
-                            const uploadResponse = await fetch('/api/upload-image', {
+                            const { fetchWithAuth } = await import('@/lib/api-client');
+                            const uploadResponse = await fetchWithAuth('/api/upload-image', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({

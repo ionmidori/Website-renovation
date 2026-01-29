@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,11 +62,15 @@ export function SignInButton({ className, onLoginClick }: SignInButtonProps) {
             <div className={cn("flex items-center gap-3", className)}>
                 <div className="flex items-center gap-2">
                     {user.photoURL ? (
-                        <img
-                            src={user.photoURL}
-                            alt={user.displayName || "User"}
-                            className="w-8 h-8 rounded-full border border-slate-700"
-                        />
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-700">
+                            <Image
+                                src={user.photoURL}
+                                alt={user.displayName || "User"}
+                                fill
+                                sizes="32px"
+                                className="object-cover"
+                            />
+                        </div>
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
                             <UserIcon className="w-4 h-4 text-slate-400" />

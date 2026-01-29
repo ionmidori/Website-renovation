@@ -55,11 +55,12 @@ export function usePasskey() {
 
         try {
             // Get registration options from backend
-            const optionsRes = await fetch('/api/passkey/register/options', {
+            const { fetchWithAuth } = await import('@/lib/api-client');
+            const optionsRes = await fetchWithAuth('/api/passkey/register/options', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
+                    'Content-Type': 'application/json'
+                    // Authorization header injected automatically
                 },
                 body: JSON.stringify({ user_id: user.uid })
             });
@@ -90,11 +91,11 @@ export function usePasskey() {
             }
 
             // Send credential to backend
-            const verifyRes = await fetch('/api/passkey/register/verify', {
+            const verifyRes = await fetchWithAuth('/api/passkey/register/verify', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
+                    'Content-Type': 'application/json'
+                    // Authorization header injected automatically
                 },
                 body: JSON.stringify({
                     id: credential.id,
@@ -145,10 +146,12 @@ export function usePasskey() {
 
         try {
             // Get authentication options
-            const optionsRes = await fetch('/api/passkey/authenticate/options', {
+            const { fetchWithAuth } = await import('@/lib/api-client');
+            const optionsRes = await fetchWithAuth('/api/passkey/authenticate/options', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId || null })  // ✅ Null for Resident Keys
+                body: JSON.stringify({ user_id: userId || null }),  // ✅ Null for Resident Keys
+                skipAuth: true // Login is public
             });
 
             if (!optionsRes.ok) {
@@ -180,7 +183,7 @@ export function usePasskey() {
             }
 
             // Verify with backend
-            const verifyRes = await fetch('/api/passkey/authenticate/verify', {
+            const verifyRes = await fetchWithAuth('/api/passkey/authenticate/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -200,7 +203,8 @@ export function usePasskey() {
                             : null
                     },
                     type: assertion.type
-                })
+                }),
+                skipAuth: true // Login verification is public
             });
 
             if (!verifyRes.ok) {

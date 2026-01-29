@@ -88,9 +88,11 @@ export async function POST(req: Request) {
         // Forward to Python backend
         const pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/chat/stream`, {
             method: 'POST',
+            cache: 'no-store', // ⚡ CRITICAL: Disable Next.js buffering
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`, // ✅ Forward original Firebase ID Token
+                'Authorization': `Bearer ${idToken}`,
+                'Connection': 'close', // ⚡ Explicitly disable Keep-Alive upstream
             },
             body: JSON.stringify(pythonPayload)
         });
@@ -111,13 +113,42 @@ export async function POST(req: Request) {
 
         console.log('[Proxy] ✅ Streaming response from Python backend');
 
-        // Return Python's stream directly to client
-        // Python backend implements Vercel Data Stream Protocol
-        return new Response(pythonResponse.body, {
+        // 🛠️ MANUAL STREAM BRIDGE
+        // We manually read the stream to ensure the controller closes immediately
+        // when the upstream reader is done, preventing socket timeout delays.
+        const reader = pythonResponse.body?.getReader();
+        if (!reader) {
+            throw new Error("Failed to get reader from Python response");
+        }
+
+        const stream = new ReadableStream({
+            async start(controller) {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            controller.close();
+                            break;
+                        }
+                        controller.enqueue(value);
+                    }
+                } catch (err) {
+                    console.error("[Proxy] Stream Error:", err);
+                    controller.error(err);
+                }
+            }
+        });
+
+        // Return the manual stream
+        return new Response(stream, {
             status: 200,
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
                 'X-Vercel-AI-Data-Stream': 'v1',
+                'Cache-Control': 'no-cache, no-transform, no-store',
+                'Connection': 'keep-alive',
+                'X-Content-Type-Options': 'nosniff',
+                'Transfer-Encoding': 'chunked'
             },
         });
 

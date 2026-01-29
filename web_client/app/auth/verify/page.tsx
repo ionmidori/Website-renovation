@@ -48,7 +48,8 @@ function VerifyContent() {
             await completeMagicLink(emailLink, email);
 
             // Log analytics
-            await fetch("/api/magic-link/verify", {
+            const { fetchWithAuth } = await import('@/lib/api-client');
+            await fetchWithAuth("/api/magic-link/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email })

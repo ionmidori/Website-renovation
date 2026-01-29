@@ -1,24 +1,11 @@
 import React, { RefObject } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ArchitectAvatar from '@/components/ArchitectAvatar';
 import { MessageItem } from '@/components/chat/MessageItem';
+import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
 
 // ✅ Message interface compatible with AI SDK
-interface Message {
-    id: string;
-    role: string;
-    content: string;
-    toolInvocations?: Array<{
-        toolCallId: string;
-        toolName: string;
-        state: 'call' | 'result';
-        args?: any;
-        result?: any;
-    }>;
-    attachments?: {
-        images?: string[];
-    };
-}
+import { Message } from '@/types/chat';
 
 interface ChatMessagesProps {
     messages: Message[];
@@ -45,88 +32,45 @@ const ChatMessagesComponent = ({
     messagesEndRef
 }: ChatMessagesProps) => {
     return (
+
         <div
-            ref={messagesContainerRef}
+            ref={messagesContainerRef as any}
             className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y"
             style={scrollStyle}
         >
-            {/* Render all messages */}
-            {messages.map((msg, idx) => (
-                <MessageItem
-                    key={msg.id || idx}
-                    message={msg}
-                    index={idx}
-                    onImageClick={onImageClick}
-                />
-            ))}
+            <motion.div
+                layout
+                className="flex flex-col space-y-6"
+            >
+                <AnimatePresence initial={false} mode="popLayout">
+                    {messages.map((msg, idx) => (
+                        <MessageItem
+                            key={msg.id || idx}
+                            message={msg}
+                            index={idx}
+                            typingMessage={typingMessage}
+                            onImageClick={onImageClick}
+                        />
+                    ))}
+                </AnimatePresence>
+            </motion.div>
 
-            {/* Loading indicator (Only show if NO active tool is running to prevent double messages) */}
-            {isLoading && !messages[messages.length - 1]?.toolInvocations?.some(t => t.state === 'call') && (
+            {/* Loading indicator (Only show initial latency before first token arrives) */}
+            {isLoading && messages[messages.length - 1]?.role === 'user' && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
                     className="flex gap-3"
                 >
                     <ArchitectAvatar className="w-8 h-8 shrink-0" />
-                    <div className="bg-luxury-bg/80 border border-luxury-gold/10 p-4 rounded-2xl rounded-tl-none">
-                        <div className="flex items-center gap-3">
-                            <div className="flex gap-1">
-                                <motion.span
-                                    className="w-2 h-2 bg-luxury-teal rounded-full"
-                                    animate={{
-                                        y: [0, -8, 0],
-                                        scale: [1, 1.1, 1]
-                                    }}
-                                    transition={{
-                                        duration: 1.2,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                        times: [0, 0.5, 1]
-                                    }}
-                                />
-                                <motion.span
-                                    className="w-2 h-2 bg-luxury-teal rounded-full"
-                                    animate={{
-                                        y: [0, -8, 0],
-                                        scale: [1, 1.1, 1]
-                                    }}
-                                    transition={{
-                                        duration: 1.2,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                        times: [0, 0.5, 1],
-                                        delay: 0.15
-                                    }}
-                                />
-                                <motion.span
-                                    className="w-2 h-2 bg-luxury-teal rounded-full"
-                                    animate={{
-                                        y: [0, -8, 0],
-                                        scale: [1, 1.1, 1]
-                                    }}
-                                    transition={{
-                                        duration: 1.2,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                        times: [0, 0.5, 1],
-                                        delay: 0.3
-                                    }}
-                                />
-                            </div>
-                            <motion.span
-                                key={typingMessage}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="text-xs text-luxury-text/60 font-medium"
-                            >
-                                {typingMessage}
-                            </motion.span>
-                        </div>
+                    <div className="bg-luxury-bg/80 border border-luxury-gold/10 p-4 rounded-2xl rounded-tl-none shadow-premium backdrop-blur-sm">
+                        <ThinkingIndicator message={typingMessage} />
                     </div>
                 </motion.div>
             )}
 
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef as any} />
         </div>
     );
 };

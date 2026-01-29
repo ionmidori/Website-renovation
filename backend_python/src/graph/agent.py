@@ -15,8 +15,6 @@ from src.graph.tools_registry import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 # LLM initialization is deferred to get_agent_graph() to prevent blocking at import time
 _llm = None
 _llm_with_tools = None
@@ -26,9 +24,10 @@ def _get_llm():
     global _llm
     if _llm is None:
         logger.info("⚡ Initializing Gemini LLM...")
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         _llm = ChatGoogleGenerativeAI(
             model="gemini-3-flash-preview",
-            google_api_key=GEMINI_API_KEY,
+            google_api_key=api_key,
             temperature=0.7,
         )
     return _llm

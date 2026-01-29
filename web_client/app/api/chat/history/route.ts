@@ -20,6 +20,21 @@ export async function GET(req: NextRequest) {
             );
         }
 
+        // 🔒 AUTH VERIFICATION
+        const { auth } = await import('@/lib/firebase-admin');
+        const authHeader = req.headers.get('Authorization');
+
+        if (!authHeader?.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        try {
+            await auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+        } catch (e) {
+            console.error('[API] Auth failed:', e);
+            return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });
+        }
+
         console.log('[GET /api/chat/history] Loading history for session:', sessionId);
 
         // Load last 50 messages from Firestore

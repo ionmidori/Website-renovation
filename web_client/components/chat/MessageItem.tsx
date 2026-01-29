@@ -5,27 +5,15 @@ import ReactMarkdown from 'react-markdown';
 import ArchitectAvatar from '@/components/ArchitectAvatar';
 import { ImagePreview } from '@/components/chat/ImagePreview';
 import { ToolStatus } from '@/components/chat/ToolStatus';
+import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
 import { cn } from '@/lib/utils';
 
-interface Message {
-    id: string;
-    role: string;
-    content: string;
-    toolInvocations?: Array<{
-        toolCallId: string;
-        toolName: string;
-        state: 'call' | 'result';
-        args?: any;
-        result?: any;
-    }>;
-    attachments?: {
-        images?: string[];
-    };
-}
+import { Message } from '@/types/chat';
 
 interface MessageItemProps {
     message: Message;
     index: number;
+    typingMessage?: string;
     onImageClick: (imageUrl: string) => void;
 }
 
@@ -34,17 +22,20 @@ interface MessageItemProps {
  * Handles rendering of one chat message with its avatar, content, and attachments
  * ✅ Memoized to prevent unnecessary re-renders
  */
-export const MessageItem = React.memo<MessageItemProps>(({ message, index, onImageClick }) => {
+export const MessageItem = React.memo<MessageItemProps>(({ message, index, typingMessage, onImageClick }) => {
     // Helper: Extract text from both old (content) and new (parts[]) formats
-    const getMessageText = (msg: any): string => {
+    const getMessageText = (msg: Message): string => {
         if (msg.parts && Array.isArray(msg.parts)) {
             return msg.parts
-                .filter((part: any) => part.type === 'text')
-                .map((part: any) => part.text)
+                .filter((part) => part.type === 'text')
+                .map((part) => part.text)
                 .join('');
         }
         return msg.content || '';
     };
+
+    // Fix for React 18/19 type mismatch
+    const Markdown = ReactMarkdown as any;
 
     const text = getMessageText(message);
     const hasTools = message.toolInvocations?.length ?? 0 > 0;
@@ -60,78 +51,124 @@ export const MessageItem = React.memo<MessageItemProps>(({ message, index, onIma
         ) : null
     }), [onImageClick]);
 
-    // Hide empty assistant placeholders
-    if (message.role === 'assistant' && !text && !hasTools) {
+    const variants = {
+        hidden: { opacity: 0, y: 20, scale: 0.95 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: { type: "spring", stiffness: 300, damping: 24 }
+        },
+        exit: {
+            opacity: 0,
+            scale: 0.9,
+            transition: { duration: 0.2 }
+        }
+    };
+
+    // Hide internal 'tool' and 'data' messages
+    if (message.role === 'tool' || message.role === 'data') {
         return null;
     }
 
+    // 💎 PREMIUM UI: Native Thinking State
+    // Check if the message is in "Thinking Mode" (Assistant + Empty/Placeholder)
+    const isThinking = message.role === 'assistant' && (!text || text.trim() === '' || text.trim() === '...') && !hasTools;
+
     return (
         <motion.div
-            key={message.id || index}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 35,
-                delay: index * 0.05  // Stagger effect
-            }}
+            layout
+            variants={variants as any} // Cast to any to bypass strict framer-motion types
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className={cn(
                 "flex gap-3 max-w-[90%]",
-                message.role === 'user' ? "ml-auto flex-row-reverse" : ""
+                message.role === 'user' ? "ml-auto flex-row-reverse" : "items-start"
             )}
         >
             {/* Avatar */}
             {message.role === 'user' ? (
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1 bg-luxury-teal border-luxury-teal text-white">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-1 bg-luxury-teal border-luxury-teal text-white shadow-sm">
                     <User className="w-4 h-4" />
                 </div>
             ) : (
                 <ArchitectAvatar className="w-8 h-8 mt-1 shrink-0" />
             )}
 
-            {/* Message Bubble */}
-            <div className={cn(
-                "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
-                message.role === 'user'
-                    ? "bg-luxury-teal text-white rounded-tr-none"
-                    : "bg-luxury-bg/80 border border-luxury-gold/10 text-luxury-text rounded-tl-none"
-            )}>
-                {/* User Image Attachments */}
+            {/* Message Content Stack (Split Bubbles for User) */}
+            <div className={cn("flex flex-col gap-2 min-w-0 font-light", message.role === 'user' ? "items-end" : "items-start")}>
+
+                {/* 1. User Images Bubble (Visual Only) */}
                 {message.role === 'user' && message.attachments?.images && message.attachments.images.length > 0 && (
-                    <div className="mb-3 space-y-2">
+                    <div className="flex flex-wrap gap-2 justify-end">
                         {message.attachments.images.map((imageUrl, imgIdx) => (
-                            <ImagePreview
-                                key={imgIdx}
-                                src={imageUrl}
-                                alt="Uploaded image"
-                                onClick={onImageClick}
-                                className="w-full rounded-lg"
-                            />
+                            <div key={imgIdx} className="overflow-hidden rounded-2xl shadow-sm border border-luxury-text/10 max-w-[200px]">
+                                <ImagePreview
+                                    src={imageUrl}
+                                    alt="Uploaded image"
+                                    onClick={onImageClick}
+                                    className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                                />
+                            </div>
                         ))}
                     </div>
                 )}
 
-                {/* Message Content */}
-                <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
-                    {text ? (
-                        <ReactMarkdown
-                            urlTransform={(value) => value}
-                            components={markdownComponents}
-                        >
-                            {text}
-                        </ReactMarkdown>
-                    ) : null}
+                {/* 2. Main Text Bubble */}
+                {/* 💎 PREMIUM LOGIC: Only render if there is visible content */}
+                {(() => {
+                    // Check if tools have any visual output (Loading state OR Result with Image/Error)
+                    const hasVisibleTools = message.toolInvocations?.some(tool => {
+                        if (tool.state === 'call') return true; // Loading is always visible
+                        const result = tool.result || (tool as any).output;
+                        // Only results with images or errors are visible in ToolStatus
+                        return !!result?.imageUrl || !!result?.error || result?.status === 'error';
+                    });
 
-                    {/* Tool Invocations */}
-                    {message.toolInvocations?.map((tool, toolIdx) => (
-                        <ToolStatus
-                            key={toolIdx}
-                            tool={tool}
-                            onImageClick={onImageClick}
-                        />
-                    ))}
-                </div>
+                    // Determine if the bubble container should be transparent to the user
+                    const shouldShowBubble =
+                        isThinking ||
+                        (text && text.trim().length > 0) ||
+                        hasVisibleTools;
+
+                    if (!shouldShowBubble) return null;
+
+                    return (
+                        <div className={cn(
+                            "p-4 rounded-2xl text-sm leading-relaxed shadow-lg backdrop-blur-md",
+                            message.role === 'user'
+                                ? "bg-luxury-teal text-white rounded-tr-none border border-transparent"
+                                : "bg-luxury-bg/95 border border-luxury-gold/20 text-luxury-text rounded-tl-none" // Stronger Glass
+                        )}>
+                            <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
+                                {isThinking ? (
+                                    <ThinkingIndicator message={typingMessage} />
+                                ) : (
+                                    <>
+                                        {text && (
+                                            <Markdown
+                                                urlTransform={(value: string) => value}
+                                                components={markdownComponents as any}
+                                            >
+                                                {text}
+                                            </Markdown>
+                                        )}
+
+                                        {/* Tool Invocations */}
+                                        {message.toolInvocations?.map((tool, toolIdx) => (
+                                            <ToolStatus
+                                                key={toolIdx}
+                                                tool={tool}
+                                                onImageClick={onImageClick}
+                                            />
+                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
         </motion.div>
     );

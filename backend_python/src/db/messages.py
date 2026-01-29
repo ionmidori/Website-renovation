@@ -41,11 +41,19 @@ async def save_message(
         db.collection('sessions').document(session_id).collection('messages').add(message_data)
         
         # Update session metadata
-        db.collection('sessions').document(session_id).set({
+        session_ref = db.collection('sessions').document(session_id)
+        session_doc = session_ref.get()
+        
+        session_update = {
             'updatedAt': firestore.SERVER_TIMESTAMP,
             'sessionId': session_id,
             'messageCount': firestore.Increment(1)
-        }, merge=True)
+        }
+        
+        if not session_doc.exists:
+            session_update['createdAt'] = firestore.SERVER_TIMESTAMP
+            
+        session_ref.set(session_update, merge=True)
         
         logger.info(f"[Firestore] Saved {role} message to session {session_id}")
         

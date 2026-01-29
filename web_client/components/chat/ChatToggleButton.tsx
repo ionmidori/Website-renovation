@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,16 @@ interface ChatToggleButtonProps {
 export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
     // Track if we are dragging to prevent click
     const isDraggingRef = React.useRef(false);
+    const [constraints, setConstraints] = React.useState({ top: 0, left: 0, right: 0, bottom: 0 });
+
+    React.useEffect(() => {
+        setConstraints({
+            top: -window.innerHeight + 150,
+            left: -window.innerWidth + 150,
+            right: 0,
+            bottom: 0
+        });
+    }, []);
 
     const handleDragStart = () => {
         isDraggingRef.current = true;
@@ -58,12 +69,7 @@ export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
             drag
             dragMomentum={false}
             dragElastic={0.1}
-            dragConstraints={{
-                top: -window.innerHeight + 150,
-                left: -window.innerWidth + 150,
-                right: 0,
-                bottom: 0
-            }}
+            dragConstraints={constraints}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
 
@@ -94,10 +100,12 @@ export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
                     <X className="w-8 h-8 text-luxury-gold" />
                 ) : (
                     <div className="relative w-full h-full flex items-center justify-center !overflow-visible">
-                        <img
+                        <Image
                             src="/assets/syd_final_v9.png"
                             alt="Chat"
-                            className="w-full h-full max-w-none object-contain drop-shadow-xl transform transition-transform duration-300"
+                            fill
+                            sizes="(max-width: 768px) 150px, 220px"
+                            className="object-contain drop-shadow-xl transform transition-transform duration-300"
                             draggable={false}
                         />
                     </div>

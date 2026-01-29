@@ -1,140 +1,118 @@
-# 🛠️ POST-MORTEM & DEBUGGING: Cloud Run Crash Analysis (2026-01-24)
+# 🛠️ SYD Backend: Professional Debugging & Operations Guide
 
-> **Incident:** Cloud Run Deployment Failure (`Container failed to start`)
-> **Severity:** Critical (Service Unavailable)
-> **Cause:** `NameError: name 'Request' is not defined` in `main.py`
-> **Fix:** Added missing import `from fastapi import Request`
+> **Philosophy: Fail Fast, Log Loudly, Recover Gracefully.**
+> This document outlines the standard operating procedures (SOPs) for debugging, testing, and deploying the SYD Brain backend.
 
 ---
 
-## 🚨 Root Cause Analysis (RCA)
+## 🏗️ 1. Architecture Fundamentals
 
-### 1. The Startup Crash
-The recent **App Check Middleware** integration introduced this code block in `main.py`:
-```python
-@app.middleware("http")
-async def app_check_middleware(request: Request, call_next):  # <--- 'Request' type hint used here
-```
+The system follows a strict **3-Tier Architecture**. Violating this leads to unmaintainable bugs.
 
-However, `Request` was **not imported** from `fastapi`.
-When Python parsed `main.py` at startup, it hit the undefined `Request` symbol and immediately raised `NameError`, causing the Uvicorn server to crash before binding to port 8080.
-Cloud Run detected the health check failure and rolled back the deployment.
+- **Tier 1: Intent (Directives)** → Define *what* to do.
+- **Tier 2: Orchestration (Frontend/Next.js)** → Manages *when* to do it.
+- **Tier 3: Execution (Backend/FastAPI)** → Knows *how* to do it.
 
-### 2. Why Tests Didn't Catch It?
-- Only `check_imports.py` was run (which checks *packages*, not internal syntax/logic errors).
-- `python -m compileall` checks *syntax* (valid Python grammar), but `NameError` is a *runtime* error (unresolved symbol), not a syntax error.
-- Full integration test/local startup was skipped in the rush to push.
+**Golden Rule:** The Backend is stateless and deterministic. It never "guesses" context; it must be provided via the `session_id` or request body.
 
 ---
 
-## 🔍 Debugging Steps (Standard Operating Procedure)
+## 🚨 2. Common Failures & Solutions
 
-When Cloud Run fails to deploy, follow this checklist **in order**:
-
-### Phase 1: Local Verification (Dev Environment)
-
-**1. Syntax & Import Validity (Static Analysis)**
-```powershell
-cd backend_python
-# Compile checks pure grammar
-python -m compileall src main.py
-```
-
-**2. Simulation (Runtime Analysis)**
-This is the **GOLD STANDARD**. If it runs here, it runs on Cloud Run.
-```powershell
-# ACTUALLY START the server locally
-python -m uvicorn main:app --port 8080
-```
-*   **Result:** It would have crashed immediately with:
-    `NameError: name 'Request' is not defined`
-*   **Action:** Read the stack trace → Fix the import.
-
-### Phase 2: Cloud Run Logs Investigation
-
-If local works but Cloud Run fails:
-
-1.  Go to [Google Cloud Console > Cloud Run](https://console.cloud.google.com/run).
-2.  Select the service `syd-brain`.
-3.  Click **Logs** tab.
-4.  Filter Severity to `Error` or `Critical`.
-5.  Look for "Payload" messages just before "Container terminated".
-
-**Common Cloud Run Errors & Fixes:**
-
-| Error Message | Meaning | Fix |
-|:--------------|:--------|:----|
-| `ModuleNotFoundError: No module named 'xyz'` | Missing dependency | Add to `pyproject.toml` |
-| `NameError: name 'X' is not defined` | Missing import | Check imports in failing file |
-| `Container failed to start. Failed to listen on port 8080.` | Timeout / Crash | Check server logs for Python errors |
-| `Memory limit exceeded` | OOM Kill | Increase Memory Limit (e.g., 512MB -> 1GB) |
-
----
-
-## ✅ Deployment Checklist (Prevention)
-
-Before every `git push`, run this single command to prove the server breathes:
-
-```powershell
-# The "Does It Boot?" Test
-python -m uvicorn main:app --host 127.0.0.1 --port 8080 --reload
-# Wait 5 seconds. If you see "Uvicorn running...", CTRL+C.
-```
-
----
-
-## 🔧 Critical Security Components Check
-
-### 1. App Check Middleware (`src/middleware/app_check.py`)
-- **Role:** Validates `X-Firebase-AppCheck` header.
-- **Fail Safe:** If `ENABLE_APP_CHECK=false`, it **must** return `None` and let traffic pass.
-- **Dependency:** Requires `firebase-admin` initialized.
-
-### 2. Magic Bytes Validation (`src/utils/security.py`)
-- **Role:** Checks file hex signatures (MP4, WebM) to prevent rename attacks (`virus.exe` -> `video.mp4`).
-- **Dependency:** **PURE PYTHON** (No `libmagic` required). This design choice ensures compatibility with Alpine/Slim Linux containers without ensuring system packages.
-
-### 3. Firebase Auth (`jwt_handler.py`)
-- **Role:** Replaces JWT secret with `verify_id_token`.
-- **Key Check:** `check_revoked=True` requires a network call to Firebase. If networking fails, auth fails safe (401).
-
----
-
-## 🔄 Rollback Procedures
-
-If Cloud Run enters a "Crash Loop":
-
-1.  **Immediate:** Revert the main branch.
-    ```bash
-    git revert HEAD
-    git push
-    ```
-2.  **Manual:** Deploy previous revision in Cloud Run Console.
-    *   "Revisions" tab → Select previous green checkmark → "Manage Traffic" → Send 100% to old revision.
-
----
-
-**Status:**
-- `Request` import fixed in `main.py`.
-- Server verified locally.
-- Ready for re-deployment.
-
----
-
-## ⏳ Vercel Timeout (I2I / Generative AI)
-
-**Symptoms:**
-- Log Error: `Vercel Runtime Timeout Error: Task timed out after 60 seconds`
-- Endpoint: `/api/chat` fails during long-running tasks (e.g. Image-to-Image generation).
-
+### A. Authentication Errors (`401 Unauthorized`)
+**Symptom:** API returns 401, frontend shows red toast error.
 **Root Cause:**
-- Default Vercel Serverless Function timeout is **60 seconds** (Pro Plan) or 10s (Hobby).
-- The I2I pipeline (Download -> Analyze -> Architect -> Imagen -> Upload) can take 50-90 seconds cold.
+1.  Frontend `useAuth` hook hasn't finished loading (`loading: true`).
+2.  `fetch` was used instead of `fetchWithAuth`.
+3.  Token is expired and auto-refresh failed.
 
-**Solution:**
-- Increase `maxDuration` in `web_client/app/api/chat/route.ts` (Requires **Pro Plan**).
-```typescript
-// app/api/chat/route.ts
-export const maxDuration = 300; // 5 minutes
+**Fix:**
+- **Frontend:** Always await `user` and `loading` states. Use `api-client.ts` for ALL requests.
+- **Backend:** Check `src/auth/jwt_handler.py`. Ensure `verify_token` dependency is used.
+- **Debug:** Check Headers in Network Tab: `Authorization: Bearer eyJ...`.
+
+### B. CORS & Network Errors (`Failed to fetch`)
+**Symptom:** Browser blocks request, console shows CORS error.
+**Root Cause:**
+1.  Backend crashed (port closed).
+2.  `origin` header mismatch (localhost:3000 vs 3001).
+3.  Vercel/Cloud Run timeouts.
+
+**Fix:**
+- **Check Ports:** Backend must be on `:8080`, Frontend on `:3000`.
+- **Check Allowlist:** Update `main.py` -> `CORSMiddleware` allow_origins.
+- **Zombie Process:** Run `netstat -ano | findstr :8080` and kill the PID.
+
+### C. Streaming & Chat Latency
+**Symptom:** Chat bubble appears but remains empty/loading forever.
+**Root Cause:**
+1.  **Empty Tokens:** Backend yielding empty strings `""` keeps connection open but renders nothing.
+2.  **Frontend Aggregation:** `ChatWidget` expects specific Vercel Protocol format (`0:"text"`).
+3.  **Optimistic UI:** `sendMessage` needs full object (e.g., missing `attachments`).
+
+**Fix:**
+- **Backend:** Ensure `stream_text` in `src/utils/stream_protocol.py` yields valid chunks.
+- **Frontend:** Verify `MessageItem.tsx` handles `undefined` content gracefully (show `...`).
+
+### D. Image/File Upload Failures
+**Symptom:** "Upload failed" or 400 Bad Request.
+**Root Cause:**
+1.  **Missing Metadata:** Backend requires `media_type` or `mime_type`.
+2.  **Size Limit:** 413 Request Entity Too Large (FastAPI default is generous, but Nginx/Vercel limit is 4.5MB).
+3.  **Next.js Optimization:** `storage.googleapis.com` not whitelisted in `next.config.ts`.
+
+**Fix:**
+- **Config:** Add domain to `images.remotePatterns` in `next.config.ts`.
+- **Payload:** Check `ChatRequest` model in `main.py` matches frontend body.
+
+---
+
+## 🩺 3. Debugging Workflow (The "Hospital" Protocol)
+
+When a bug is reported, follow this **Triage Flow**:
+
+### Step 1: Is the Patient Breathing? (Health Check)
+```bash
+# Backend Terminal
+curl http://localhost:8080/health
+# Response: {"status": "ok"}
 ```
-- If on **Hobby Plan**, you CANNOT proxy this request. The client must call Cloud Run directly (requires setting specific CORS headers).
+*If this fails, the backend is crashed. Check terminal logs immediately.*
+
+### Step 2: Check Vital Signs (Logs)
+1.  **Frontend Logs:** Chrome DevTools > Network > Click Request > **Preview**.
+2.  **Backend Logs:** Check `server.log` or terminal output. Look for `ERROR` or `Traceback`.
+
+### Step 3: Isolate the Infection
+- **Disable Frontend:** Use `Postman` or `curl` to hit the API directly.
+- **Disable Auth:** (Temporarily) Remove `Depends(verify_token)` to rule out auth issues.
+
+---
+
+## ✅ 4. Deployment Checklist (Pre-Flight)
+
+Before pushing to `main` (Production):
+
+- [ ] **Type Safety:** Run `npm run type-check` in `web_client`.
+- [ ] **Clean Startup:** Restart backend locally. **NO** `ImportError` or `NameError` allowed.
+- [ ] **Build Check:** Run `npm run build` locally to catch Vercel build errors.
+- [ ] **Environment:** Verify `.env.local` keys match Production variables.
+- [ ] **Ports:** Confirm no zombie processes (`node` or `python`) are lingering.
+
+---
+
+## 🧰 5. Essential Commands Reference
+
+| Action | Command (Windows Powershell) |
+| :--- | :--- |
+| **Start Backend** | `cd backend_python; python main.py` |
+| **Start Frontend** | `cd web_client; npm run dev` |
+| **Kill Zombie Ports** | `taskkill /F /IM python.exe /IM node.exe` |
+| **Type Check** | `cd web_client; npm run type-check` |
+| **Update Dependencies** | `pip freeze > requirements.txt` / `npm install` |
+
+---
+
+> **Final Note:**
+> Code is read more often than it is written.
+> Write clear logs. Handle exceptions explicitly. Don't guess types.

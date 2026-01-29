@@ -21,6 +21,10 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 
+// Initialize Firestore
+import { getFirestore } from 'firebase/firestore';
+const db = getFirestore(app);
+
 // Note: App Check is initialized globally in AppCheckProvider.tsx
-export { app, auth };
+export { app, auth, db };
 export type { Auth };

@@ -73,8 +73,9 @@ export function useMediaUpload(sessionId: string) {
                 }
             }
 
-            // 1. Get Signed URL
-            const res = await fetch('/api/get-upload-url', {
+            // 1. Get Signed URL (Secure)
+            const { fetchWithAuth } = await import('@/lib/api-client');
+            const res = await fetchWithAuth('/api/get-upload-url', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -12,6 +12,12 @@ export function AppCheckProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
+        // Protocol (Security Gates): Disable in Dev unless Debug Token is explicit
+        if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN) {
+            console.log("[AppCheck] 🛑 Disabled in Development (Anti-Fragile Protocol).");
+            return;
+        }
+
         // Feature Flag Check
         if (process.env.NEXT_PUBLIC_ENABLE_APP_CHECK !== 'true') return;
 

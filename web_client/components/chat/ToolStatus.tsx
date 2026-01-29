@@ -48,7 +48,14 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
             );
         }
 
-        return null;
+        // Fallback for any other tool
+        return (
+            <div className="flex items-center gap-2 text-sm text-slate-400 italic mt-2 relative overflow-hidden rounded-md px-2 py-1">
+                <div className="absolute inset-0 animate-shimmer opacity-20 pointer-events-none" />
+                <span className="animate-pulse">⚙️</span>
+                Elaborazione in corso...
+            </div>
+        );
     }
 
     // Completed state: Tool finished with result

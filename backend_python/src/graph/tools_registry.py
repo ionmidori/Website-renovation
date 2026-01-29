@@ -80,7 +80,7 @@ async def generate_render(
     source_image_url: Optional[str] = None,
     keep_elements: Optional[List[str]] = None,
     user_id: str = "default"
-) -> str:
+) -> Dict[str, Any]:
     """Generate photorealistic interior design rendering (T2I or I2I mode)."""
     logger.info(f"[Tool] 🎨 generate_render called (ASYNC):")
     logger.info(f"  - mode: {mode}")

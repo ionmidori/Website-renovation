@@ -162,6 +162,10 @@ async def chat_stream_generator(request: ChatRequest, user_payload: dict):
         # ✅ Extract user_id from JWT for quota tracking
         user_id = user_payload.get("uid", "default")
         
+        # ⚡ Send immediate keep-alive to wake up client stream
+        yield '0:""\n'
+        
+        
         # ✅ Set context for tools to access user_id AND media metadata
         set_current_user_id(user_id)
         if request.media_metadata:
@@ -455,12 +459,14 @@ async def chat_stream_generator(request: ChatRequest, user_payload: dict):
                         # 🔥 ACCUMULATE for DB
                         accumulated_response += text_content
                         
-                        # Stream text word by word for smooth UX
+                        # Stream text by chunks to preserve whitespace/markdown
                         if text_content:
-                            for word in text_content.split():
-                                async for chunk in stream_text(word + " "):
-                                    yield chunk
-                                await asyncio.sleep(0.05)  # Natural typing effect
+                            chunk_size = 5  # Send 5 chars at a time for smooth but fast streaming
+                            for i in range(0, len(text_content), chunk_size):
+                                chunk = text_content[i:i+chunk_size]
+                                async for stream_chunk in stream_text(chunk):
+                                    yield stream_chunk
+                                # Removed asyncio.sleep to maximize throughput
 
                 except Exception as node_error:
                     logger.error(f"   Error processing node {node_name}: {node_error}")
@@ -471,8 +477,8 @@ async def chat_stream_generator(request: ChatRequest, user_payload: dict):
         # 🔥 SAVE ASSISTANT RESPONSE to DB after streaming completes
         if accumulated_response:
             await save_message(request.session_id, "assistant", accumulated_response)
-            print(f"💾 Saved assistant response to DB ({len(accumulated_response)} chars)")
-    
+            logger.info(f"💾 Saved assistant response to DB ({len(accumulated_response)} chars)")
+            
     except Exception as e:
         import traceback
         import os
@@ -500,6 +506,7 @@ async def chat_stream(request: ChatRequest, user_payload: dict = Depends(verify_
     return StreamingResponse(
         chat_stream_generator(request, user_payload),  # ✅ Pass full payload
         media_type="text/plain; charset=utf-8",
+        headers={"Connection": "close", "X-Vercel-AI-Data-Stream": "v1"} # ⚡ FORCE socket closure
     )
 
 if __name__ == "__main__":

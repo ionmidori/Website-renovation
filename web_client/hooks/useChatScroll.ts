@@ -2,12 +2,12 @@ import { useRef, useEffect } from 'react';
 
 /**
  * Custom hook for managing auto-scroll behavior in chat messages
- * Extracted from ChatWidget.tsx (lines 232-280)
+ * @param dep - Dependency that triggers scroll check (e.g. messages array or length)
+ * @param isOpen - Whether the chat window is open
  */
-export function useChatScroll(messagesLength: number, isOpen: boolean) {
+export function useChatScroll(dep: any, isOpen: boolean) {
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
-    const prevMessagesLengthRef = useRef(messagesLength);
     const isNearBottomRef = useRef(true); // Track if user is at bottom
 
     // Auto-scroll logic - Optimized for iOS Safari compatibility
@@ -32,30 +32,29 @@ export function useChatScroll(messagesLength: number, isOpen: boolean) {
     useEffect(() => {
         const container = messagesContainerRef.current;
         if (container) {
+            // Initial check
+            checkScrollPosition();
             container.addEventListener('scroll', checkScrollPosition, { passive: true });
             return () => container.removeEventListener('scroll', checkScrollPosition);
         }
     }, [messagesContainerRef.current]);
 
+    // Auto-scroll on dependency change (messages updated)
     useEffect(() => {
-        // Scroll logic:
-        // 1. If chat just opened -> force scroll
-        // 2. If new message and we were near bottom -> smooth scroll
-        // 3. If new message and we were scrolled up -> don't scroll (let user read)
-        if (isOpen) {
-            if (prevMessagesLengthRef.current !== messagesLength) {
-                // New message arrived
-                if (isNearBottomRef.current) {
-                    scrollToBottom('smooth');
-                }
-            } else {
-                // Chat opened or re-rendered without new messages
-                // Force scroll to bottom initially
-                scrollToBottom('instant');
-            }
-            prevMessagesLengthRef.current = messagesLength;
+        if (isOpen && isNearBottomRef.current) {
+            scrollToBottom('smooth');
         }
-    }, [messagesLength, isOpen]);
+    }, [dep, isOpen]);
+
+    // Initial scroll when opening
+    useEffect(() => {
+        if (isOpen) {
+            // Small delay to ensure content is fully rendered
+            setTimeout(() => {
+                scrollToBottom('instant');
+            }, 50);
+        }
+    }, [isOpen]);
 
     return {
         messagesContainerRef,
