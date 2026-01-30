@@ -70,8 +70,9 @@ export function EmailAuthForm({ onSuccess }: EmailAuthFormProps) {
                 await createUserWithEmailAndPassword(auth, email, password);
                 onSuccess?.();
             }
-        } catch (err: any) {
-            const friendlyError = mapAuthError(err.code);
+        } catch (err) {
+            const error = err as { code: string };
+            const friendlyError = mapAuthError(error.code);
             setError(friendlyError);
             setShake(true);
             triggerHapticFeedback('heavy');

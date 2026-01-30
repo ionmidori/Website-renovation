@@ -52,9 +52,10 @@ export function PasskeyButton({ mode, userId, onSuccess }: PasskeyButtonProps) {
                 await authenticateWithPasskey(userId);
                 onSuccess?.();
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('[PasskeyButton] Error:', err);
-            setError(err.message || 'Errore durante l\'autenticazione');
+            const error = err as Error;
+            setError(error.message || 'Errore durante l\'autenticazione');
         }
     };
 

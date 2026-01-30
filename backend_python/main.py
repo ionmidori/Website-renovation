@@ -19,11 +19,12 @@ import os
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🔥 FILE LOGGING CONFIGURATION
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-log_file = os.path.join(os.path.dirname(__file__), "server.log")
+log_file = os.path.join(os.path.dirname(__file__), "server_debug.log")
 file_handler = RotatingFileHandler(
     log_file,
     maxBytes=5 * 1024 * 1024,  # 5 MB
-    backupCount=3
+    backupCount=3,
+    encoding='utf-8'
 )
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter(
@@ -110,8 +111,40 @@ app.include_router(upload_router)
 from src.api.passkey import router as passkey_router
 app.include_router(passkey_router)
 
+# Register projects router (Dashboard)
+from src.api.projects_router import router as projects_router
+app.include_router(projects_router)
 
 
+
+
+class LeadSubmissionRequest(BaseModel):
+    name: str
+    email: str
+    phone: str | None = None
+    quote_summary: str
+    session_id: str
+
+@app.post("/api/submit-lead")
+async def submit_lead_endpoint(request: LeadSubmissionRequest, user_payload: dict = Depends(verify_token)):
+    """
+    Direct endpoint for the Lead Generation Form widget.
+    Bypasses the agent to save data directly to DB.
+    """
+    from src.tools.submit_lead import submit_lead_wrapper
+    
+    user_id = user_payload.get("uid", "anonymous")
+    
+    result = await submit_lead_wrapper(
+        name=request.name,
+        email=request.email,
+        phone=request.phone,
+        project_details=request.quote_summary, # Map summary to details
+        uid=user_id,
+        session_id=request.session_id
+    )
+    
+    return {"status": "success", "message": result}
 
 class ChatRequest(BaseModel):
     messages: list[dict]

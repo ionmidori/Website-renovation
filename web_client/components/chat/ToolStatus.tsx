@@ -24,7 +24,7 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
     if (tool.state === 'call') {
         if (tool.toolName === 'generate_render') {
             return (
-                <div className="flex items-center gap-2 text-sm text-slate-400 italic mt-2">
+                <div className="flex items-center gap-2 text-sm text-luxury-gold/70 italic mt-2">
                     <span className="animate-pulse">🎨</span>
                     Generando rendering...
                 </div>
@@ -33,7 +33,7 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
 
         if (tool.toolName === 'submit_lead_data') {
             return (
-                <div className="text-sm text-slate-400 italic mt-2">
+                <div className="text-sm text-luxury-gold/70 italic mt-2">
                     📝 Salvando i tuoi dati...
                 </div>
             );
@@ -41,8 +41,8 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
 
         if (tool.toolName === 'analyze_room') {
             return (
-                <div className="flex items-center gap-2 text-sm text-slate-400 italic mt-2">
-                    <span className="animate-spin">🔍</span>
+                <div className="flex items-center gap-2 text-sm text-luxury-gold/70 italic mt-2">
+                    <span className="animate-spin text-luxury-gold">🔍</span>
                     Analisi della stanza in corso...
                 </div>
             );
@@ -50,7 +50,7 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
 
         // Fallback for any other tool
         return (
-            <div className="flex items-center gap-2 text-sm text-slate-400 italic mt-2 relative overflow-hidden rounded-md px-2 py-1">
+            <div className="flex items-center gap-2 text-sm text-luxury-gold/70 italic mt-2 relative overflow-hidden rounded-md px-2 py-1">
                 <div className="absolute inset-0 animate-shimmer opacity-20 pointer-events-none" />
                 <span className="animate-pulse">⚙️</span>
                 Elaborazione in corso...

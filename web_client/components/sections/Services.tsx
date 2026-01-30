@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
     Wand2,
@@ -8,10 +9,16 @@ import {
     LayoutDashboard,
     Calculator,
     HardHat,
-    Home
+    Home,
+    Hammer,
+    Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthDialog } from '@/components/auth/AuthDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const services = [
     {
@@ -59,9 +66,12 @@ const services = [
 ];
 
 export function Services() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [authDialogOpen, setAuthDialogOpen] = useState(false);
     const [hoveredService, setHoveredService] = useState<number | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [comingSoon, setComingSoon] = useState<{ title: string; open: boolean }>({ title: '', open: false });
 
     // Mobile detection
     useEffect(() => {
@@ -118,17 +128,26 @@ export function Services() {
                             onViewportLeave={() => isMobile && setHoveredService(prev => prev === index ? null : prev)}
                             onClick={() => {
                                 if (service.title === 'Gestione Dashboard') {
-                                    setAuthDialogOpen(true);
+                                    // If user is already authenticated, go directly to dashboard
+                                    if (user && !user.isAnonymous) {
+                                        router.push('/dashboard');
+                                    } else {
+                                        // Otherwise, show auth dialog
+                                        setAuthDialogOpen(true);
+                                    }
                                 } else if (service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') {
                                     const event = new CustomEvent('OPEN_CHAT');
                                     window.dispatchEvent(event);
+                                } else {
+                                    // Features in development
+                                    setComingSoon({ title: service.title, open: true });
                                 }
                             }}
                             onMouseEnter={() => !isMobile && setHoveredService(index)}
                             onMouseLeave={() => !isMobile && setHoveredService(null)}
                             className={cn(
                                 "relative p-6 rounded-2xl bg-white/5 border border-luxury-gold/10 hover:border-luxury-gold/30 active:border-luxury-gold/50 transition-all duration-300 backdrop-blur-sm",
-                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20 active:shadow-md active:bg-white/10",
+                                (service.title === 'Gestione Dashboard' || service.title === 'Design Generativo AI' || service.title === 'Preventivi Istantanei' || service.title === 'Rilievi Precisi' || service.title === 'Direzione Lavori' || service.title === 'Chiavi in Mano') && "cursor-pointer hover:shadow-lg hover:shadow-luxury-teal/20 active:shadow-md active:bg-white/10",
                                 hoveredService === index && "border-luxury-gold/30 shadow-lg shadow-luxury-teal/20"
                             )}
                         >
@@ -168,6 +187,56 @@ export function Services() {
 
             </div>
             <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
+
+            {/* Coming Soon Modal */}
+            <AnimatePresence>
+                {comingSoon.open && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-sm glass-premium p-8 rounded-[2.5rem] border-luxury-gold/20 shadow-2xl overflow-hidden group"
+                        >
+                            {/* Decorative Background Glow */}
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-luxury-teal/10 rounded-full blur-3xl pointer-events-none group-hover:bg-luxury-teal/20 transition-all duration-700" />
+
+                            <button
+                                onClick={() => setComingSoon({ ...comingSoon, open: false })}
+                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-luxury-text/40 hover:text-luxury-gold transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+
+                            <div className="relative z-10 text-center space-y-6">
+                                <div className="w-16 h-16 bg-luxury-teal/10 rounded-2xl border border-luxury-teal/20 flex items-center justify-center mx-auto shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                    <Hammer className="w-8 h-8 text-luxury-gold animate-pulse" />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-bold font-serif text-luxury-text">
+                                        <span className="text-luxury-gold italic">Prossimamente</span>
+                                    </h3>
+                                    <p className="text-sm font-light text-luxury-text/60 leading-relaxed">
+                                        La funzione <span className="text-luxury-text font-medium">"{comingSoon.title}"</span> è attualmente in fase di sviluppo avanzato e sarà disponibile a breve per tutti i nostri clienti.
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={() => setComingSoon({ ...comingSoon, open: false })}
+                                    className="w-full bg-luxury-teal hover:bg-luxury-teal/90 text-white font-bold uppercase tracking-widest text-[10px] h-12 rounded-xl border border-white/10 shadow-lg shadow-luxury-teal/20 transition-all hover:scale-[1.02] active:scale-95"
+                                >
+                                    Ho Capito
+                                </Button>
+
+                                <p className="text-[10px] text-luxury-text/30 font-bold uppercase tracking-[0.2em]">
+                                    Professional Quality Guaranteed
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }

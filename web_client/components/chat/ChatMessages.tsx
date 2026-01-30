@@ -11,6 +11,7 @@ interface ChatMessagesProps {
     messages: Message[];
     isLoading: boolean;
     typingMessage: string;
+    sessionId: string;
     onImageClick: (imageUrl: string) => void;
     messagesContainerRef: RefObject<HTMLDivElement | null>;
     messagesEndRef: RefObject<HTMLDivElement | null>;
@@ -27,6 +28,7 @@ const ChatMessagesComponent = ({
     messages,
     isLoading,
     typingMessage,
+    sessionId,
     onImageClick,
     messagesContainerRef,
     messagesEndRef
@@ -35,7 +37,7 @@ const ChatMessagesComponent = ({
 
         <div
             ref={messagesContainerRef as any}
-            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent overscroll-contain touch-pan-y"
+            className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-luxury-gold/20 scrollbar-track-transparent overscroll-contain touch-pan-y"
             style={scrollStyle}
         >
             <motion.div
@@ -49,6 +51,7 @@ const ChatMessagesComponent = ({
                             message={msg}
                             index={idx}
                             typingMessage={typingMessage}
+                            sessionId={sessionId}
                             onImageClick={onImageClick}
                         />
                     ))}

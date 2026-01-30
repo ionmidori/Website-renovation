@@ -1,147 +1,92 @@
-# 🏗️ Renovation AI - Assistente per Interior Design
+# 🏗️ SYD Bioedilizia - AI Renovation Platform
 
-> Chatbot evoluto basato su IA per la visualizzazione di interni, preventivi di ristrutturazione e analisi di mercato in tempo reale. Costruito con Next.js 16, Google Vertex AI e Perplexity.
+> **SYD** è una piattaforma SaaS d'avanguardia per la ristrutturazione edilizia, che combina Intelligenza Artificiale generativa, analisi di mercato in tempo reale e gestione progetti persistente.
+
+---
+
+## 🏛️ Architettura Operativa (3-Tier)
+
+La piattaforma adotta un modello ibrido per garantire massime performance e scalabilità:
+
+1.  **Directive Layer (Intent)**: Gestione della logica di business e flussi agentici via LangGraph.
+2.  **Orchestration Layer (Frontend)**: **Next.js 15.5.11** gestisce l'interazione utente, l'autenticazione (Passkeys/Magic Links) e il routing della Dashboard.
+3.  **Execution Layer (Backend)**: **Python (FastAPI)** gestisce i calcoli deterministici, l'elaborazione delle immagini (Computer Vision) e l'integrazione con i modelli LLM.
 
 ---
 
 ## 📋 Tech Stack
 
 ### Frontend (`web_client`)
-- **Framework**: Next.js 16.0.10 (App Router) + React 19
-- **Stile**: Tailwind CSS 4.0
-- **IA Streaming**: Vercel AI SDK 3.0 + @ai-sdk/google
-- **UI/UX**: Radix UI + Framer Motion
-- **State**: Custom Hooks (`useChat` con protocollo Data Stream)
+- **Framework**: Next.js 15.5.11 (App Router)
+- **Library**: React 18.3.1
+- **Styling**: Tailwind CSS 4.0 (Design Premium / Glassmorphism)
+- **Motion**: Framer Motion (Liquid UI)
+- **Auth**: Firebase Auth (Biometrics & Magic Links)
+- **Data Fetching**: Server Actions & SWR/React Hooks
 
-### Backend & AI Logic (`ai_core`)
-- **Core AI**: Google Gemini Pro (Logica conversazionale & Vision)
-- **Image Gen**: Google Imagen 3 (via Vertex AI `gemini-3-pro-image-preview`)
-- **Market Intel**: Perplexity API (`sonar`) per prezzi in tempo reale
-- **Database**: Firebase Firestore (NoSQL)
-- **Storage**: Firebase Cloud Storage
-- **Validazione**: Zod 4.3
-
----
-
-## ✨ Funzionalità Chiave
-
-### 1. Generazione Ibrida (JIT Pipeline)
-Il sistema utilizza una pipeline **Just-In-Time** che decide dinamicamente la strategia di generazione:
-- **Creation Mode (Text-to-Image)**: Genera nuovi ambienti da zero basandosi sulle descrizioni dell'utente.
-- **Renovation Mode (Image-to-Image)**: Ridisegna stanze esistenti mantenendo la geometria strutturale (muri, finestre, soffitti).
-  - **Structural Lock**: Analizza e preserva le linee prospettiche.
-  - **Selective Keep**: Permette all'utente di specificare elementi da mantenere (es. "tieni il pavimento in cotto").
-
-### 2. Analisi Prezzi di Mercato
-Integrazione con **Perplexity AI** per fornire stime di costo realistiche e localizzate:
-- Ricerca in tempo reale su e-commerce italiani e listini fornitori.
-- Output strutturato con range di prezzo (Min-Max) e unità di misura.
-
-### 3. Sistema di Quote e Sicurezza
-- **IP-Based Rate Limiting**: Limita le generazioni pesanti (Render e Preventivi) a 2 per IP ogni 24 ore.
-- **Validazione Input**: Tutti gli input utente vengono validati e sanitizzati tramite schemi Zod prima di raggiungere i modelli IA.
-- **CSP & HSTS**: Security headers rigorosi per la protezione client-side.
+### Backend (`backend_python`)
+- **API**: FastAPI (Asincrono)
+- **AI Engine**: Google Vertex AI (Gemini 1.5 Pro/Flash, Imagen 3)
+- **Orchestration**: LangGraph (Agentic Workflows)
+- **Vision**: Custom Image Processing (Pillow, Vision API)
+- **Market Intel**: Perplexity AI (Sonar)
+- **Database**: Firestore (NoSQL)
 
 ---
 
-## 🏛️ Panoramica Architettura
+## ✨ Funzionalità Core
 
-Monorepo gestito tramite npm workspaces con separazione netta delle responsabilità:
+### 1. Chat Assistant Intelligente
+Un assistente che "vede" e "capisce" gli spazi. Capace di:
+- Analizzare foto/video caricati per estrarre metrature e stato di fatto.
+- Generare rendering fotorealistici basati su stili specifici.
+- Formulare preventivi dettagliati basati su prezzi di mercato reali.
 
-```
-renovation-next/
-├── web_client/          # UI Layer (Next.js)
-│   ├── app/            # Routes & Pages
-│   ├── components/     # Chat Widget & Markdown renderers
-│   └── hooks/          # Logica client-side
-│
-├── ai_core/            # Intelligence Layer (Service)
-│   └── src/
-│       ├── chat-tools.ts       # Definizioni Tool (Render, Market, Leads)
-│       ├── imagen/             # Pipeline Generativa (Triage -> Architect -> Painter)
-│       ├── vision/             # Analisi Visiva & Estrazione Strutturale
-│       └── db/                 # Firestore Adapters
-│
-└── package.json        # Workspace Root
-```
+### 2. Dashboard Project Management
+Trasformazione da semplice chatbot a strumento professionale:
+- **I Miei Progetti**: Gestione persistente di più cantieri.
+- **Galleria Intelligente**: Organizzazione automatica di rendering, preventivi e foto originali.
+- **Dettagli Cantiere**: Salvataggio di vincoli tecnici (metratura, budget, note) per un'AI sempre più precisa.
 
-**Flusso Dati**: `web_client` invoca le funzioni di `ai_core` server-side (Server Actions o API Routes), mantenendo la logica di business isolata dalla UI.
+### 3. Sicurezza di Grado Enterprise
+- **Passwordless**: Accesso sicuro tramite dati biometrici (Passkeys).
+- **App Check**: Protezione contro bot e accessi non autorizzati via Firebase App Check.
+- **Strict Typing**: Sincronizzazione rigorosa dei tipi tra Pydantic (Python) e TypeScript.
 
 ---
 
-## 🚀 Per Iniziare
+## 🚀 Setup & Sviluppo
 
-### Prerequisiti
-- **Node.js**: >= 18.x
-- **npm**: >= 9.x
-- **Account Firebase**: Firestore + Storage + Auth
-- **Google Cloud**: Vertex AI API abilitata
-- **Perplexity**: API Key attiva
-
-### 1. Installazione
+### Installazione
+Il progetto utilizza npm workspaces. Dalla root:
 
 ```bash
-git clone <repo-url>
-cd renovation-next
 npm install
 ```
 
-### 2. Configurazione (`web_client/.env`)
+### Configurazione
+È necessario configurare i file `.env` sia in `web_client/` che in `backend_python/` (vedi i rispettivi file `.env.example`).
 
-Crea il file `.env` nella directory `web_client/`:
-
+### Avvio Sviluppo
 ```bash
-# Firebase
-FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-FIREBASE_STORAGE_BUCKET=...
+# Frontend (localhost:3000)
+cd web_client && npm run dev
 
-# Google AI (Vertex)
-GEMINI_API_KEY=...
-
-# Market Intelligence
-PERPLEXITY_API_KEY=pplx-...
-
-# Opzionali (Model override)
-IMAGEN_MODEL_ID=gemini-3-pro-image-preview
+# Backend (localhost:8000)
+cd backend_python && uv sync && python -m main
 ```
-
-### 3. Avvio Sviluppo
-
-```bash
-# Avvia tutto il sistema
-npm run dev:web
-```
-L'applicazione sarà accessibile su `http://localhost:3000`.
 
 ---
 
-## 🧪 Testing & Verifica
-
-Il progetto include suite di test complete per garantire la stabilità della pipeline IA:
-
-```bash
-# Test Unitari Frontend
-npm run test --workspace=web_client
-
-# Test Pipeline IA (Core)
-# Verifica la generazione, le quote e l'integrazione DB
-npm run test --workspace=ai_core
-```
-
-Sono presenti script specifici in `ai_core` per testare isolatamente i modelli (es. `test-imagen.ts`, `test-rate-limit.ts`).
+## 🛠️ Manutenzione e Qualità
+- **Linting**: `npm run lint` (Frontend)
+- **Testing**: `pytest` (Backend)
+- **Type Check**: `npm run type-check` (Frontend)
 
 ---
 
-## 🤝 Contribuire
-
-1.  **Branching**: Usa feature branches (`feature/nome-feature`).
-2.  **Linting**: Assicurati che non ci siano errori di lint (`npm run lint`).
-3.  **Testing**: Verifica che le modifiche non rompano la pipeline esistente.
+## 🤝 Project Owner
+**SYD Bioedilizia** - *Trasformiamo la tua visione in realtà con l'AI.*
 
 ---
-
-## 📄 Licenza
-
-Proprietario e Riservato. Copyright © 2026 Renovation AI Team.
+*Copyright © 2026 SYD Bioedilizia. All rights reserved.*

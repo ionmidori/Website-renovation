@@ -75,7 +75,7 @@ function validateServiceAccount(clientEmail: string, projectId: string): void {
  * Initialize Firebase Admin SDK
  * Loads from environment variables (Vercel-compatible) or falls back to JSON file
  */
-function initializeFirebase(): App {
+export function initializeFirebase(): App {
     if (getApps().length === 0) {
         console.log('[Firebase] Initializing Firebase Admin SDK...');
 

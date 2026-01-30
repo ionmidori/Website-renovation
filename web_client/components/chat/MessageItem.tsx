@@ -15,6 +15,7 @@ interface MessageItemProps {
     message: Message;
     index: number;
     typingMessage?: string;
+    sessionId: string;
     onImageClick: (imageUrl: string) => void;
 }
 
@@ -23,7 +24,7 @@ interface MessageItemProps {
  * Handles rendering of one chat message with its avatar, content, and attachments
  * ✅ Memoized to prevent unnecessary re-renders
  */
-export const MessageItem = React.memo<MessageItemProps>(({ message, index, typingMessage, onImageClick }) => {
+export const MessageItem = React.memo<MessageItemProps>(({ message, index, typingMessage, sessionId, onImageClick }) => {
     // Helper: Extract text from both old (content) and new (parts[]) formats
     const getMessageText = (msg: Message): string => {
         if (msg.parts && Array.isArray(msg.parts)) {
@@ -166,6 +167,7 @@ export const MessageItem = React.memo<MessageItemProps>(({ message, index, typin
                                                     <div key={toolIdx} className="mt-4">
                                                         <LeadCaptureForm
                                                             quoteSummary={args?.quote_summary || "Preventivo Ristrutturazione"}
+                                                            sessionId={sessionId || "unknown"} // Use prop
                                                         />
                                                     </div>
                                                 );

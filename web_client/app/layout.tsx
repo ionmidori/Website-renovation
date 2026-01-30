@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { AppCheckProvider } from "@/components/providers/AppCheckProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -25,6 +26,8 @@ export const viewport = {
   interactiveWidget: "resizes-content"
 };
 
+import { CookieConsent } from "@/components/CookieConsent";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +40,10 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AppCheckProvider>
-          {children}
+          <AuthProvider>
+            {children}
+            <CookieConsent />
+          </AuthProvider>
         </AppCheckProvider>
         <SpeedInsights />
         <Analytics />

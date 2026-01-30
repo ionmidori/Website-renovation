@@ -40,13 +40,14 @@ export function MagicLinkForm({ onSuccess }: MagicLinkFormProps) {
             if (onSuccess) {
                 setTimeout(onSuccess, 3000);
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error('[MagicLinkForm] Error:', error);
 
             // Handle Firebase errors
-            if (error.code === 'auth/invalid-email') {
+            const firebaseError = error as { code?: string; message?: string };
+            if (firebaseError.code === 'auth/invalid-email') {
                 setError('Email non valida');
-            } else if (error.message?.includes('429')) {
+            } else if (firebaseError.message?.includes('429')) {
                 setError('Troppe richieste. Riprova tra un\'ora.');
             } else {
                 setError('Errore nell\'invio. Riprova.');
@@ -109,7 +110,7 @@ export function MagicLinkForm({ onSuccess }: MagicLinkFormProps) {
             </button>
 
             <p className="text-xs text-slate-500 text-center mt-4">
-                Riceverai un'email con un link sicuro per accedere senza password
+                Riceverai un&apos;email con un link sicuro per accedere senza password
             </p>
         </form>
     );

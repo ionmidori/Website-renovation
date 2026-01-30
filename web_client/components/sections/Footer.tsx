@@ -175,9 +175,9 @@ export function Footer() {
                         © {currentYear} SYD BIOEDILIZIA. Tutti i diritti riservati.
                     </p>
                     <div className="flex gap-6 text-sm text-luxury-text/40">
-                        <Link href="#" className="hover:text-luxury-gold transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="hover:text-luxury-gold transition-colors">Termini di Servizio</Link>
-                        <Link href="#" className="hover:text-luxury-gold transition-colors">Cookie Policy</Link>
+                        <Link href="/privacy" className="hover:text-luxury-gold transition-colors">Privacy Policy</Link>
+                        <Link href="/terms" className="hover:text-luxury-gold transition-colors">Termini di Servizio</Link>
+                        <Link href="/cookie-policy" className="hover:text-luxury-gold transition-colors">Cookie Policy</Link>
                     </div>
                 </div>
             </div>

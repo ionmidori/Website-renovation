@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label';
 
 interface LeadCaptureFormProps {
     quoteSummary: string;
+    sessionId: string;
     onSuccess?: (data: any) => void;
 }
 
-export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ quoteSummary, onSuccess }) => {
+export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ quoteSummary, sessionId, onSuccess }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -39,16 +40,40 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ quoteSummary, 
         setStatus('loading');
 
         try {
-            // Simulate API delay for UX (or call real API)
-            // Real implementation would POST to /api/tools/submit_lead here or pass back to chat
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Get current Firebase ID token
+            // note: we assume the user is signed in (anon or perm) if they are chatting
+            const { getAuth } = await import('firebase/auth');
+            const auth = getAuth();
+            const token = await auth.currentUser?.getIdToken();
 
-            // Here we would perform the actual submission.
-            // For now, we simulate success and let the parent handle the data flow
+            if (!token) {
+                throw new Error("User not authenticated");
+            }
+
+            const response = await fetch('/api/lead-magnet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    quote_summary: quoteSummary,
+                    session_id: sessionId // Need to add this prop
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Errore durante l'invio");
+            }
+
             setStatus('success');
             if (onSuccess) onSuccess(formData);
 
         } catch (err) {
+            console.error(err);
             setError("Si è verificato un errore. Riprova.");
             setStatus('idle');
         }

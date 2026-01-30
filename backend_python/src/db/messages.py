@@ -138,12 +138,16 @@ def get_messages(session_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         return []
 
 
-async def ensure_session(session_id: str) -> None:
+async def ensure_session(session_id: str, user_id: Optional[str] = None) -> None:
     """
     Ensure session document exists in Firestore.
     
+    If user_id is provided and the session doesn't exist, it's created with that owner.
+    If user_id is None, a guest_ prefix is used.
+    
     Args:
         session_id: Session identifier
+        user_id: Optional Firebase UID of the owner
     """
     try:
         db = get_firestore_client()
@@ -152,14 +156,20 @@ async def ensure_session(session_id: str) -> None:
         doc = session_ref.get()
         
         if not doc.exists:
+            # Determine owner: use provided user_id or generate guest ID
+            owner_id = user_id if user_id else f"guest_{session_id[:8]}"
+            
             session_ref.set({
                 'sessionId': session_id,
+                'userId': owner_id,  # 🆕 Project owner
+                'title': 'Nuovo Progetto',  # 🆕 Default title
+                'status': 'draft',  # 🆕 Project status (replaces 'active')
+                'thumbnailUrl': None,  # 🆕 First uploaded image
                 'createdAt': firestore.SERVER_TIMESTAMP,
                 'updatedAt': firestore.SERVER_TIMESTAMP,
-                'status': 'active',
                 'messageCount': 0
             })
-            logger.info(f"[Firestore] Created new session {session_id}")
+            logger.info(f"[Firestore] Created new session {session_id} for user {owner_id}")
         else:
             logger.debug(f"[Firestore] Session {session_id} already exists")
             

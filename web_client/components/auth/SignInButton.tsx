@@ -13,6 +13,8 @@ export interface SignInButtonProps {
     onLoginClick?: () => void;
 }
 
+import Link from 'next/link';
+
 export function SignInButton({ className, onLoginClick }: SignInButtonProps) {
     const { user, loading, logout } = useAuth();
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,9 +62,9 @@ export function SignInButton({ className, onLoginClick }: SignInButtonProps) {
     if (user) {
         return (
             <div className={cn("flex items-center gap-3", className)}>
-                <div className="flex items-center gap-2">
+                <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
                     {user.photoURL ? (
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-700">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-700 group-hover:border-luxury-gold transition-colors">
                             <Image
                                 src={user.photoURL}
                                 alt={user.displayName || "User"}
@@ -72,14 +74,14 @@ export function SignInButton({ className, onLoginClick }: SignInButtonProps) {
                             />
                         </div>
                     ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                            <UserIcon className="w-4 h-4 text-slate-400" />
+                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:border-luxury-gold transition-colors">
+                            <UserIcon className="w-4 h-4 text-slate-400 group-hover:text-luxury-gold" />
                         </div>
                     )}
-                    <span className="text-sm font-medium text-slate-300 hidden lg:block">
+                    <span className="text-sm font-medium text-slate-300 hidden lg:block group-hover:text-luxury-gold transition-colors">
                         {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
                     </span>
-                </div>
+                </Link>
                 <Button
                     variant="ghost"
                     size="icon"

@@ -84,7 +84,7 @@ export function Hero() {
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-luxury-teal/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-            <div className="container mx-auto px-4 md:px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="container mx-auto px-4 md:px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center lg:items-start">
 
                 {/* Text Content */}
                 <motion.div
@@ -196,7 +196,7 @@ export function Hero() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative hidden md:block"
+                    className="relative hidden md:block lg:mt-20"
                 >
                     <HeroVideo />
                 </motion.div>

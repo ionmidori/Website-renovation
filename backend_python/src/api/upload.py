@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Gemini initialization is handled lazily in the route handler
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-router = APIRouter(prefix="/upload", tags=["upload"])
+router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 
 class UploadResponse(BaseModel):
