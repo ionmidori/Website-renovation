@@ -71,6 +71,9 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // State for Global Widget Synchronization
+    const [syncedProjectId, setSyncedProjectId] = useState<string | undefined>(projectId);
+
     // Refs
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,10 +91,26 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         }
     }, [isInitialized, user, projectId, signInAnonymously]);
 
+    // 🔄 STATE SYNC: Restore active project for Global Widget
+    useEffect(() => {
+        // Only run if:
+        // 1. We are initialized (auth check done)
+        // 2. User is logged in (Guest users don't have projects)
+        // 3. We are in "Global Mode" (no explicit projectId prop)
+        if (isInitialized && user && !projectId) {
+            const stored = localStorage.getItem('activeProjectId');
+            if (stored) {
+                console.log('[ChatWidget] 🔄 Restored active project context:', stored);
+                setSyncedProjectId(stored);
+            }
+        }
+    }, [isInitialized, user, projectId]);
+
     // Session Management
-    // If projectId is provided (dashboard context), use it. Otherwise, use localStorage.
+    // Use syncedProjectId (from prop or storage) -> Dashboard Context
+    // Fallback to localStorage session -> Landing Page Context
     const fallbackSessionId = useSessionId();
-    const sessionId = projectId || fallbackSessionId;
+    const sessionId = syncedProjectId || fallbackSessionId;
 
     // Load conversation history
     const { historyLoaded, historyMessages } = useChatHistory(sessionId);
@@ -408,7 +427,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                         >
                             <ChatHeader
                                 onMinimize={isInline ? undefined : () => setIsOpen(false)}
-                                projectId={projectId}
+                                projectId={syncedProjectId}
                             />
 
                             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scrollbar-thin scrollbar-thumb-luxury-gold/20 hover:scrollbar-thumb-luxury-gold/40">

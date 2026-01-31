@@ -58,6 +58,9 @@ export function ProjectSelector({ currentProjectId }: ProjectSelectorProps) {
             return;
         }
 
+        // Persist Project ID for Global Widget
+        localStorage.setItem('activeProjectId', projectId);
+
         // UX: Show loading/block interaction immediately? 
         // For now, simple navigation. Page will show global loader.
         setIsOpen(false);
