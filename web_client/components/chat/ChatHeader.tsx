@@ -7,14 +7,15 @@ import { ProjectSelector } from './ProjectSelector';
 interface ChatHeaderProps {
     onMinimize?: () => void;
     projectId?: string;
-    showSelector?: boolean; // New prop
+    showSelector?: boolean;
+    onProjectSelect?: (projectId: string) => void; // New prop
 }
 
 /**
  * Chat header component with avatar, status, and minimize button
  * Extracted from ChatWidget.tsx (lines 516-526)
  */
-export function ChatHeader({ onMinimize, projectId, showSelector }: ChatHeaderProps) {
+export function ChatHeader({ onMinimize, projectId, showSelector, onProjectSelect }: ChatHeaderProps) {
     return (
         <div
             className="flex items-center justify-between p-4 border-b border-luxury-gold/10 bg-luxury-bg/50 flex-shrink-0"
@@ -25,7 +26,10 @@ export function ChatHeader({ onMinimize, projectId, showSelector }: ChatHeaderPr
                 <div>
                     {/* Dynamic Header: Project Selector or Fallback Title */}
                     {projectId || showSelector ? (
-                        <ProjectSelector currentProjectId={projectId || ''} />
+                        <ProjectSelector
+                            currentProjectId={projectId || ''}
+                            onProjectSelect={onProjectSelect}
+                        />
                     ) : (
                         <h3 className="font-serif font-bold text-luxury-text flex items-center gap-2">
                             SYD

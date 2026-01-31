@@ -9,9 +9,10 @@ import { ProjectListItem } from '@/types/projects';
 
 interface ProjectSelectorProps {
     currentProjectId: string;
+    onProjectSelect?: (projectId: string) => void; // Support custom handling (e.g. no navigation)
 }
 
-export function ProjectSelector({ currentProjectId }: ProjectSelectorProps) {
+export function ProjectSelector({ currentProjectId, onProjectSelect }: ProjectSelectorProps) {
     const router = useRouter();
     const [projects, setProjects] = useState<ProjectListItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -52,17 +53,30 @@ export function ProjectSelector({ currentProjectId }: ProjectSelectorProps) {
     const currentProject = projects.find(p => p.session_id === currentProjectId);
     const displayName = currentProject ? currentProject.title : "Seleziona Progetto";
 
+    // 🔄 STATE SYNC: Keep localStorage updated with current project
+    useEffect(() => {
+        if (currentProjectId) {
+            localStorage.setItem('activeProjectId', currentProjectId);
+        }
+    }, [currentProjectId]);
+
     const handleSelect = (projectId: string) => {
         if (projectId === currentProjectId) {
             setIsOpen(false);
             return;
         }
 
-        // Persist Project ID for Global Widget
+        // Persist Project ID always (redundant if effect exists, but safe)
         localStorage.setItem('activeProjectId', projectId);
 
-        // UX: Show loading/block interaction immediately? 
-        // For now, simple navigation. Page will show global loader.
+        // If custom handler exists, use it and SKIP navigation
+        if (onProjectSelect) {
+            onProjectSelect(projectId);
+            setIsOpen(false);
+            return;
+        }
+
+        // Default: Navigate to Dashboard
         setIsOpen(false);
         router.push(`/dashboard/${projectId}`);
     };

@@ -379,6 +379,19 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         }
     }, [historyLoaded, historyMessages, setMessages]);
 
+    // 🔄 CONTEXT SWITCHING (Global Widget Only)
+    const handleProjectSwitch = (newProjectId: string) => {
+        console.log('[ChatWidget] Switching context to:', newProjectId);
+        // 1. Update State
+        setSyncedProjectId(newProjectId);
+        localStorage.setItem('activeProjectId', newProjectId);
+
+        // 2. Clear current messages to prevent ghosting
+        setMessages([]);
+
+        // 3. Note: useChatHistory key change will trigger re-fetch automatically.
+    };
+
     return (
         <>
             {/* Toggle Button - Hide if inline */}
@@ -429,7 +442,8 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                             <ChatHeader
                                 onMinimize={isInline ? undefined : () => setIsOpen(false)}
                                 projectId={syncedProjectId}
-                                showSelector={!!user} // Show selector if user is authenticated
+                                showSelector={!!user}
+                                onProjectSelect={!isInline ? handleProjectSwitch : undefined}
                             />
 
                             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scrollbar-thin scrollbar-thumb-luxury-gold/20 hover:scrollbar-thumb-luxury-gold/40">
