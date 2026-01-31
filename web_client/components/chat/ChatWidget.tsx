@@ -97,6 +97,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         // 1. We are initialized (auth check done)
         // 2. User is logged in (Guest users don't have projects)
         // 3. We are in "Global Mode" (no explicit projectId prop)
+        // 3. We are in "Global Mode" (no explicit projectId prop)
         if (isInitialized && user && !projectId) {
             const stored = localStorage.getItem('activeProjectId');
             if (stored) {
@@ -428,6 +429,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                             <ChatHeader
                                 onMinimize={isInline ? undefined : () => setIsOpen(false)}
                                 projectId={syncedProjectId}
+                                showSelector={!!user} // Show selector if user is authenticated
                             />
 
                             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scrollbar-thin scrollbar-thumb-luxury-gold/20 hover:scrollbar-thumb-luxury-gold/40">
