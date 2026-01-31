@@ -406,7 +406,10 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                                     : "fixed inset-0 md:inset-auto md:bottom-4 md:right-6 w-full md:w-[450px] md:h-[850px] md:max-h-[calc(100vh-40px)] md:rounded-3xl shadow-2xl"
                             )}
                         >
-                            <ChatHeader onMinimize={isInline ? undefined : () => setIsOpen(false)} />
+                            <ChatHeader
+                                onMinimize={isInline ? undefined : () => setIsOpen(false)}
+                                projectId={projectId}
+                            />
 
                             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scrollbar-thin scrollbar-thumb-luxury-gold/20 hover:scrollbar-thumb-luxury-gold/40">
 

@@ -3284,3 +3284,17 @@ google.api_core.exceptions.FailedPrecondition: 400 The query requires an index. 
 2026-01-31 22:16:34 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
 2026-01-31 22:19:55 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
 2026-01-31 22:19:55 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:10 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:10 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:12 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:12 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:14 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:14 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:21 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:21 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:27 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:36:27 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:37:03 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 22:37:03 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:01:51 [INFO] SYD Brain API starting on port 8080...
+2026-01-31 23:02:00 [INFO] SYD Brain API starting on port 8080...

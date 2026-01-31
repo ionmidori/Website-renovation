@@ -102,7 +102,7 @@ export default function ProjectPage() {
     return (
         <div className="flex flex-col h-full w-full">
             {/* Pass projectId to ChatWidget as primary inline view */}
-            <ChatWidget projectId={projectId} variant="inline" />
+            <ChatWidget key={projectId} projectId={projectId} variant="inline" />
         </div>
     );
 }

@@ -16,6 +16,8 @@ from src.vision.analyze import analyze_room_structure
 from src.vision.architect import generate_architectural_prompt
 from src.vision.triage import analyze_media_triage
 
+from src.tools.project_files import list_project_files
+
 logger = logging.getLogger(__name__)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -206,5 +208,6 @@ ALL_TOOLS = [
     generate_render, 
     save_quote, 
     analyze_room, 
-    plan_renovation
+    plan_renovation,
+    list_project_files
 ]

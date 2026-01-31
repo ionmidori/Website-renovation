@@ -15,7 +15,8 @@ from src.graph.tools_registry import (
     generate_render,
     analyze_room,
     get_market_prices,
-    submit_lead
+    submit_lead,
+    list_project_files
 )
 from src.tools.lead_tools import display_lead_form
 
@@ -25,7 +26,8 @@ tools = [
      analyze_room,
      get_market_prices,
      submit_lead,
-     display_lead_form
+     display_lead_form,
+     list_project_files
 ]
 
 logger = logging.getLogger(__name__)
@@ -144,6 +146,17 @@ When calling generate_render, you MUST set sourceImageUrl="{last_image_url}" if 
 If the user specifically asks for another image from the list, use that URL instead.
 """
             logger.info(f"[Context] 💉 Injected {len(found_images)} image URLs into system instruction")
+        
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        # 🔥 PROJECT AWARENESS: File Listing & Isolation
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        active_system_instruction += f"""
+\n\n[[PROJECT CONTEXT]]
+Session ID: {state.get("session_id", "default")}
+1. **ISOLATION**: You are currently working on the project with this Session ID. STRICTLY IGNORE any details from previous projects.
+2. **FILES**: You have access to project files. If the user asks "What files are here?" or "Do you have the plan?", you MUST use `list_project_files(session_id="{state.get("session_id")}")` to check.
+3. **CATEGORIES**: When listing files, try to infer the category (image, video, plan, quote) to be efficient.
+"""
         
         # Add system instruction to first message if not present
         if not any(isinstance(msg, SystemMessage) for msg in messages):
