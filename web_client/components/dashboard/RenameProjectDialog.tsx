@@ -56,7 +56,7 @@ export function RenameProjectDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="sm:max-w-md bg-luxury-bg border border-luxury-gold/20 text-luxury-text"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold font-serif text-luxury-gold">
