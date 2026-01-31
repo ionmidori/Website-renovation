@@ -1,5 +1,6 @@
 import React from 'react';
 import { ImagePreview } from '@/components/chat/ImagePreview';
+import { GalleryCard } from '@/components/chat/GalleryCard';
 
 interface ToolInvocation {
     toolCallId: string;
@@ -61,6 +62,27 @@ export const ToolStatus = React.memo<ToolStatusProps>(({ tool, onImageClick }) =
     // Completed state: Tool finished with result
     if (tool.state === 'result') {
         const result = tool.result || (tool as any).output;
+
+
+        // Gallery: Project images
+        if (tool.toolName === 'show_project_gallery') {
+            try {
+                const galleryData = typeof result === 'string' ? JSON.parse(result) : result;
+                if (galleryData?.type === 'gallery' && galleryData?.items) {
+                    return (
+                        <div className="mt-3">
+                            <GalleryCard
+                                items={galleryData.items}
+                                projectId={galleryData.projectId}
+                            />
+                        </div>
+                    );
+                }
+            } catch (e) {
+                console.error('[ToolStatus] Failed to parse gallery data:', e);
+                // Fall through to text rendering
+            }
+        }
 
         // Success: Image generated
         if (result?.imageUrl) {

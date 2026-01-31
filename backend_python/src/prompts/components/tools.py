@@ -205,15 +205,28 @@ JSON object containing the 4 pillars gathered:
 </parameters>
 </tool>"""
 
-TOOL_PLAN_RENOVATION = """<tool name="plan_renovation">
-<trigger>User asks for a "plan", "layout proposal", or "architectural advice" WITHOUT a render request.</trigger>
-<goal>Generate a text-based architectural plan/strategy.</goal>
+TOOL_LIST_PROJECT_FILES = """<tool name="list_project_files">
+<trigger>User asks "What files do I have?", "Show my documents", or general file list requests.</trigger>
+<goal>Retrieve a TEXT list of all assets in the project folder.</goal>
 <parameters>
-<param name="image_url" conditional="true">Image URL if available.</param>
-<param name="style" required="true">Desired style.</param>
-<param name="keepElements" type="array">Elements to preserve.</param>
+<param name="session_id" required="true">The current project ID.</param>
+<param name="category" optional="true">Filter: 'image', 'video', 'document', 'plan'.</param>
 </parameters>
 </tool>"""
 
+TOOL_SHOW_PROJECT_GALLERY = """<tool name="show_project_gallery">
+<trigger>User wants to SEE photos, renderings, or a visual gallery. E.g., "Fammi vedere le foto", "Mostrami la gallery", "Voglio vedere i rendering della cucina".</trigger>
+<goal>Retrieve a VISUAL gallery (JSON) that the frontend will render as a grid/carousel.</goal>
+<parameters>
+<param name="session_id" required="true">The current project ID.</param>
+<param name="room" optional="true">Filter by room (e.g., 'cucina').</param>
+<param name="status" optional="true">Filter by status (e.g., 'approvato').</param>
+</parameters>
+<rules>
+1. ALWAYS prefer this tool over `list_project_files` if the user wants to SEE the images.
+2. Use `list_project_files` ONLY if they want a technical list or count of files.
+</rules>
+</tool>"""
+
 # Combined export
-TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}\n\n{TOOL_ANALYZE_ROOM}\n\n{TOOL_SAVE_QUOTE}\n\n{TOOL_PLAN_RENOVATION}"
+TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}\n\n{TOOL_ANALYZE_ROOM}\n\n{TOOL_SAVE_QUOTE}\n\n{TOOL_PLAN_RENOVATION}\n\n{TOOL_LIST_PROJECT_FILES}\n\n{TOOL_SHOW_PROJECT_GALLERY}"
