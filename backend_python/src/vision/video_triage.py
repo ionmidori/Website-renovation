@@ -208,6 +208,7 @@ def optimize_video(input_path: str, max_duration: float = 30.0, trim_start: Opti
         raise
 
 
+async def analyze_video_with_gemini(video_path: str) -> Dict[str, Any]:
     """
     Analyze video using Gemini 3 Flash multimodal capabilities.
     
@@ -260,7 +261,7 @@ def optimize_video(input_path: str, max_duration: float = 30.0, trim_start: Opti
                 )
             ],
             config=types.GenerateContentConfig(
-                tools=[types.Tool(code_execution=types.CodeExecution())]
+                tools=[{"code_execution": {}}]
             )
         )
         

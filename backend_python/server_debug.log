@@ -3298,3 +3298,77 @@ google.api_core.exceptions.FailedPrecondition: 400 The query requires an index. 
 2026-01-31 22:37:03 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
 2026-01-31 23:01:51 [INFO] SYD Brain API starting on port 8080...
 2026-01-31 23:02:00 [INFO] SYD Brain API starting on port 8080...
+2026-01-31 23:02:06 [INFO] SYD Brain API starting on port 8080...
+2026-01-31 23:09:57 [INFO] Using local service account: firebase-service-account.json
+2026-01-31 23:09:57 [INFO] Firebase Admin SDK initialized
+2026-01-31 23:09:59 [WARNING] [Projects] Cannot claim non-existent project session-1769897042193-g4vr3
+2026-01-31 23:10:06 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:10:06 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:10:18 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:10:18 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:10:18 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:10:19 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:19:23 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:19:24 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:19:48 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:19:48 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:20 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:20 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:22 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:23 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:23 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:21:23 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:32:28 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:34:54 [INFO] SYD Brain API starting on port 8080...
+2026-01-31 23:35:35 [INFO] SYD Brain API starting on port 8080...
+2026-01-31 23:50:19 [INFO] Using local service account: firebase-service-account.json
+2026-01-31 23:50:19 [INFO] Firebase Admin SDK initialized
+2026-01-31 23:50:20 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:50:20 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:34 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:34 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:45 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:46 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:46 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:51:46 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:59:41 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-01-31 23:59:41 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:00:51 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:00:52 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:20:20 [INFO] SYD Brain API starting on port 8080...
+2026-02-01 00:20:27 [INFO] SYD Brain API starting on port 8080...
+2026-02-01 00:48:29 [INFO] SYD Brain API starting on port 8080...
+2026-02-01 00:48:29 [INFO] SYD Brain API starting on port 8080...
+2026-02-01 00:48:29 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:29 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:29 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [INFO] Firebase Admin SDK initialized
+2026-02-01 00:48:30 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [INFO] Using local service account: firebase-service-account.json
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:30 [ERROR] Authentication error: The default Firebase app already exists. This means you called initialize_app() more than once without providing an app name as the second argument. In most cases you only need to call initialize_app() once. But if you do want to initialize multiple apps, pass a second argument to initialize_app() to give each app a unique name.
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:48:31 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:06 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:06 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:14 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:14 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:26 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:26 [INFO] [API] get_project request for session_id: e3d6258c-ecf0-400b-8fb8-c0e3886f3e7f from user_id: eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:26 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:49:26 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:50:02 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3
+2026-02-01 00:50:02 [INFO] [Projects] Retrieved 1 projects for user eD2MWEyuIBU1s0VjYQApU0WPMOE3

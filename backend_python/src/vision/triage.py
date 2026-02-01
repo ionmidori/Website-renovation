@@ -64,7 +64,7 @@ async def analyze_image_triage(image_data: bytes) -> Dict[str, Any]:
                     )
                 ],
                 config=types.GenerateContentConfig(
-                    tools=[types.Tool(code_execution=types.CodeExecution())]
+                    tools=[{"code_execution": {}}]
                 )
             )
         finally:
