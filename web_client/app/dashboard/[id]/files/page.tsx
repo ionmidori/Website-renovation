@@ -198,7 +198,12 @@ export default function ProjectFilesPage() {
             </div>
 
             {/* Gallery */}
-            <AssetGallery assets={filteredAssets} />
+            <AssetGallery
+                assets={filteredAssets}
+                onDelete={(deletedId) => {
+                    setAssets(prev => prev.filter(a => a.id !== deletedId));
+                }}
+            />
         </div>
     );
 }

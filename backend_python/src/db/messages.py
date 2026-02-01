@@ -170,9 +170,77 @@ async def ensure_session(session_id: str, user_id: Optional[str] = None) -> None
                 'messageCount': 0
             })
             logger.info(f"[Firestore] Created new session {session_id} for user {owner_id}")
+            
+            # 🔥 SYNC: Create corresponding Project document
+            # This ensures the session appears in the Global Gallery project list
+            project_ref = db.collection('projects').document(session_id)
+            if not project_ref.get().exists:
+                project_ref.set({
+                    'id': session_id,
+                    'name': 'Nuovo Progetto', 
+                    'userId': owner_id,
+                    'createdAt': firestore.SERVER_TIMESTAMP,
+                    'updatedAt': firestore.SERVER_TIMESTAMP,
+                    'status': 'active'
+                })
+                logger.info(f"[Firestore] 🚀 Sync: Created project {session_id} from session")
         else:
+            # Check if project exists even if session exists (backfill logic)
+            project_ref = db.collection('projects').document(session_id)
+            if not project_ref.get().exists:
+                 session_data = doc.to_dict()
+                 project_ref.set({
+                    'id': session_id,
+                    'name': session_data.get('title', 'Progetto Recuperato'), 
+                    'userId': session_data.get('userId', user_id or 'unknown'),
+                    'createdAt': session_data.get('createdAt', firestore.SERVER_TIMESTAMP),
+                    'updatedAt': firestore.SERVER_TIMESTAMP,
+                    'status': 'active'
+                })
+                 logger.info(f"[Firestore] 🚀 Sync: Backfilled missing project {session_id}")
+            
             logger.debug(f"[Firestore] Session {session_id} already exists")
             
     except Exception as e:
         logger.error(f"[Firestore] Error ensuring session: {str(e)}", exc_info=True)
         pass
+
+async def save_file_metadata(
+    project_id: str,
+    file_data: Dict[str, Any]
+) -> None:
+    """
+    Save file metadata to the project's 'files' subcollection.
+    This ensures files appear in the Global Gallery.
+    """
+    try:
+        db = get_firestore_client()
+        
+        # Ensure 'files' subcollection under the project
+        # Using projects/{project_id}/files ensures compatibility with GlobalGallery
+        files_ref = db.collection('projects').document(project_id).collection('files')
+        
+        # Check if file already exists (by URL) to prevent duplicates
+        # This is a basic check; stricter checks could rely on hash or storage ID
+        existing_docs = files_ref.where('url', '==', file_data['url']).limit(1).get()
+        if len(existing_docs) > 0:
+            logger.info(f"[Firestore] File already exists in gallery: {file_data.get('name', 'unknown')}")
+            return
+
+        # Prepare Document
+        doc_data = {
+            'url': file_data['url'],
+            'type': file_data.get('type', 'image'), # image, video, document
+            'name': file_data.get('name', f"File {datetime.now().isoformat()}"),
+            'size': file_data.get('size', 0),
+            'uploadedBy': file_data.get('uploadedBy', 'system'),
+            'uploadedAt': firestore.SERVER_TIMESTAMP,
+            'mimeType': file_data.get('mimeType', 'application/octet-stream')
+        }
+        
+        files_ref.add(doc_data)
+        logger.info(f"[Firestore] 🖼️ Saved file metadata to project {project_id}: {doc_data['name']}")
+        
+    except Exception as e:
+        logger.error(f"[Firestore] Error saving file metadata: {str(e)}", exc_info=True)
+

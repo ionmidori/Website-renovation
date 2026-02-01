@@ -129,12 +129,15 @@ export default function GlobalGalleryPage() {
         }
     };
 
-    // Initial Load Effect
+    // Initial Load Effect (and auto-refresh when projects load)
     useEffect(() => {
         if (user?.uid) {
+            // If projects are needed for mapping, we should ideally wait or re-map.
+            // Since fetchFiles runs independently, we can trigger it again when projects changes 
+            // OR better, we can just update the asset state if projectId mapping is missing.
             fetchFiles(true);
         }
-    }, [user?.uid, projects, refreshTrigger]);
+    }, [user?.uid, refreshTrigger, projects.length]); // Depend on projects.length to re-run when projects load
 
     // Grouping logic (with Filter)
     const groupedAssets = useMemo(() => {
@@ -397,7 +400,12 @@ export default function GlobalGalleryPage() {
                         </div>
 
                         {/* Assets Grid */}
-                        <AssetGallery assets={groupAssets} />
+                        <AssetGallery
+                            assets={groupAssets}
+                            onDelete={(deletedId) => {
+                                setAssets(prev => prev.filter(a => a.id !== deletedId));
+                            }}
+                        />
                     </motion.section>
                 ))}
 
