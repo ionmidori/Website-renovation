@@ -22,7 +22,6 @@ from src.graph.tools_registry import (
     list_project_files
 )
 from src.tools.lead_tools import display_lead_form
-from src.tools.lead_tools import display_lead_form
 from src.tools.auth_tools import request_login # 🔥 NEW
 from src.agents.sop_manager import SOPManager # 🔥 Tier 3 Gatekeeper
 
@@ -70,7 +69,7 @@ def _get_reasoning_llm():
     # For V2 architecture, we specifically want Flash.
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     return ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp", # ⚡ FASTEST MODEL
+        model="gemini-2.5-flash", # ⚡ STABLE FLASH MODEL
         google_api_key=api_key,
         temperature=0.2, # Low temp for strict logic
     )
@@ -88,6 +87,16 @@ def should_continue(state: AgentState) -> str:
     messages = state["messages"]
     last_message = messages[-1]
     
+    # 🛡️ LOOP GUARD: Check for excessive tool usage in recent history
+    # We look at the last 10 messages. If we see > 5 ToolMessages, we abort.
+    # This prevents the agent from getting stuck in a generate -> refine -> generate loop.
+    recent_history = messages[-10:] if len(messages) > 10 else messages
+    tool_message_count = sum(1 for m in recent_history if isinstance(m, ToolMessage))
+    
+    if tool_message_count >= 5:
+        logger.warning(f"🛑 LOOP DETECTED: Aborting after {tool_message_count} tool calls in recent history.")
+        return END
+
     # If LLM made tool calls, go to tools node
     if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
         return "tools"
@@ -99,60 +108,68 @@ def create_agent_graph():
     """Create LangGraph StateGraph with Gemini LLM and tools."""
     
     # Define the agent node
-    # Define the execution node (formerly agent_node)
-    def execution_node(state: AgentState) -> Dict[str, Any]:
-        """
-        The 'Cortex' that executes the plan or handles the conversation.
-        """
-        messages = state["messages"]
-        internal_plan = state.get("internal_plan", [])
-        latest_plan = internal_plan[-1] if internal_plan else None
+def _inject_context(state: AgentState) -> str:
+    """Centralized context injection for all nodes."""
+    messages = state["messages"]
+    found_images = []
+    
+    # Robust image scanning
+    for msg in reversed(messages):
+        if hasattr(msg, 'content') and isinstance(msg.content, str):
+            matches = re.findall(r'\[(?:Immagine|Video) allegat[oa]: (https?://[^\]]+)\]', msg.content)
+            found_images.extend(matches)
+        elif hasattr(msg, 'content') and isinstance(msg.content, list):
+            for part in msg.content:
+               if isinstance(part, dict) and part.get("type") == "image_url":
+                   url_data = part.get("image_url")
+                   if isinstance(url_data, dict): found_images.append(url_data.get("url"))
+                   else: found_images.append(url_data)
+        if found_images: break
 
-        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        # 🧠 CONTEXT INJECTION (Kept from original)
-        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        # ... (Context injection logic is critical so we keep it here or move to a pre-processing node)
-        # For V2, we keeping it here to minimize refactor risk for now, but ideally it goes to 'context_node'
+    # Inject Context logic
+    active_system_instruction = SYSTEM_INSTRUCTION
+    if found_images:
+        import json
+        active_system_instruction += f"\n\n[[ACTIVE CONTEXT]]\nLAST_UPLOADED_IMAGE_URL=\"{found_images[-1]}\"\nAVAILABLE_IMAGES={json.dumps(found_images)}"
         
-        found_images = []
-        # ... [Scanning logic same as before] ... 
-        # (To save space in this edit, assuming the scanning logic is preserved or we can optimize it)
-        # Let's perform a lightweight scan here or rely on the previous implementation if not changing.
-        # WAITING: Actually, to be safe, I will re-implement the scan briefly or assume it's there.
-        # Better approach: We will TRUST the reasoning node's analysis in the future, 
-        # but for now we keep the context injection operational as the Prompt needs it.
-        
-        # Traverse messages backwards for images ( Simplified for brevity in this specific edit block, 
-        # but in real code, I'd keep the robust one. Re-inserting robust logic below )
-        for msg in reversed(messages):
-            if hasattr(msg, 'content') and isinstance(msg.content, str):
-                matches = re.findall(r'\[(?:Immagine|Video) allegat[oa]: (https?://[^\]]+)\]', msg.content)
-                found_images.extend(matches)
-            elif hasattr(msg, 'content') and isinstance(msg.content, list):
-                for part in msg.content:
-                   if isinstance(part, dict) and part.get("type") == "image_url":
-                       url_data = part.get("image_url")
-                       if isinstance(url_data, dict): found_images.append(url_data.get("url"))
-                       else: found_images.append(url_data)
-            if found_images: break
+    # Auth & Project Context
+    active_system_instruction += f"\n\n[[PROJECT CONTEXT]]\nSession ID: {state.get('session_id')}\nIS_AUTHENTICATED={str(state.get('is_authenticated', False)).upper()}"
+    
+    return active_system_instruction
 
-        # Inject Context logic
-        active_system_instruction = SYSTEM_INSTRUCTION
-        if found_images:
-            import json
-            active_system_instruction += f"\n\n[[ACTIVE CONTEXT]]\nLAST_UPLOADED_IMAGE_URL=\"{found_images[-1]}\"\nAVAILABLE_IMAGES={json.dumps(found_images)}"
-            
-        # Auth Check Logic
-        active_system_instruction += f"\n\n[[PROJECT CONTEXT]]\nSession ID: {state.get('session_id')}\nIS_AUTHENTICATED={str(state.get('is_authenticated', False)).upper()}"
+def execution_node(state: AgentState) -> Dict[str, Any]:
+    """
+    The 'Cortex' that executes the plan or handles the conversation.
+    """
+    messages = state["messages"]
+    internal_plan = state.get("internal_plan", [])
+    latest_plan = internal_plan[-1] if internal_plan else None
 
-        # Update System Message
-        if not any(isinstance(msg, SystemMessage) for msg in messages):
-            messages = [SystemMessage(content=active_system_instruction)] + list(messages)
-        else:
-             messages = [SystemMessage(content=active_system_instruction) if isinstance(msg, SystemMessage) else msg for msg in messages]
+    # Inject Context
+    active_system_instruction = _inject_context(state)
+
+    # Scan for images for state persistence
+    found_images = []
+    for msg in reversed(messages):
+        if hasattr(msg, 'content') and isinstance(msg.content, str):
+            matches = re.findall(r'\[(?:Immagine|Video) allegat[oa]: (https?://[^\]]+)\]', msg.content)
+            found_images.extend(matches)
+        elif hasattr(msg, 'content') and isinstance(msg.content, list):
+            for part in msg.content:
+               if isinstance(part, dict) and part.get("type") == "image_url":
+                   url_data = part.get("image_url")
+                   if isinstance(url_data, dict): found_images.append(url_data.get("url"))
+                   else: found_images.append(url_data)
+        if found_images: break
+
+    # Update System Message
+    if not any(isinstance(msg, SystemMessage) for msg in messages):
+        messages = [SystemMessage(content=active_system_instruction)] + list(messages)
+    else:
+         messages = [SystemMessage(content=active_system_instruction) if isinstance(msg, SystemMessage) else msg for msg in messages]
 
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        # �️ DETERMINISTIC EXECUTION (Tier 3)
+        # ️ DETERMINISTIC EXECUTION (Tier 3)
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         
         # 1. READ THE PLAN
@@ -198,14 +215,22 @@ def create_agent_graph():
         """
         messages = state["messages"]
         
-        # 1. Prepare Reasoning Context
-        # We give the reasoning model a meta-view of the conversation
+        # 1. Inject Context to ALL messages for Reasoning
+        active_system_instruction = _inject_context(state)
+        
+        # Inject as System Message if not present
+        if not any(isinstance(msg, SystemMessage) for msg in messages):
+            reasoning_messages = [SystemMessage(content=active_system_instruction)] + list(messages)
+        else:
+            reasoning_messages = [SystemMessage(content=active_system_instruction) if isinstance(msg, SystemMessage) else msg for msg in messages]
+
+        # 2. Prepare Reasoning Model
         reasoning_model = _get_reasoning_llm().with_structured_output(ReasoningStep)
         
-        # 2. Invoke CoT
+        # 3. Invoke CoT
         try:
             logger.info("🤔 Reasoning Node: Thinking...")
-            step = reasoning_model.invoke(messages)
+            step = reasoning_model.invoke(reasoning_messages)
             
             # If we get here, Pydantic validation PASSED (Fail-Fast check 1)
             logger.info(f"💡 Thought: {step.analysis}")
@@ -221,8 +246,12 @@ def create_agent_graph():
         except Exception as e:
             logger.error(f"❌ Reasoning Failed (Fail-Fast Triggered): {e}")
             # Fallback to a safe error state -> terminate
+            
+            # TRUNCATE ERROR MESSAGE TO FIT PYDANTIC LIMIT (200 chars)
+            error_msg = str(e)[:150] + "..."
+            
             emergency_plan = ReasoningStep(
-                analysis=f"System Error during reasoning: {str(e)}",
+                analysis=f"System Error: {error_msg}",
                 action="terminate",
                 confidence_score=0.0,
                 validation_passed=False 
@@ -276,8 +305,25 @@ def create_agent_graph():
         if isinstance(last_msg, HumanMessage) or (isinstance(last_msg, dict) and last_msg.get("type") == "human"):
             content = last_msg.content if hasattr(last_msg, "content") else last_msg.get("content", "")
             
+            # 1. Normalize Content (Handle Multimodal List)
+            text_content = ""
+            if isinstance(content, str):
+                text_content = content
+            elif isinstance(content, list):
+                # Extract text parts
+                text_parts = []
+                for part in content:
+                    if isinstance(part, str):
+                         text_parts.append(part)
+                    elif isinstance(part, dict) and part.get("type") == "text":
+                         text_parts.append(part.get("text", ""))
+                text_content = " ".join(text_parts)
+            
             # 1. Length Check (Max 5 words)
-            if len(content.split()) > 5:
+            if len(text_content.split()) > 5:
+                # If multimodal (list), also default to reasoning as it implies complexity
+                if isinstance(content, list):
+                    return "reasoning"
                 return "reasoning"
                 
             # 2. Greeting/Simple Pattern Check
@@ -322,8 +368,8 @@ def create_agent_graph():
         }
     )
     
-    # After tools, always go back to execution
-    workflow.add_edge("tools", "execution")
+    # After tools, always go back to reasoning to decide next step
+    workflow.add_edge("tools", "reasoning")
     
     # Compile graph
     return workflow.compile()

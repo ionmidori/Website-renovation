@@ -115,10 +115,20 @@ export function useChatHistory(sessionId: string) {
                             );
 
                             if (toolResultMsg) {
+                                let parsedResult = toolResultMsg.content;
+                                try {
+                                    if (typeof toolResultMsg.content === 'string' &&
+                                        (toolResultMsg.content.startsWith('{') || toolResultMsg.content.startsWith('['))) {
+                                        parsedResult = JSON.parse(toolResultMsg.content);
+                                    }
+                                } catch (e) {
+                                    // Keep as string if parse fails
+                                }
+
                                 return {
                                     ...tool,
                                     state: 'result',
-                                    result: toolResultMsg.content // Inject content as result
+                                    result: parsedResult // Inject parsed content
                                 };
                             }
                             return tool;

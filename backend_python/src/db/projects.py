@@ -11,7 +11,7 @@ from datetime import datetime
 from google.cloud.firestore_v1 import FieldFilter
 from firebase_admin import firestore
 
-from src.db.firebase_client import get_async_firestore_client
+from src.db.firebase_client import get_async_firestore_client, get_storage_client
 from src.models.project import (
     ProjectCreate,
     ProjectDocument,
@@ -356,16 +356,13 @@ async def update_project_details(session_id: str, user_id: str, details: Project
         return False
 
 
+
+
+# ... (Previous code) ... 
+
 async def delete_project(session_id: str, user_id: str) -> bool:
     """
-    Delete a project and all its associated data (messages subcollection).
-    
-    Args:
-        session_id: Project ID to delete.
-        user_id: UID for ownership verification.
-    
-    Returns:
-        True if deleted successfully, False if not found or unauthorized.
+    Delete a project and all its associated data (messages, files, storage blobs).
     """
     try:
         db = get_async_firestore_client()
@@ -382,49 +379,43 @@ async def delete_project(session_id: str, user_id: str) -> bool:
             logger.warning(f"[Projects] User {user_id} not authorized to delete {session_id}")
             return False
         
-        # Delete all messages in the subcollection
-        messages_ref = doc_ref.collection("messages")
-        
-        # Firestore doesn't support deleting collections directly in async client
-        # We need to delete documents in batches
-        batch_size = 100
-        deleted_count = 0
-        
-        while True:
-            # Get a batch of messages
-            messages_query = messages_ref.limit(batch_size)
-            docs = messages_query.stream()
+        # 1. Clean up Firestore Subcollections (Deep Delete)
+        # A. Backend 'sessions' collection
+        subcollections = ["messages", "files"]
+        for subcol_name in subcollections:
+            subcol_ref = doc_ref.collection(subcol_name)
+            await _delete_collection_batch(db, subcol_ref)
             
-            # Collect document references
-            doc_refs_to_delete = []
-            async for msg_doc in docs:
-                doc_refs_to_delete.append(msg_doc.reference)
+        # B. Frontend 'projects' collection
+        frontend_project_ref = db.collection("projects").document(session_id)
+        await _delete_collection_batch(db, frontend_project_ref.collection("files"))
+        await frontend_project_ref.delete()
+
+        # 2. Delete Firebase Storage Blobs
+        try:
+            bucket = get_storage_client()
             
-            # If no more documents, break
-            if not doc_refs_to_delete:
-                break
+            # Path A: Backend Generator
+            prefix_backend = f"user-uploads/{session_id}/"
+            blobs_backend = list(bucket.list_blobs(prefix=prefix_backend))
+            if blobs_backend:
+                bucket.delete_blobs(blobs_backend)
             
-            # Delete in batch
-            batch = db.batch()
-            for msg_ref in doc_refs_to_delete:
-                batch.delete(msg_ref)
-            
-            await batch.commit()
-            deleted_count += len(doc_refs_to_delete)
-            
-            logger.info(f"[Projects] Deleted {len(doc_refs_to_delete)} messages from {session_id}")
+            # Path B: Frontend Uploader
+            prefix_frontend = f"projects/{session_id}/uploads/"
+            blobs_frontend = list(bucket.list_blobs(prefix=prefix_frontend))
+            if blobs_frontend:
+                bucket.delete_blobs(blobs_frontend)
+                
+            logger.info(f"[Projects] Deep delete: Storage cleaned for {session_id}")
+                
+        except Exception as storage_e:
+            logger.error(f"[Projects] Storage cleanup warning for {session_id}: {storage_e}")
+
+        # 3. Delete Project Document (Backend)
+        await doc_ref.delete()
         
-        # Finally, delete the project document itself AND the public project reference
-        batch = db.batch()
-        batch.delete(doc_ref)
-        
-        # Delete from 'projects' collection too
-        project_ref = db.collection("projects").document(session_id)
-        batch.delete(project_ref)
-        
-        await batch.commit()
-        
-        logger.info(f"[Projects] Deleted project {session_id} (with {deleted_count} messages) for user {user_id}")
+        logger.info(f"[Projects] DEEP DELETE completed for {session_id}")
         return True
         
     except Exception as e:
@@ -549,3 +540,25 @@ async def sync_project_cover(session_id: str) -> bool:
     except Exception as e:
         logger.error(f"[Projects] Error syncing cover for {session_id}: {str(e)}", exc_info=True)
         return False
+
+
+async def _delete_collection_batch(db, coll_ref, batch_size=50):
+    """
+    Helper to delete a collection in batches.
+    """
+    # Use list() to consume stream immediately
+    docs = [d async for d in coll_ref.limit(batch_size).stream()]
+    
+    if not docs:
+        return 0
+        
+    batch = db.batch()
+    for doc in docs:
+        batch.delete(doc.reference)
+    await batch.commit()
+    
+    deleted = len(docs)
+    
+    if deleted >= batch_size:
+        return deleted + await _delete_collection_batch(db, coll_ref, batch_size)
+    return deleted

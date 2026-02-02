@@ -44,7 +44,12 @@ def init_firebase():
                 'token_uri': 'https://oauth2.googleapis.com/token',
             })
         
-        initialize_app(cred)
+        if os.getenv('FIREBASE_STORAGE_BUCKET'):
+            initialize_app(cred, {
+                'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
+            })
+        else:
+            initialize_app(cred)
         _cached_cred = cred  # Cache for generic Google Cloud clients
         logger.info("Firebase Admin SDK initialized")
     

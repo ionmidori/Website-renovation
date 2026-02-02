@@ -13,8 +13,8 @@ class ReasoningStep(BaseModel):
     
     analysis: str = Field(
         ..., 
-        description="Concise internal reasoning about user intent and state. MAX 200 characters.",
-        max_length=200
+        description="Concise internal reasoning about user intent and state. MAX 500 characters.",
+        max_length=500
     )
     
     action: Literal["call_tool", "ask_user", "terminate"] = Field(
@@ -53,9 +53,45 @@ class ReasoningStep(BaseModel):
     def validate_tool_access(cls, v: Optional[str]) -> Optional[str]:
         """
         Prevents LLM hallucinations by strictly validating tool names against an allowed list.
+        Auto-corrects common aliases.
         """
         if v is None:
             return v
+            
+        # 1. AUTO-CORRECTION / ALIAS MAPPING
+        aliases = {
+            # Rendering
+            "create_rendering": "generate_render",
+            "render_room": "generate_render",
+            "make_render": "generate_render",
+            "generate_image": "generate_render",
+            "create_image": "generate_render",
+            "visualize_room": "generate_render",
+            
+            # Analysis
+            "scan_room": "analyze_room",
+            "check_room": "analyze_room",
+            "describe_room": "analyze_room",
+            "analyze_image": "analyze_room",
+            
+            # Leads / Projects
+            "create_quote": "submit_lead",
+            "save_lead": "submit_lead",
+            "create_project": "submit_lead",
+            "save_project": "submit_lead",
+            
+            # Pricing
+            "check_prices": "get_market_prices",
+            "estimate_costs": "get_market_prices",
+            
+            # Files
+            "show_files": "list_project_files",
+            "list_files": "list_project_files",
+            "show_gallery": "list_project_files" 
+        }
+        
+        if v in aliases:
+            return aliases[v]
             
         # ALLOWED TOOLS (Source of Truth)
         # TODO: In Tier-3 optimization, this list should be dynamic based on User Role (RBTA)

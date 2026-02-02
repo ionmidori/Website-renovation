@@ -79,6 +79,25 @@ export const MessageItem = React.memo<MessageItemProps>(({ message, index, typin
     // Check if the message is in "Thinking Mode" (Assistant + Empty/Placeholder)
     const isThinking = message.role === 'assistant' && (!text || text.trim() === '' || text.trim() === '...') && !hasTools;
 
+    // Check if tools have any visual output (Loading state OR Result with Image/Error OR Widgets)
+    const hasVisibleTools = message.toolInvocations?.some(tool => {
+        if (tool.toolName === 'display_lead_form') return true; // Always visible
+        if (tool.toolName === 'request_login') return true; // 🔥 Login Widget Always visible
+        if (tool.state === 'call') return true; // Loading is always visible
+        const result = tool.result || (tool as any).output;
+        // Only results with images or errors are visible in ToolStatus
+        return !!result?.imageUrl || !!result?.error || result?.status === 'error';
+    }) ?? false;
+
+    // Determine if the bubble (AND the entire row) should be visible
+    const shouldShow =
+        isThinking ||
+        (text && text.trim().length > 0) ||
+        hasVisibleTools ||
+        (message.attachments?.images && message.attachments.images.length > 0); // User images
+
+    if (!shouldShow) return null;
+
     return (
         <motion.div
             layout
@@ -120,85 +139,64 @@ export const MessageItem = React.memo<MessageItemProps>(({ message, index, typin
                 )}
 
                 {/* 2. Main Text Bubble */}
-                {/* 💎 PREMIUM LOGIC: Only render if there is visible content */}
-                {(() => {
-                    // Check if tools have any visual output (Loading state OR Result with Image/Error OR Widgets)
-                    const hasVisibleTools = message.toolInvocations?.some(tool => {
-                        if (tool.toolName === 'display_lead_form') return true; // Always visible
-                        if (tool.toolName === 'request_login') return true; // 🔥 Login Widget Always visible
-                        if (tool.state === 'call') return true; // Loading is always visible
-                        const result = tool.result || (tool as any).output;
-                        // Only results with images or errors are visible in ToolStatus
-                        return !!result?.imageUrl || !!result?.error || result?.status === 'error';
-                    });
+                {shouldShow && (
+                    <div className={cn(
+                        "p-4 rounded-2xl text-sm leading-relaxed shadow-lg backdrop-blur-md",
+                        message.role === 'user'
+                            ? "bg-luxury-teal text-white rounded-tr-none border border-transparent"
+                            : "bg-luxury-bg/95 border border-luxury-gold/20 text-luxury-text rounded-tl-none" // Stronger Glass
+                    )}>
+                        <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
+                            {isThinking ? (
+                                <ThinkingIndicator message={typingMessage} />
+                            ) : (
+                                <>
+                                    {text && (
+                                        <Markdown
+                                            urlTransform={(value: string) => value}
+                                            components={markdownComponents as any}
+                                        >
+                                            {text}
+                                        </Markdown>
+                                    )}
 
-                    // Determine if the bubble container should be transparent to the user
-                    const shouldShowBubble =
-                        isThinking ||
-                        (text && text.trim().length > 0) ||
-                        hasVisibleTools;
-
-                    if (!shouldShowBubble) return null;
-
-                    return (
-                        <div className={cn(
-                            "p-4 rounded-2xl text-sm leading-relaxed shadow-lg backdrop-blur-md",
-                            message.role === 'user'
-                                ? "bg-luxury-teal text-white rounded-tr-none border border-transparent"
-                                : "bg-luxury-bg/95 border border-luxury-gold/20 text-luxury-text rounded-tl-none" // Stronger Glass
-                        )}>
-                            <div className="prose prose-invert prose-p:my-1 prose-pre:bg-slate-900 prose-pre:p-2 prose-pre:rounded-lg max-w-none break-words">
-                                {isThinking ? (
-                                    <ThinkingIndicator message={typingMessage} />
-                                ) : (
-                                    <>
-                                        {text && (
-                                            <Markdown
-                                                urlTransform={(value: string) => value}
-                                                components={markdownComponents as any}
-                                            >
-                                                {text}
-                                            </Markdown>
-                                        )}
-
-                                        {/* Tool Invocations */}
-                                        {message.toolInvocations?.map((tool, toolIdx) => {
-                                            // 💎 PREMIUM WIDGET: Lead Capture Form
-                                            if (tool.toolName === 'display_lead_form') {
-                                                const args = tool.args as any;
-                                                return (
-                                                    <div key={toolIdx} className="mt-4">
-                                                        <LeadCaptureForm
-                                                            quoteSummary={args?.quote_summary || "Preventivo Ristrutturazione"}
-                                                            sessionId={sessionId || "unknown"} // Use prop
-                                                        />
-                                                    </div>
-                                                );
-                                            }
-
-                                            // 🔒 AUTH WIDGET: Login Request
-                                            if (tool.toolName === 'request_login') {
-                                                return (
-                                                    <div key={toolIdx} className="mt-4">
-                                                        <LoginRequest />
-                                                    </div>
-                                                );
-                                            }
-
+                                    {/* Tool Invocations */}
+                                    {message.toolInvocations?.map((tool, toolIdx) => {
+                                        // 💎 PREMIUM WIDGET: Lead Capture Form
+                                        if (tool.toolName === 'display_lead_form') {
+                                            const args = tool.args as any;
                                             return (
-                                                <ToolStatus
-                                                    key={toolIdx}
-                                                    tool={tool}
-                                                    onImageClick={onImageClick}
-                                                />
+                                                <div key={toolIdx} className="mt-4">
+                                                    <LeadCaptureForm
+                                                        quoteSummary={args?.quote_summary || "Preventivo Ristrutturazione"}
+                                                        sessionId={sessionId || "unknown"} // Use prop
+                                                    />
+                                                </div>
                                             );
-                                        })}
-                                    </>
-                                )}
-                            </div>
+                                        }
+
+                                        // 🔒 AUTH WIDGET: Login Request
+                                        if (tool.toolName === 'request_login') {
+                                            return (
+                                                <div key={toolIdx} className="mt-4">
+                                                    <LoginRequest />
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <ToolStatus
+                                                key={toolIdx}
+                                                tool={tool}
+                                                onImageClick={onImageClick}
+                                            />
+                                        );
+                                    })}
+                                </>
+                            )}
                         </div>
-                    );
-                })()}
+                    </div>
+                )}
             </div>
         </motion.div>
     );

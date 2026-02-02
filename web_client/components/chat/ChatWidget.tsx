@@ -76,6 +76,9 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     // State for Global Widget Synchronization
     const [syncedProjectId, setSyncedProjectId] = useState<string | undefined>(projectId);
 
+    // Prevent infinite loop during hydration
+    const lastSyncedHistoryRef = useRef<any>(null);
+
     // Refs
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,6 +229,12 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     // We trust DB (Server State) more than SDK (Client State) for history.
     useEffect(() => {
         if (!historyLoaded) return;
+        if (historyMessages.length === 0) return;
+
+        // 🛡️ LOOP GUARD: Only sync if historyMessages reference has changed OR strict divergence detected
+        if (lastSyncedHistoryRef.current === historyMessages) {
+            return; // Already synced this exact snapshot
+        }
 
         const lastHistoryMsg = historyMessages[historyMessages.length - 1];
         const lastSdkMsg = messages[messages.length - 1];
@@ -235,6 +244,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
             console.log(`[ChatWidget] 💧 Hydrating: DB has more messages (${historyMessages.length} > ${messages.length})`);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setMessages(historyMessages as any);
+            lastSyncedHistoryRef.current = historyMessages; // MARK SYNCED
         }
         // Case 2: DB has *longer* content (Stream hung empty or partial)
         else if (historyMessages.length === messages.length && lastSdkMsg && lastHistoryMsg) {
@@ -244,6 +254,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                 console.log(`[ChatWidget] 💧 Hydrating: DB content richer (${lastHistoryMsg.content.length} > ${lastSdkMsg.content.length})`);
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setMessages(historyMessages as any);
+                lastSyncedHistoryRef.current = historyMessages; // MARK SYNCED
             }
         }
     }, [historyLoaded, historyMessages, messages, setMessages]);
