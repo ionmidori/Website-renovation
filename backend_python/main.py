@@ -97,11 +97,14 @@ async def app_check_middleware(request: Request, call_next):
     try:
         # Validate token (if enforcement enabled)
         await validate_app_check_token(request)
-    except HTTPException as e:
-        # Middleware cannot raise HTTPException directly, must return JSONResponse
+    except AppException as e:
         return JSONResponse(
             status_code=e.status_code,
-            content={"detail": e.detail}
+            content=APIErrorResponse(
+                error_code=e.error_code,
+                message=e.message,
+                detail=e.detail
+            ).model_dump()
         )
 
     return await call_next(request)

@@ -123,6 +123,16 @@ def verify_phase_3_4():
                  assert err_res.json()["request_id"] is not None
                  print("   ✅ Middleware caught AuthError and returned APIErrorResponse")
 
+            # TEST 4: App Check Enforcement (Phase 4)
+            print("\n🧪 Test 4: App Check Enforcement")
+            with patch("src.middleware.app_check.ENABLE_APP_CHECK", True):
+                # Request without App Check header
+                no_header_res = client.post("/api/submit-lead", json=lead_payload)
+                print(f"   Status (No Header): {no_header_res.status_code}")
+                assert no_header_res.status_code == 403
+                assert no_header_res.json()["error_code"] == "APP_CHECK_FAILED"
+                print("   ✅ App Check blocked and returned standardized error")
+
     print("\n🎉 E2E Verification Complete: Phases 3 & 4 are Integrated and Robust.")
 
 if __name__ == "__main__":

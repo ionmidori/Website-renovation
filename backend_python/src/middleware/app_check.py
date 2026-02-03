@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 ENABLE_APP_CHECK = settings.ENABLE_APP_CHECK
 
 
+from src.core.exceptions import AppCheckError
+
 async def validate_app_check_token(request: Request) -> Optional[dict]:
     """
     Validate App Check token from request headers.
@@ -37,7 +39,7 @@ async def validate_app_check_token(request: Request) -> Optional[dict]:
         Decoded token payload if valid, None if validation disabled
         
     Raises:
-        HTTPException: If token is invalid or missing (when enforcement is enabled)
+        AppCheckError: If token is invalid or missing (when enforcement is enabled)
     """
     # Skip validation if feature flag is disabled
     if not ENABLE_APP_CHECK:
@@ -49,10 +51,7 @@ async def validate_app_check_token(request: Request) -> Optional[dict]:
     
     if not app_check_token:
         logger.warning(f"[App Check] Missing token from {request.client.host}")
-        raise HTTPException(
-            status_code=401,
-            detail="Missing App Check token"
-        )
+        raise AppCheckError("Missing App Check token", detail={"reason": "missing_header"})
     
     try:
         # Ensure Firebase is initialized
@@ -66,10 +65,7 @@ async def validate_app_check_token(request: Request) -> Optional[dict]:
         
     except app_check.TokenVerificationError as e:
         logger.warning(f"[App Check] Invalid token: {str(e)[:100]}")
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid App Check token"
-        )
+        raise AppCheckError("Invalid App Check token", detail={"reason": str(e)})
     except Exception as e:
         # Graceful degradation: log error but don't block request
         # This prevents Firebase outages from breaking the app

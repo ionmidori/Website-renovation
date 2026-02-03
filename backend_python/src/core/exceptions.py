@@ -22,6 +22,10 @@ class PermissionDenied(AppException):
     status_code = 403
     error_code = "PERMISSION_DENIED"
 
+class AppCheckError(AppException):
+    status_code = 403
+    error_code = "APP_CHECK_FAILED"
+
 class ServiceError(AppException):
     """Exceptions related to external services (AI, DB, etc.)"""
     status_code = 502
