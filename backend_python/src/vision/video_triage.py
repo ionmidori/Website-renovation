@@ -16,10 +16,13 @@ from google import genai
 from google.genai import types
 from src.models.video_types import VideoMetadata, VideoTriageResult
 from src.utils.json_parser import extract_json_response
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+logger = logging.getLogger(__name__)
+
+GEMINI_API_KEY = settings.api_key
 
 # Video Triage Prompt - Multimodal (Visual + Audio)
 VIDEO_TRIAGE_PROMPT = """You are an expert interior architect analyzing this renovation video.

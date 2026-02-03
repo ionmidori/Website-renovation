@@ -4,6 +4,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ async def analyze_room_structure(image_bytes: bytes) -> RoomAnalysis:
     Returns:
         RoomAnalysis object with detailed structural data
     """
-    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-3-flash-preview")
+    model_name = "gemini-3-flash-preview" # Hardcoded for now, or add to Settings
     
     logger.info(f"[Vision] Initializing Gemini Vision analysis...")
     logger.info(f"[Vision] Model: {model_name}")
@@ -82,7 +83,7 @@ CRITICAL RULES:
         # Initialize Gemini LLM
         llm = ChatGoogleGenerativeAI(
             model=model_name,
-            google_api_key=os.getenv("GEMINI_API_KEY"),
+            google_api_key=settings.api_key,
             temperature=0.1 # Low temperature for factual analysis
         )
         

@@ -13,6 +13,7 @@ from typing import List
 import logging
 
 from src.auth.jwt_handler import verify_token
+from src.schemas.internal import UserSession
 from src.db import projects as projects_db
 from src.models.project import (
     ProjectCreate,
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 @router.get("", response_model=List[ProjectListItem])
 async def list_projects(
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> List[ProjectListItem]:
     """
     List all projects for the authenticated user.
@@ -37,13 +38,7 @@ async def list_projects(
     Returns:
         List of projects ordered by last activity.
     """
-    user_id = user_payload.get("uid")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
+    user_id = user_session.uid
     
     projects = await projects_db.get_user_projects(user_id)
     return projects
@@ -52,7 +47,7 @@ async def list_projects(
 @router.get("/{session_id}", response_model=ProjectDocument)
 async def get_project(
     session_id: str,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> ProjectDocument:
     """
     Get detailed project information.
@@ -66,14 +61,8 @@ async def get_project(
     Raises:
         404: Project not found or not owned by user.
     """
-    user_id = user_payload.get("uid")
+    user_id = user_session.uid
     logger.info(f"[API] get_project request for session_id: {session_id} from user_id: {user_id}")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
     
     project = await projects_db.get_project(session_id, user_id)
     
@@ -89,7 +78,7 @@ async def get_project(
 @router.post("", response_model=dict)
 async def create_project(
     data: ProjectCreate,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> dict:
     """
     Create a new project.
@@ -100,14 +89,8 @@ async def create_project(
     Returns:
         Object with session_id of the new project.
     """
-    user_id = user_payload.get("uid")
+    user_id = user_session.uid
     logger.info(f"[API] create_project request from user_id: {user_id} with data: {data}")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
     
     try:
         session_id = await projects_db.create_project(user_id, data)
@@ -126,7 +109,7 @@ async def create_project(
 async def update_project(
     session_id: str,
     data: ProjectUpdate,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> dict:
     """
     Update project metadata (title, status, thumbnail).
@@ -138,13 +121,7 @@ async def update_project(
     Returns:
         Success status.
     """
-    user_id = user_payload.get("uid")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
+    user_id = user_session.uid
     
     success = await projects_db.update_project(session_id, user_id, data)
     
@@ -160,7 +137,7 @@ async def update_project(
 @router.post("/{session_id}/claim", response_model=dict)
 async def claim_project(
     session_id: str,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> dict:
     """
     Claim a guest project (Deferred Auth).
@@ -173,13 +150,7 @@ async def claim_project(
     Returns:
         Success status.
     """
-    user_id = user_payload.get("uid")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
+    user_id = user_session.uid
     
     success = await projects_db.claim_project(session_id, user_id)
     
@@ -197,7 +168,7 @@ async def claim_project(
 async def update_project_details(
     session_id: str,
     details: ProjectDetails,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> dict:
     """
     Update construction site details for a project.
@@ -216,14 +187,8 @@ async def update_project_details(
         404: Project not found or not owned by user.
         422: Validation error (handled by Pydantic).
     """
-    user_id = user_payload.get("uid")
+    user_id = user_session.uid
     logger.info(f"[API] update_project_details request for session_id: {session_id} from user_id: {user_id}")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
     
     # Ensure the details ID matches the session_id
     if details.id != session_id:
@@ -247,7 +212,7 @@ async def update_project_details(
 @router.delete("/{session_id}", response_model=dict)
 async def delete_project(
     session_id: str,
-    user_payload: dict = Depends(verify_token)
+    user_session: UserSession = Depends(verify_token)
 ) -> dict:
     """
     Delete a project and all its associated data.
@@ -265,14 +230,8 @@ async def delete_project(
     Raises:
         404: Project not found or not owned by user.
     """
-    user_id = user_payload.get("uid")
+    user_id = user_session.uid
     logger.info(f"[API] delete_project request for session_id: {session_id} from user_id: {user_id}")
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token"
-        )
     
     success = await projects_db.delete_project(session_id, user_id)
     

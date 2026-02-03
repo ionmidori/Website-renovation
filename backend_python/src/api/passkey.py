@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from firebase_admin import firestore, auth
 from src.auth.jwt_handler import verify_token, get_current_user_id
 from src.db.firebase_client import get_firestore_client
+from src.core.config import settings
 import secrets
 import base64
 import logging

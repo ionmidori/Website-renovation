@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Tuple
 from firebase_admin import firestore
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +86,7 @@ def check_quota(user_id: str, tool_name: str) -> Tuple[bool, int, datetime]:
     now = datetime.utcnow()
     
     # ENVIRONMENT OVERRIDE: Unlimited quota in development
-    env = os.getenv("ENV", "development")
-    if env == "development":
+    if settings.ENV == "development":
         logging.info(f"[Quota] Dev mode active: Bypassing quota for {tool_name}")
         # Return infinite remaining and a reset in the far future
         return True, 9999, now + timedelta(days=365)

@@ -6,10 +6,13 @@ from typing import Dict, Any
 from google import genai
 from google.genai import types
 from src.utils.json_parser import extract_json_response
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+logger = logging.getLogger(__name__)
+
+GEMINI_API_KEY = settings.api_key
 
 TRIAGE_PROMPT = """You are an expert interior architect and structural engineer analyzing this image.
 

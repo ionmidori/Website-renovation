@@ -1,44 +1,53 @@
+
 import json
-from typing import AsyncGenerator, Any
+from typing import AsyncGenerator, Any, Dict, List, Union
 
 async def stream_text(text: str) -> AsyncGenerator[str, None]:
     """
     Formats text chunks according to the Vercel AI SDK Data Stream Protocol.
+    Event '0': Text part.
+    
     Format: 0:"<text_chunk>"\n
     """
-    # Simply wrap the text in the protocol format
-    yield f'0:{json.dumps(text)}\n'
+    if text:
+        yield f'0:{json.dumps(text)}\n'
 
-async def stream_data(data: Any) -> AsyncGenerator[str, None]:
+async def stream_data(data: Union[Dict[str, Any], List[Any], str, int, float, bool]) -> AsyncGenerator[str, None]:
     """
     Formats arbitrary data chunks (tools, metadata) for Vercel AI SDK.
+    Event '2': Data part.
+    
     Format: 2:[<json_data>]\n
     """
+    # Vercel expects a JSON array for the data part
     yield f'2:{json.dumps([data])}\n'
 
 async def stream_error(error: str) -> AsyncGenerator[str, None]:
     """
     Formats error messages for the client.
+    Event '3': Error part.
+    
     Format: 3:"<error_message>"\n
-    Args:
-        error: Error message string
     """
-    yield f'3:{json.dumps({"error": error})}\n'
+    yield f'3:{json.dumps(error)}\n'
 
 async def stream_tool_call(
     tool_call_id: str,
     tool_name: str,
-    args: dict[str, Any]
+    args: Dict[str, Any]
 ) -> AsyncGenerator[str, None]:
     """
     Formats tool call events for Vercel AI SDK.
+    Event '9': Tool Call part.
+    
     Format: 9:{"toolCallId":"...","toolName":"...","args":{...}}\n
-    Args:
-        tool_call_id: Unique identifier for this tool call
-        tool_name: Name of the tool being invoked
-        args: Tool arguments as dictionary
     """
-    yield f'9:{json.dumps({"toolCallId": tool_call_id, "toolName": tool_name, "args": args})}\n'
+    payload = {
+        "toolCallId": tool_call_id,
+        "toolName": tool_name,
+        "args": args
+    }
+    yield f'9:{json.dumps(payload)}\n'
 
 async def stream_tool_result(
     tool_call_id: str,
@@ -46,9 +55,12 @@ async def stream_tool_result(
 ) -> AsyncGenerator[str, None]:
     """
     Formats tool result events for Vercel AI SDK.
+    Event 'a': Tool Result part.
+    
     Format: a:{"toolCallId":"...","result":...}\n
-    Args:
-        tool_call_id: Unique identifier matching the original tool call
-        result: Tool execution result (can be any JSON-serializable type)
     """
-    yield f'a:{json.dumps({"toolCallId": tool_call_id, "result": result})}\n'
+    payload = {
+        "toolCallId": tool_call_id,
+        "result": result
+    }
+    yield f'a:{json.dumps(payload)}\n'

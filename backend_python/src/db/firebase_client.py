@@ -1,8 +1,9 @@
 import os
 import logging
-from typing import Dict, Any
+import json
 from datetime import datetime
 from firebase_admin import credentials, firestore, storage, initialize_app
+from src.core.config import settings
 
 def get_storage_client():
     """Get Firebase Storage client."""
@@ -22,31 +23,42 @@ def init_firebase():
     global _cached_cred
     
     if not firebase_admin._apps:
-        # Check for service account JSON file or use environment variables
-        if os.path.exists('/secrets/service-account.json'):
-            # Production: mounted secret
-            cred = credentials.Certificate('/secrets/service-account.json')
-            logger.info("Using production service account: /secrets/service-account.json")
-        elif os.path.exists('firebase-service-account.json'):
-            # Development: local file (PRIORITY)
-            cred = credentials.Certificate('firebase-service-account.json')
-            logger.info("Using local service account: firebase-service-account.json")
+        # Check for service account JSON file (Production Secret or Local)
+        # Priority 1: settings.FIREBASE_CREDENTIALS (if set)
+        # Priority 2: /secrets/service-account.json (Cloud Run default)
+        # Priority 3: firebase-service-account.json (Local default)
+        
+        cert_path = settings.FIREBASE_CREDENTIALS
+        if not cert_path and os.path.exists('/secrets/service-account.json'):
+             cert_path = '/secrets/service-account.json'
+        elif not cert_path and os.path.exists('firebase-service-account.json'):
+             cert_path = 'firebase-service-account.json'
+             
+        if cert_path and os.path.exists(cert_path):
+            cred = credentials.Certificate(cert_path)
+            logger.info(f"Using service account: {cert_path}")
         else:
-            # Development: use environment variables
+            # Priority 4: Environment Variables via Settings
+            logger.info("Using environment variables for Firebase Creds")
+            # Handle newline escaping in private key
+            private_key = settings.FIREBASE_PRIVATE_KEY
+            if private_key:
+                private_key = private_key.replace('\\n', '\n')
+                
             cred = credentials.Certificate({
                 'type': 'service_account',
-                'project_id': os.getenv('FIREBASE_PROJECT_ID'),
-                'private_key_id': os.getenv('FIREBASE_PRIVATE_KEY_ID'),
-                'private_key': os.getenv('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
-                'client_email': os.getenv('FIREBASE_CLIENT_EMAIL'),
-                'client_id': os.getenv('FIREBASE_CLIENT_ID'),
+                'project_id': settings.FIREBASE_PROJECT_ID,
+                'private_key_id': settings.FIREBASE_PRIVATE_KEY_ID,
+                'private_key': private_key,
+                'client_email': settings.FIREBASE_CLIENT_EMAIL,
+                'client_id': settings.FIREBASE_CLIENT_ID,
                 'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
                 'token_uri': 'https://oauth2.googleapis.com/token',
             })
         
-        if os.getenv('FIREBASE_STORAGE_BUCKET'):
+        if settings.FIREBASE_STORAGE_BUCKET:
             initialize_app(cred, {
-                'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
+                'storageBucket': settings.FIREBASE_STORAGE_BUCKET
             })
         else:
             initialize_app(cred)
@@ -113,10 +125,17 @@ def validate_firebase_config():
         return
 
     if missing:
-        raise RuntimeError(
-            f"❌ Missing Firebase configuration: {', '.join(missing)}\n"
-            f"Please set these environment variables before starting the server."
-        )
+        # Check settings
+        required_vars = [
+            settings.FIREBASE_PROJECT_ID,
+            settings.FIREBASE_PRIVATE_KEY,
+            settings.FIREBASE_CLIENT_EMAIL,
+            settings.FIREBASE_STORAGE_BUCKET
+        ]
+        if not all(required_vars) and not (settings.FIREBASE_CREDENTIALS or os.path.exists('/secrets/service-account.json') or os.path.exists('firebase-service-account.json')):
+             raise RuntimeError(
+                "❌ Missing Firebase configuration: Environment variables or JSON file required."
+            )
     
     logger.info("✅ Firebase configuration validated")
 

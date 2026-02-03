@@ -18,10 +18,12 @@ from fastapi import Request, HTTPException
 from firebase_admin import app_check
 from src.db.firebase_client import init_firebase
 
+from src.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 # Feature flag - Set to "true" in production after monitoring phase
-ENABLE_APP_CHECK = os.getenv("ENABLE_APP_CHECK", "false").lower() == "true"
+ENABLE_APP_CHECK = settings.ENABLE_APP_CHECK
 
 
 async def validate_app_check_token(request: Request) -> Optional[dict]:

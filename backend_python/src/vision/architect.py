@@ -4,6 +4,7 @@ import logging
 from typing import List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,10 @@ async def generate_architectural_prompt(
     if keep_elements is None:
         keep_elements = []
     
-    model_name = os.getenv("CHAT_MODEL_VERSION", "gemini-3-flash-preview")
+    if keep_elements is None:
+        keep_elements = []
+    
+    model_name = "gemini-3-flash-preview"
     
     logger.info(f"[Architect] Building narrative plan (Style: {target_style}, Keep: {len(keep_elements)})...")
     logger.info(f"[Architect] User Instructions: {user_instructions[:50]}...")
@@ -174,7 +178,7 @@ Respond with ONLY valid JSON. No markdown, no explanations:
         # Initialize Gemini LLM
         llm = ChatGoogleGenerativeAI(
             model=model_name,
-            google_api_key=os.getenv("GEMINI_API_KEY"),
+            google_api_key=settings.api_key,
             temperature=0.4
         )
         
