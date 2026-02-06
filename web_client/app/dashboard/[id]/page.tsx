@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import ChatWidget from '@/components/chat/ChatWidget';
 import { projectsApi } from '@/lib/projects-api';
 import { Project } from '@/types/projects';
@@ -102,7 +102,9 @@ export default function ProjectPage() {
     return (
         <div className="flex flex-col h-full w-full">
             {/* Pass projectId to ChatWidget as primary inline view */}
-            <ChatWidget key={projectId} projectId={projectId} variant="inline" />
+            <Suspense fallback={<div />}>
+                <ChatWidget key={projectId} projectId={projectId} variant="inline" />
+            </Suspense>
         </div>
     );
 }

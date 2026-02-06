@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Navbar } from '@/components/sections/Navbar';
 import { About } from '@/components/sections/About';
 import { Footer } from '@/components/sections/Footer';
@@ -12,7 +13,9 @@ export default function ChiSiamoPage() {
                 <About />
             </div>
             <Footer />
-            <ChatWidget />
+            <Suspense fallback={<div />}>
+                <ChatWidget />
+            </Suspense>
         </main>
     );
 }
