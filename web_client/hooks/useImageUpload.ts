@@ -136,9 +136,10 @@ export function useImageUpload(sessionId?: string) {
                     }
 
                     // Step 1: Compress image
+                    setUploadStatus('Compressione...');
                     const compressed = await compressImageForGemini(file);
 
-                    // Step 2: Convert to base64
+                    // Step 2: Convert to base64 for preview
                     const base64 = await new Promise<string>((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onloadend = () => resolve(reader.result as string);
@@ -146,28 +147,25 @@ export function useImageUpload(sessionId?: string) {
                         reader.readAsDataURL(compressed);
                     });
 
-                    // Step 3: Upload to Firebase Storage
+                    // Step 3: Upload to Python Backend (Firebase Storage via backend)
                     let publicUrl = '';
                     if (sessionId) {
                         try {
-                            const { fetchWithAuth } = await import('@/lib/api-client');
-                            const uploadResponse = await fetchWithAuth('/api/upload-image', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    image: base64,
-                                    sessionId: sessionId,
-                                }),
+                            setUploadStatus('Caricamento...');
+                            const { uploadImage } = await import('@/lib/api-client');
+
+                            // Create a File object from the compressed blob
+                            const compressedFile = new File([compressed], file.name || 'image.jpg', {
+                                type: 'image/jpeg'
                             });
 
-                            if (uploadResponse.ok) {
-                                const uploadResult = await uploadResponse.json();
-                                if (uploadResult.success && uploadResult.url) {
-                                    publicUrl = uploadResult.url;
-                                }
-                            }
+                            const uploadResult = await uploadImage(compressedFile, sessionId);
+                            publicUrl = uploadResult.public_url;
+
+                            console.log(`[Image Upload] ✅ Uploaded to Python backend: ${publicUrl}`);
                         } catch (uploadErr) {
-                            console.error('[Image Upload] Storage upload error:', uploadErr);
+                            console.error('[Image Upload] Backend upload error:', uploadErr);
+                            // Continue with base64 fallback for preview
                         }
                     }
 

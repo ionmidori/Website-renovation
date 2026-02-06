@@ -4,13 +4,13 @@
 
 ---
 
-## 🏛️ Architettura Operativa (3-Tier CoT)
+## 🏛️ Architettura Operativa (Enterprise 3-Tier)
 
-La piattaforma adotta un modello **Python-First Chain of Thought (CoT)** per garantire controllo deterministico e performance elevate:
+La piattaforma adotta un'architettura **Service-Oriented** strutturata su tre livelli per massimizzare scalabilità e manutenibilità:
 
-1.  **Tier 1: Directive (Reasoning)**: Il "Pre-Cortex" (Gemini 2.0 Flash) analizza l'intento e genera un piano strutturato. Validato da guardrail **Pydantic** per prevenire allucinazioni.
-2.  **Tier 2: Orchestration (Routing)**: Logic layer in Python (`edges.py`) che smista il flusso di lavoro basandosi sul piano validato.
-3.  **Tier 3: Execution (Muscle)**: Un **SOP Manager** dinamico applica regole di business e accessi privilegiati (RBTA) prima di eseguire strumenti o generare risposte finali.
+1.  **Tier 1: Directives (Strategy)**: Gestito da `IntentClassifier` e `SystemPrompts`. Analizza l'intento dell'utente e seleziona la SOP (Standard Operating Procedure) più adatta, caricando istruzioni versionate e contesto dinamico.
+2.  **Tier 2: Orchestration (Service Layer)**: `AgentOrchestrator` coordina il flusso di lavoro. Gestisce lo streaming tipizzato (Vercel Protocol), la persistenza dei dati tramite pattern **Repository** (`ConversationRepository`) e la sicurezza delle sessioni.
+3.  **Tier 3: Execution (Muscle)**: `AgentGraphFactory` e `MediaProcessor`. Qui risiede la logica pesante: esecuzione di grafi LangGraph isolati, analisi Vision asincrona (Gemini 2.0 Flash) e generazione di asset.
 
 
 ---
@@ -26,8 +26,8 @@ La piattaforma adotta un modello **Python-First Chain of Thought (CoT)** per gar
 - **Data Fetching**: Server Actions & SWR/React Hooks
 
 ### Backend (`backend_python`)
-- **API**: FastAPI (Asincrono)
-- **AI Engine**: Google Vertex AI (Gemini 1.5 Pro/Flash, Imagen 3)
+- **API**: FastAPI (Asincrono / Enterprise Hardened)
+- **AI Engine**: Google Vertex AI (Gemini 2.0 Flash, Imagen 3)
 - **Orchestration**: LangGraph (Agentic Workflows)
 - **Vision**: Custom Image Processing (Pillow, Vision API)
 - **Market Intel**: Perplexity AI (Sonar)
@@ -49,10 +49,12 @@ Trasformazione da semplice chatbot a strumento professionale:
 - **Galleria Intelligente**: Organizzazione automatica di rendering, preventivi e foto originali.
 - **Dettagli Cantiere**: Salvataggio di vincoli tecnici (metratura, budget, note) per un'AI sempre più precisa.
 
-### 3. Sicurezza di Grado Enterprise
-- **Passwordless**: Accesso sicuro tramite dati biometrici (Passkeys).
-- **App Check**: Protezione contro bot e accessi non autorizzati via Firebase App Check.
-- **Strict Typing**: Sincronizzazione rigorosa dei tipi tra Pydantic (Python) e TypeScript.
+### 3. Sicurezza & Affidabilità Enterprise
+- **Asymmetric Auth**: Identità verificata tramite **Firebase Admin RSA** (addio chiavi condivise).
+- **App Check**: Protezione granulare contro bot tramite middleware dedicato.
+- **Request Tracing**: Ogni azione è tracciata da un `X-Request-ID` unico propagato in tutti i log.
+- **JSON Logging**: Log strutturati e machine-readable per un'osservabilità totale.
+- **Async Safety**: Gestione sicura dei task in background e protezione dell'event loop.
 
 ---
 

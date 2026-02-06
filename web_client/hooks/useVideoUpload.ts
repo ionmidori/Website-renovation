@@ -145,7 +145,7 @@ export function useVideoUpload() {
                     reject(new Error(error));
                 };
 
-                xhr.open('POST', `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload/video`);
+                xhr.open('POST', '/api/py/upload/video');
                 xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                 xhr.send(formData);
             });

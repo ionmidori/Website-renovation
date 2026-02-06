@@ -50,6 +50,10 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-ID"] = request_id
     return response
 
+# 📊 Metrics Middleware (Performance Monitoring)
+from src.middleware.metrics import metrics_middleware
+app.middleware("http")(metrics_middleware)
+
 # 🛡️ Global Exception Handlers
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
@@ -120,7 +124,9 @@ async def startup_event():
 from src.api.upload import router as upload_router
 app.include_router(upload_router)
 
-
+# Register chat history router
+from src.api.chat_history import router as chat_history_router
+app.include_router(chat_history_router)
 
 # Register passkey router
 from src.api.passkey import router as passkey_router
@@ -133,6 +139,7 @@ app.include_router(projects_router)
 # Register metadata update router
 from src.api.update_metadata import router as metadata_router
 app.include_router(metadata_router)
+
 
 
 

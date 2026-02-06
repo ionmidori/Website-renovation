@@ -1,156 +1,195 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useSWR from 'swr';
 import { useAuth } from '@/hooks/useAuth';
-import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
+import { getChatHistory, type ChatHistoryResponse } from '@/lib/api-client';
+import type { Message } from '@/types/chat';
 
-interface Message {
+/**
+ * Backend message format from Python API
+ */
+interface BackendMessage {
     id: string;
     role: string;
     content: string;
-    createdAt?: Date;
-    toolInvocations?: any[];
+    timestamp?: string;
     tool_call_id?: string;
-    // Add other fields as needed based on DB schema
+    tool_calls?: any[];
+    attachments?: {
+        images?: string[];
+        videos?: string[];
+        documents?: string[];
+    };
+}
+
+interface UseChatHistoryOptions {
+    /**
+     * Enable automatic polling (revalidation) for realtime-like updates.
+     * Default: 5000ms (5 seconds)
+     */
+    refreshInterval?: number;
+    /**
+     * Disable automatic revalidation on focus/reconnect.
+     */
+    revalidateOnFocus?: boolean;
+    /**
+     * Number of messages to fetch per page.
+     */
+    limit?: number;
+}
+
+interface UseChatHistoryReturn {
+    historyLoaded: boolean;
+    historyMessages: Message[];
+    isLoading: boolean;
+    error: Error | undefined;
+    mutate: () => void;
 }
 
 /**
- * Custom hook for loading chat history from Firestore
- * Uses Realtime Listener (onSnapshot) for instant updates
+ * Custom hook for loading chat history from Python backend.
+ * 
+ * **Migration from Firestore Direct Access:**
+ * - Previously used `onSnapshot` for realtime updates
+ * - Now uses SWR with polling for near-realtime behavior
+ * - Provides automatic caching, deduplication, and error retry
+ * 
+ * **Best Practices Applied:**
+ * - Client-side caching with SWR
+ * - Automatic revalidation on focus/reconnect
+ * - Optional polling for realtime-like updates
+ * - Proper error handling and loading states
+ * - Type-safe with full TypeScript support
  */
-export function useChatHistory(sessionId: string) {
-    const [historyLoaded, setHistoryLoaded] = useState(false);
-    const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
-
-    // ✅ Wait for Auth initialization
+export function useChatHistory(
+    sessionId: string | undefined,
+    options: UseChatHistoryOptions = {}
+): UseChatHistoryReturn {
     const { user, loading: authLoading } = useAuth();
 
-    useEffect(() => {
-        if (authLoading) return;
+    const {
+        refreshInterval = 5000, // Poll every 5 seconds for new messages
+        revalidateOnFocus = true,
+        limit = 50
+    } = options;
 
-        // If no user, we might still want to load if rules allow public reads for session?
-        // But for now, let's keep the auth check safety.
-        if (!user) {
-            console.warn("[useChatHistory] No authenticated user - skipping history load");
-            setHistoryLoaded(true);
-            return;
+    // Only fetch if we have sessionId and user is authenticated
+    const shouldFetch = !authLoading && !!user && !!sessionId;
+
+    const {
+        data,
+        error,
+        isLoading,
+        mutate
+    } = useSWR<ChatHistoryResponse>(
+        shouldFetch ? [`/api/sessions/${sessionId}/messages`, sessionId] : null,
+        async () => {
+            if (!sessionId) throw new Error('Session ID required');
+            return getChatHistory(sessionId, undefined, limit);
+        },
+        {
+            refreshInterval: shouldFetch ? refreshInterval : 0,
+            revalidateOnFocus,
+            revalidateOnReconnect: true,
+            dedupingInterval: 2000, // Prevent duplicate requests within 2s
+            errorRetryCount: 3,
+            errorRetryInterval: 5000,
+            onError: (err) => {
+                console.error('[useChatHistory] SWR Error:', err);
+            },
+            onSuccess: (data) => {
+                console.log(`[useChatHistory] Loaded ${data.messages.length} messages`);
+            }
+        }
+    );
+
+    // Transform backend messages to match frontend Message format
+    const transformedMessages: Message[] = (data?.messages || []).map((backendMsg: any) => {
+        // Cast to BackendMessage for type safety
+        const msg = backendMsg as BackendMessage;
+
+        // Parse tool_calls from backend format to frontend toolInvocations
+        let toolInvocations = undefined;
+        if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+            toolInvocations = msg.tool_calls.map((tc: any) => ({
+                toolCallId: tc.id || tc.tool_call_id,
+                toolName: tc.function?.name || tc.name,
+                args: typeof tc.function?.arguments === 'string'
+                    ? JSON.parse(tc.function.arguments)
+                    : (tc.function?.arguments || tc.args),
+                state: 'result' as const
+            }));
         }
 
-        if (!sessionId) {
-            setHistoryLoaded(true);
-            return;
+        // Parse attachments from backend format
+        let attachments = undefined;
+        if (msg.attachments) {
+            // Backend sends { images?: string[], videos?: string[], documents?: string[] }
+            attachments = msg.attachments;
         }
 
-        console.log("[useChatHistory] Subscribing to session:", sessionId);
-        setHistoryLoaded(false);
+        // Clean content from legacy markers
+        let content = msg.content;
+        if (content && (attachments?.images?.length || attachments?.videos?.length)) {
+            content = content
+                .replace(/\[(Immagine|Video) allegata:.*?\]/g, '')
+                .replace(/\[https?:\/\/.*?\]/g, '')
+                .trim();
+        }
 
-        // Reference to messages subcollection
-        // Path: sessions/{sessionId}/messages
-        // 🔥 FIX: Order by 'timestamp' (field used by backend), not 'createdAt'
-        const messagesRef = collection(db, 'sessions', sessionId, 'messages');
-        const q = query(messagesRef, orderBy('timestamp', 'asc'));
+        return {
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant' | 'system' | 'tool',
+            content,
+            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            timestamp: msg.timestamp,
+            toolInvocations,
+            tool_call_id: msg.tool_call_id,
+            attachments
+        };
+    });
 
-        // Realtime Listener
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const messages = snapshot.docs.map(doc => {
-                const data = doc.data();
+    // Link tool results to assistant tool invocations
+    const linkedMessages = transformedMessages.map(msg => {
+        if (msg.role === 'assistant' && msg.toolInvocations) {
+            return {
+                ...msg,
+                toolInvocations: msg.toolInvocations.map((tool: any) => {
+                    const toolResultMsg = transformedMessages.find(m =>
+                        m.role === 'tool' && m.tool_call_id === tool.toolCallId
+                    );
 
-                // Map Firestore 'tool_calls' to AI SDK 'toolInvocations'
-                let toolInvocations = undefined;
-                if (data.tool_calls && Array.isArray(data.tool_calls)) {
-                    toolInvocations = data.tool_calls.map((tc: any) => ({
-                        toolCallId: tc.id || tc.tool_call_id,
-                        toolName: tc.function?.name || tc.name,
-                        args: typeof tc.function?.arguments === 'string'
-                            ? JSON.parse(tc.function.arguments)
-                            : (tc.function?.arguments || tc.args),
-                        state: 'result' // History items are always completed
-                    }));
-                }
-
-                // Map Firestore attachments (Array) to UI attachments (Object)
-                let attachments = undefined;
-                if (data.attachments && Array.isArray(data.attachments)) {
-                    attachments = {
-                        images: data.attachments
-                            .filter((a: any) => a.media_type === 'image' || a.contentType?.startsWith('image/'))
-                            .map((a: any) => a.url),
-                        videos: data.attachments
-                            .filter((a: any) => a.media_type === 'video' || a.contentType?.startsWith('video/'))
-                            .map((a: any) => a.url)
-                    };
-                }
-
-                // Hide text markers in content if we have structured attachments to avoid duplicates
-                // Also remove raw URL markers like [https://...] which might be causing the "hash" issue
-                let content = data.content;
-                if (content && (attachments?.images?.length || attachments?.videos?.length)) {
-                    // Regex to remove legacy markers like [Immagine allegata: https://...] or just [https://...]
-                    content = content
-                        .replace(/\[(Immagine|Video) allegata:.*?\]/g, '')
-                        .replace(/\[https?:\/\/.*?\]/g, '') // Remove naked URL markers too
-                        .trim();
-                }
-
-                return {
-                    id: doc.id,
-                    role: data.role,
-                    content,
-                    createdAt: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(),
-                    toolInvocations,
-                    tool_call_id: data.tool_call_id,
-                    attachments, // Injected structured attachments
-                } as Message;
-            });
-
-            // 🔗 LINKING FIX: Backfill 'result' from Tool Messages into Assistant Invocations
-            // This ensures ToolStatus can render the result immediately without relying on SDK internal merging
-            const linkedMessages = messages.map((msg, index) => {
-                if (msg.role === 'assistant' && msg.toolInvocations) {
-                    return {
-                        ...msg,
-                        toolInvocations: msg.toolInvocations.map((tool: any) => {
-                            // Find the corresponding tool result message
-                            const toolResultMsg = messages.find(m =>
-                                m.role === 'tool' && m.tool_call_id === tool.toolCallId
-                            );
-
-                            if (toolResultMsg) {
-                                let parsedResult = toolResultMsg.content;
-                                try {
-                                    if (typeof toolResultMsg.content === 'string' &&
-                                        (toolResultMsg.content.startsWith('{') || toolResultMsg.content.startsWith('['))) {
-                                        parsedResult = JSON.parse(toolResultMsg.content);
-                                    }
-                                } catch (e) {
-                                    // Keep as string if parse fails
-                                }
-
-                                return {
-                                    ...tool,
-                                    state: 'result',
-                                    result: parsedResult // Inject parsed content
-                                };
+                    if (toolResultMsg) {
+                        let parsedResult = toolResultMsg.content;
+                        try {
+                            if (typeof toolResultMsg.content === 'string' &&
+                                (toolResultMsg.content.startsWith('{') || toolResultMsg.content.startsWith('['))) {
+                                parsedResult = JSON.parse(toolResultMsg.content);
                             }
-                            return tool;
-                        })
-                    };
-                }
-                return msg;
-            });
+                        } catch (e) {
+                            // Keep as string if parse fails
+                        }
 
-            console.log(`[useChatHistory] Updated: ${linkedMessages.length} messages (Linked Tools)`);
-            setHistoryMessages(linkedMessages);
-            setHistoryLoaded(true);
-        }, (error) => {
-            console.error("[useChatHistory] Listener Error:", error);
-            // 403 usually means rules blocked it or session doesn't exist for user
-            setHistoryLoaded(true);
-        });
+                        return {
+                            ...tool,
+                            state: 'result' as const,
+                            result: parsedResult
+                        };
+                    }
+                    return tool;
+                })
+            };
+        }
+        return msg;
+    });
 
-        // Cleanup listener on unmount or sessionId change
-        return () => unsubscribe();
+    // Determine if history is fully loaded
+    const historyLoaded = !isLoading && !authLoading;
 
-    }, [sessionId, authLoading, user]);
-
-    return { historyLoaded, historyMessages };
+    return {
+        historyLoaded,
+        historyMessages: linkedMessages,
+        isLoading,
+        error,
+        mutate // Expose for manual revalidation
+    };
 }

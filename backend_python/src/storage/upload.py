@@ -90,3 +90,42 @@ def upload_base64_image(
     except Exception as e:
         logger.error(f"Upload failed: {str(e)}", exc_info=True)
         raise Exception(f"Failed to upload image: {str(e)}")
+
+def upload_file_bytes(
+    file_bytes: bytes,
+    session_id: str,
+    file_name: str,
+    mime_type: str = "application/octet-stream",
+    prefix: str = "documents"
+) -> str:
+    """
+    Upload raw bytes to Firebase Storage and return signed URL.
+    """
+    if not FIREBASE_STORAGE_BUCKET:
+        raise Exception("FIREBASE_STORAGE_BUCKET not configured")
+    
+    try:
+        full_path = f"{prefix}/{session_id}/{file_name}"
+        
+        from src.storage.firebase_storage import get_storage_client
+        client = get_storage_client()
+        bucket = client.bucket(FIREBASE_STORAGE_BUCKET)
+        blob = bucket.blob(full_path)
+        
+        blob.upload_from_string(
+            file_bytes,
+            content_type=mime_type
+        )
+        
+        public_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(days=7),
+            method="GET"
+        )
+        
+        logger.info(f"File upload complete: {full_path}")
+        return public_url
+        
+    except Exception as e:
+        logger.error(f"File upload failed: {str(e)}", exc_info=True)
+        raise Exception(f"Failed to upload file: {str(e)}")

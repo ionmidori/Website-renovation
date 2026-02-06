@@ -238,5 +238,20 @@ TOOL_SHOW_PROJECT_GALLERY = """<tool name="show_project_gallery">
 </rules>
 </tool>"""
 
+TOOL_GENERATE_CAD = """<tool name="generate_cad">
+<trigger>User wants "rilievo CAD", "misure tecniche", "planimetria accurata", or "CAD plan".</trigger>
+<goal>Extract structural geometry, area estimates, and dimensions from an image and generate a DXF file.</goal>
+<parameters>
+<param name="image_url" required="true">The URL of the user's uploaded image.</param>
+<param name="session_id" required="true">The current project ID extracted from project context.</param>
+</parameters>
+<workflow>
+1. DETECT CAD request.
+2. IF image not provided, ask for it.
+3. ELSE, call `generate_cad(image_url="...", session_id="...")`.
+4. Present the technical summary and the download link from the tool output.
+</workflow>
+</tool>"""
+
 # Combined export
-TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}\n\n{TOOL_ANALYZE_ROOM}\n\n{TOOL_SAVE_QUOTE}\n\n{TOOL_PLAN_RENOVATION}\n\n{TOOL_LIST_PROJECT_FILES}\n\n{TOOL_SHOW_PROJECT_GALLERY}"
+TOOLS = f"{TOOL_GENERATE_RENDER}\n\n{TOOL_SUBMIT_LEAD}\n\n{TOOL_PRICE_SEARCH}\n\n{TOOL_ANALYZE_ROOM}\n\n{TOOL_SAVE_QUOTE}\n\n{TOOL_PLAN_RENOVATION}\n\n{TOOL_LIST_PROJECT_FILES}\n\n{TOOL_SHOW_PROJECT_GALLERY}\n\n{TOOL_GENERATE_CAD}"

@@ -14,6 +14,8 @@ from src.api.perplexity import fetch_market_prices
 from src.db.quotes import save_quote_draft
 # from src.vision.analyze import analyze_room_structure (Unused after triage fix)
 from src.vision.triage import analyze_media_triage
+from src.vision.cad_engine import analyze_floorplan_vector, generate_dxf_bytes
+from src.storage.upload import upload_file_bytes
 
 from src.tools.project_files import list_project_files
 from src.tools.gallery import show_project_gallery
@@ -196,6 +198,67 @@ async def plan_renovation(image_url: str, style: str, keep_elements: Optional[Li
         logger.error(f"[Tool] ❌ plan_renovation failed: {e}")
         return f"❌ Errore nel piano architettonico: {str(e)}"
 
+@tool
+async def generate_cad(image_url: str, session_id: str) -> str:
+    """
+    Generate a technical CAD measurement plan (DXF) from an image.
+    Extracts structural geometry, area estimates, and dimensions.
+    Returns a technical summary and a download link for the .dxf file.
+    
+    Args:
+        image_url: The image to analyze.
+        session_id: The current project/session ID to save the file.
+    """
+    logger.info(f"[Tool] 📏 generate_cad V2 called for {image_url}")
+    try:
+        # 1. Download
+        image_bytes, mime_type = await download_image_smart(image_url)
+        
+        # 2. Extract Vector Data (Gemini Pro)
+        vector_data = await analyze_floorplan_vector(image_bytes)
+        
+        # 3. Generate DXF
+        dxf_bytes = generate_dxf_bytes(vector_data)
+        
+        # 4. Upload DXF to Storage
+        file_name = f"rilievo-cad-{int(datetime.now().timestamp())}.dxf"
+        download_url = upload_file_bytes(
+            file_bytes=dxf_bytes,
+            session_id=session_id,
+            file_name=file_name,
+            mime_type="application/dxf",
+            prefix="projects"
+        )
+        
+        # 5. Format Summary
+        muri_count = len(vector_data.walls)
+        aperture_count = len(vector_data.openings)
+        
+        # Estimate area if scale exists (simplified)
+        area_info = ""
+        if vector_data.scale_reference:
+            area_info = f"\n**Riferimento Scala:** {vector_data.scale_reference.description} ({vector_data.scale_reference.real_width_cm}cm)"
+
+        return f"""
+# 📐 Rilievo Tecnico CAD (V2)
+Analisi vettoriale completata con successo.
+
+### 📊 Riepilogo Strutturale:
+- **Muri Rilevati:** {muri_count}
+- **Aperture (Porte/Finestre):** {aperture_count}
+{area_info}
+
+### 📥 Download
+Ho generato il file professionale in formato DXF (compatibile con AutoCAD, SketchUp, Revit).
+
+[🔗 Scarica il file DXF (Rilievo Tecnico)]({download_url})
+
+*(Nota: Il link scadrà tra 7 giorni. Verificare sempre le misure in cantiere prima di procedere con gli ordini dei materiali)*
+"""
+    except Exception as e:
+        logger.error(f"[Tool] ❌ generate_cad failed: {e}")
+        return f"❌ Errore nella generazione del CAD: {str(e)}"
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 📦 REGISTRY EXPORT
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -208,5 +271,6 @@ ALL_TOOLS = [
     analyze_room, 
     plan_renovation,
     list_project_files,
-    show_project_gallery
+    show_project_gallery,
+    generate_cad
 ]
