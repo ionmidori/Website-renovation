@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Upload, X, FileText, Image, Video, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { validateFileForUpload } from '@/lib/validation/file-upload-schema';
+import { useFileUpload, UploadProgress } from '@/hooks/useFileUpload';
 
 export interface UploadedFile {
     file: File;
@@ -24,6 +25,28 @@ export function FileUploader({ projectId, onUploadComplete, maxFiles = 10 }: Fil
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 🔧 Tier-3 Integration: Use Firebase Storage hook
+    const { uploadFile: uploadToStorage, uploadProgress } = useFileUpload();
+
+    // Sync hook progress to local file state
+    useEffect(() => {
+        uploadProgress.forEach((progress, fileId) => {
+            setFiles(prev => prev.map(f => {
+                // Match by fileId suffix (hook uses timestamp_filename format)
+                if (f.id === fileId || fileId.endsWith(f.file.name)) {
+                    return {
+                        ...f,
+                        progress: progress.progress,
+                        status: progress.status === 'idle' ? 'pending' : progress.status,
+                        url: progress.url,
+                        error: progress.error,
+                    };
+                }
+                return f;
+            }));
+        });
+    }, [uploadProgress]);
 
     const addFiles = useCallback(async (newFiles: FileList | File[]) => {
         const fileArray = Array.from(newFiles);
@@ -62,61 +85,80 @@ export function FileUploader({ projectId, onUploadComplete, maxFiles = 10 }: Fil
         setFiles(prev => [...prev, ...uploadedFiles].slice(0, maxFiles));
     }, [maxFiles]);
 
-    const uploadFile = async (fileData: UploadedFile) => {
+    /**
+     * Determines file type category for the backend
+     */
+    const getFileType = (file: File): 'image' | 'video' | 'document' => {
+        if (file.type.startsWith('image/')) return 'image';
+        if (file.type.startsWith('video/')) return 'video';
+        return 'document';
+    };
+
+    /**
+     * Upload a single file to Firebase Storage via the useFileUpload hook
+     * Progress is automatically synced via the useEffect above
+     */
+    const uploadFileToStorage = async (fileData: UploadedFile): Promise<void> => {
+        // Mark as uploading immediately for UI feedback
         setFiles(prev =>
             prev.map(f => f.id === fileData.id ? { ...f, status: 'uploading' as const } : f)
         );
 
         try {
-            const formData = new FormData();
-            formData.append('file', fileData.file);
-            formData.append('projectId', projectId);
+            const fileType = getFileType(fileData.file);
+            const downloadUrl = await uploadToStorage(fileData.file, projectId, fileType);
 
-            // Simulate upload with progress
-            // In production, use XMLHttpRequest or fetch with progress events
-            for (let progress = 0; progress <= 100; progress += 10) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                setFiles(prev =>
-                    prev.map(f => f.id === fileData.id ? { ...f, progress } : f)
-                );
-            }
-
-            // TODO: Replace with actual upload to Firebase Storage
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Upload failed');
-            }
-
-            const result = await response.json();
-
+            // Explicitly set success state with URL
             setFiles(prev =>
                 prev.map(f =>
                     f.id === fileData.id
-                        ? { ...f, status: 'success' as const, url: result.url, progress: 100 }
+                        ? { ...f, status: 'success' as const, url: downloadUrl, progress: 100 }
                         : f
                 )
             );
-        } catch (error) {
+        } catch (error: any) {
+            console.error('[FileUploader] Upload failed:', error);
+
+            // Map error to user-friendly message
+            let errorMessage = 'Upload fallito. Riprova.';
+            if (error?.message?.includes('not authenticated')) {
+                errorMessage = 'Devi effettuare il login per caricare file.';
+            } else if (error?.code === 'storage/unauthorized') {
+                errorMessage = 'Non hai i permessi per caricare in questo progetto.';
+            } else if (error?.code === 'storage/quota-exceeded') {
+                errorMessage = 'Quota di storage esaurita.';
+            }
+
             setFiles(prev =>
                 prev.map(f =>
                     f.id === fileData.id
-                        ? { ...f, status: 'error' as const, error: 'Upload fallito. Riprova.' }
+                        ? { ...f, status: 'error' as const, error: errorMessage }
                         : f
                 )
             );
         }
     };
 
+    /**
+     * Upload all pending files in parallel
+     * Calls onUploadComplete with successful uploads when all finish
+     */
     const uploadAll = async () => {
         const pendingFiles = files.filter(f => f.status === 'pending');
-        await Promise.all(pendingFiles.map(file => uploadFile(file)));
 
-        const successFiles = files.filter(f => f.status === 'success');
-        onUploadComplete?.(successFiles);
+        // Upload all in parallel
+        await Promise.allSettled(pendingFiles.map(file => uploadFileToStorage(file)));
+
+        // Wait a tick for state to settle, then call completion handler
+        setTimeout(() => {
+            setFiles(currentFiles => {
+                const successFiles = currentFiles.filter(f => f.status === 'success');
+                if (successFiles.length > 0) {
+                    onUploadComplete?.(successFiles);
+                }
+                return currentFiles;
+            });
+        }, 100);
     };
 
     const removeFile = (id: string) => {
