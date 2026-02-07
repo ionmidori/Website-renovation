@@ -25,14 +25,16 @@ export default function ProjectFilesPage() {
         if (historyLoaded && historyMessages.length > 0) {
             const extractedAssets = extractMediaFromMessages(historyMessages);
             setAssets(prev => {
-                // Merge with existing assets to avoid duplicates
+                let changed = false;
                 const uniqueAssets = [...prev];
                 extractedAssets.forEach(newAsset => {
                     if (!uniqueAssets.some(a => a.id === newAsset.id)) {
                         uniqueAssets.push(newAsset);
+                        changed = true;
                     }
                 });
-                return uniqueAssets;
+                // Only return a new array if something actually changed
+                return changed ? uniqueAssets : prev;
             });
         }
     }, [historyLoaded, historyMessages]);

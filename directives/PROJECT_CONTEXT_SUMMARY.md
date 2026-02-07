@@ -187,3 +187,10 @@ Il backend Python è stato trasformato da uno script monolitico a un'architettur
 - `brain/000c8a7b-2ba5-4d17-8b59-0c6d66ffed42/chat_history_fix.md`: Documentazione del fix schema Pydantic.
 - `brain/000c8a7b-2ba5-4d17-8b59-0c6d66ffed42/nextjs16_suspense_fix.md`: Dettagli sulla migrazione a Next.js 16.
 - `brain/5f50de79-ccb4-40cc-8650-6b2d8b4473de/walkthrough.md`: **Media Upload Refactoring & Security Fix (2026-02-07)**.
+- `brain/5f50de79-ccb4-40cc-8650-6b2d8b4473de/walkthrough.md`: **CI/CD Fixes & Manual Cloud Run Deploy (2026-02-07)**.
+
+### 18. CI/CD & Deployment Recovery (2026-02-07)
+- **CI Fix:** Risolto bug nei test di `project_files_tool` (MagicMock string conversion) e isolamento `quota` tool (Environment Leakage in `conftest.py`). Test suite: **68 Passed**.
+- **Repository Rename Impact:** Il cambio nome su GitHub (`Website-renovation`) ha interrotto il Trigger automatico di Cloud Build.
+- **Manual Deploy:** Eseguito deploy manuale su Cloud Run (`syd-brain`) bypassando il trigger rotto. Servizio ora attivo e allineato con `main`.
+- **Action Required:** Riconnettere il repository nel Cloud Build Trigger su GCP Console per ripristinare CI/CD automatico.

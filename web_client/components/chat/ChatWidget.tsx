@@ -206,22 +206,40 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         // Trigger if intent is 'cad' and it's a relatively new conversation
         if (intent === 'cad' && historyLoaded && !isLoading && messages.length <= 2) {
             console.log('[ChatWidget] 🎯 Triggering CAD extraction flow');
-            setTimeout(() => {
-                if (typeof sendMessage === 'function') {
-                    sendMessage({
-                        role: 'user',
-                        content: "Vorrei effettuare un rilievo CAD di questa stanza. Mi aiuti a estrarre le misure?"
-                    }, {});
 
-                    // Cleanup URL to avoid re-triggering on refresh
-                    const params = new URLSearchParams(window.location.search);
-                    params.delete('intent');
-                    const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
-                    window.history.replaceState({}, '', newUrl);
+            // Use an async IIFE inside timeout to handle token retrieval
+            const timeoutId = setTimeout(async () => {
+                if (typeof sendMessage === 'function' && sessionId) {
+                    try {
+                        const token = await refreshToken();
+
+                        await sendMessage({
+                            role: 'user',
+                            content: "Vorrei effettuare un rilievo CAD di questa stanza. Mi aiuti a estrarre le misure?"
+                        }, {
+                            body: {
+                                sessionId,
+                                is_authenticated: !!user
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        // Cleanup URL to avoid re-triggering on refresh
+                        const params = new URLSearchParams(window.location.search);
+                        params.delete('intent');
+                        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+                        window.history.replaceState({}, '', newUrl);
+                    } catch (err) {
+                        console.error('[ChatWidget] Failed to trigger CAD flow:', err);
+                    }
                 }
             }, 1000);
+
+            return () => clearTimeout(timeoutId);
         }
-    }, [searchParams, historyLoaded, isLoading, messages.length, sendMessage]);
+    }, [searchParams, historyLoaded, isLoading, messages.length, sendMessage, sessionId, user, refreshToken]);
 
     // 🧹 STATE RESET: When Project/Session Changes
     useEffect(() => {
@@ -427,7 +445,8 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                             mediaUrls,
                             mediaTypes,
                             mediaMetadata,
-                            videoFileUris: videoFileUris.length > 0 ? videoFileUris : undefined
+                            videoFileUris: videoFileUris.length > 0 ? videoFileUris : undefined,
+                            is_authenticated: !!user
                         },
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -448,17 +467,28 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
 
     // External Triggers (Events)
     useEffect(() => {
-        const handleOpenChatWithMessage = (e: CustomEvent<{ message?: string }>) => {
+        const handleOpenChatWithMessage = async (e: CustomEvent<{ message?: string }>) => {
             setIsOpen(true);
-            if (e.detail?.message) {
-                setTimeout(() => {
-                    if (sendMessage) {
-                        sendMessage({
+            if (e.detail?.message && sendMessage && sessionId) {
+                try {
+                    const token = await refreshToken();
+                    setTimeout(async () => {
+                        await sendMessage({
                             role: 'user',
                             content: e.detail.message!
-                        }, {});
-                    }
-                }, 500);
+                        }, {
+                            body: {
+                                sessionId,
+                                is_authenticated: !!user
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    }, 500);
+                } catch (err) {
+                    console.error('[ChatWidget] Failed to send message from event:', err);
+                }
             }
         };
         const handleOpenChat = () => setIsOpen(true);

@@ -28,6 +28,7 @@ const lato = Lato({
 export const metadata: Metadata = {
   title: "SYD BIOEDILIZIA - Il Futuro della Ristrutturazione",
   description: "Trasforma la tua casa con il potere dell'Intelligenza Artificiale. Design premium, esecuzione impeccabile.",
+  manifest: "/manifest.json",
 };
 
 export const viewport = {
@@ -36,7 +37,8 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  interactiveWidget: "resizes-content"
+  interactiveWidget: "resizes-content",
+  themeColor: "#264653",
 };
 
 import { CookieConsent } from "@/components/CookieConsent";

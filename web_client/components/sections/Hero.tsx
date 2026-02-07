@@ -78,7 +78,7 @@ export function Hero() {
     }, []);
 
     return (
-        <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-luxury-bg">
+        <section className="relative min-h-[100dvh] flex items-center pt-20 overflow-hidden bg-luxury-bg">
             {/* Background Elements - Luxury Tech */}
             <div className="absolute inset-0 bg-luxury-bg z-0" />
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-luxury-teal/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />

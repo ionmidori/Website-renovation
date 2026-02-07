@@ -16,6 +16,10 @@ interface ImageLightboxProps {
  * - 🎮 Gyroscope parallax effect (subtle holographic tilt)
  * - 📤 Native Web Share API
  */
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
+// ... imports remain the same
+
 export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
     // 🎮 Parallax effect (enabled only when lightbox is open)
     const { getTransform, isSupported: parallaxSupported } = useParallax(!!imageUrl);
@@ -38,21 +42,38 @@ export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
                     onClick={onClose}
                     role="dialog"
                     aria-label="Anteprima immagine"
-                    className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+                    className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
                 >
                     <div
-                        className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center"
+                        className="relative w-full h-full flex flex-col items-center justify-center"
                         onClick={e => e.stopPropagation()}
                     >
-                        <motion.img
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            src={imageUrl}
-                            alt="Full preview"
-                            className="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-white/10"
-                            style={parallaxSupported ? getTransform(15) : {}}  // 🎮 Apply parallax
-                        />
-                        <div className="mt-4 flex gap-4">
+                        {/* 🔍 Pinch to Zoom Wrapper */}
+                        {/* @ts-ignore */}
+                        <TransformWrapper
+                            initialScale={1}
+                            minScale={1}
+                            maxScale={4}
+                            centerOnInit
+                            limitToBounds={true}
+                        >
+                            {/* @ts-ignore */}
+                            <TransformComponent
+                                wrapperClass="!w-full !h-[80vh] flex items-center justify-center"
+                                contentClass="flex items-center justify-center"
+                            >
+                                <motion.img
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    src={imageUrl}
+                                    alt="Full preview"
+                                    className="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-white/10"
+                                    style={parallaxSupported ? getTransform(15) : {}}  // 🎮 Apply parallax
+                                />
+                            </TransformComponent>
+                        </TransformWrapper>
+
+                        <div className="absolute bottom-8 flex gap-4 z-[130]">
                             <Button
                                 onClick={onClose}
                                 variant="outline"

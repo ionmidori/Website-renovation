@@ -5,9 +5,11 @@ import { useEffect, useState, Suspense } from 'react';
 import ChatWidget from '@/components/chat/ChatWidget';
 import { projectsApi } from '@/lib/projects-api';
 import { Project } from '@/types/projects';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Info, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth'; // Assuming this path for useAuth
+import ProjectInfoCard from '@/components/dashboard/ProjectInfoCard';
+import { cn } from '@/lib/utils';
 
 export default function ProjectPage() {
     const params = useParams();
@@ -19,6 +21,7 @@ export default function ProjectPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showMobileInfo, setShowMobileInfo] = useState(false);
 
     useEffect(() => {
         async function loadProject() {
@@ -98,13 +101,68 @@ export default function ProjectPage() {
         );
     }
 
-    // Success - Render Chat
+    // Success - Render Dashboard Layout
     return (
-        <div className="flex flex-col h-full w-full">
-            {/* Pass projectId to ChatWidget as primary inline view */}
-            <Suspense fallback={<div />}>
-                <ChatWidget key={projectId} projectId={projectId} variant="inline" />
-            </Suspense>
+        <div className="flex flex-col h-full w-full relative overflow-hidden bg-luxury-bg">
+            {/* 📱 Mobile Details Toggle (Top Bar / Floating) */}
+            <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-luxury-gold/10 bg-luxury-bg/50 backdrop-blur-md z-30">
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-luxury-teal animate-pulse" />
+                    <h2 className="text-xs font-bold text-luxury-text/80 uppercase tracking-widest truncate max-w-[200px]">
+                        {project.title}
+                    </h2>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowMobileInfo(!showMobileInfo)}
+                    className="text-luxury-gold hover:bg-luxury-gold/10 gap-2 border border-luxury-gold/20 rounded-xl px-4"
+                >
+                    <Info className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">Info</span>
+                </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+                {/* 💬 Main Chat Area (75% on Desktop) */}
+                <main className="flex-1 flex flex-col min-h-0 relative bg-black/20">
+                    <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-luxury-gold" /></div>}>
+                        <ChatWidget key={projectId} projectId={projectId} variant="inline" />
+                    </Suspense>
+                </main>
+
+                {/* 📋 Project Info Sidebar (25% on Desktop) */}
+                <aside className={cn(
+                    "w-full lg:w-[320px] xl:w-[380px] bg-luxury-bg/80 backdrop-blur-2xl border-l border-luxury-gold/5 lg:block transition-all duration-500 ease-in-out p-6",
+                    "fixed inset-y-0 right-0 z-[100] lg:relative lg:z-auto",
+                    showMobileInfo ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+                )}>
+                    {/* Mobile Close Handle */}
+                    <div className="lg:hidden flex justify-between items-center mb-8">
+                        <h3 className="text-lg font-serif font-bold text-luxury-gold italic">Dettagli Progetto</h3>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowMobileInfo(false)}
+                            className="rounded-full bg-white/5"
+                        >
+                            <ChevronRight className="w-5 h-5 text-luxury-text/40" />
+                        </Button>
+                    </div>
+
+                    <div className="h-full overflow-y-auto no-scrollbar pb-20 lg:pb-0">
+                        <ProjectInfoCard project={project} />
+                    </div>
+                </aside>
+
+                {/* Mobile Backdrop */}
+                {showMobileInfo && (
+                    <div
+                        className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] animate-in fade-in duration-300"
+                        onClick={() => setShowMobileInfo(false)}
+                    />
+                )}
+            </div>
         </div>
     );
 }

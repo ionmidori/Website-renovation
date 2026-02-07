@@ -21,9 +21,52 @@ interface SlideShowModalProps {
     onClose: () => void;
 }
 
+const SlideImage = ({ src, alt, priority }: { src: string, alt: string, priority?: boolean }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    return (
+        <>
+            {!isLoaded && (
+                <div className="absolute inset-0 bg-luxury-bg/50 animate-pulse z-0 rounded-xl" />
+            )}
+            <Image
+                src={src}
+                alt={alt}
+                fill
+                priority={priority}
+                className={`object-contain transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                sizes="(max-width: 768px) 100vw, 90vw"
+                onLoad={() => setIsLoaded(true)}
+            />
+        </>
+    );
+};
+
 export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [direction, setDirection] = useState(0);
+
+    // Swipe State
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) paginate(1);   // Next
+        if (isRightSwipe) paginate(-1); // Prev
+    };
 
     // Reset index when opening
     useEffect(() => {
@@ -112,7 +155,12 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                         </button>
 
                         {/* Image Carousel */}
-                        <div className="relative w-full h-full overflow-hidden rounded-xl shadow-2xl bg-black border border-luxury-gold/10">
+                        <div
+                            className="relative w-full h-full overflow-hidden rounded-xl shadow-2xl bg-black border border-luxury-gold/10"
+                            onTouchStart={onTouchStart}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onTouchEnd}
+                        >
 
                             {/* Ambient Background */}
                             <AnimatePresence initial={false} custom={direction} mode='popLayout'>
@@ -166,25 +214,19 @@ export function SlideShowModal({ isOpen, onClose }: SlideShowModalProps) {
                                 >
                                     {/* Mobile Static Slide */}
                                     <div className="md:hidden w-full h-full relative">
-                                        <Image
+                                        <SlideImage
                                             src="/slides/summary-mobile.png"
                                             alt="Come funziona SYD"
-                                            fill
                                             priority
-                                            className="object-contain"
-                                            sizes="100vw"
                                         />
                                     </div>
 
                                     {/* Desktop Dynamic Carousel */}
                                     <div className="hidden md:block w-full h-full relative">
-                                        <Image
+                                        <SlideImage
                                             src={DESKTOP_SLIDES[currentIndex]}
                                             alt={`Slide ${currentIndex + 1}`}
-                                            fill
                                             priority
-                                            className="object-contain"
-                                            sizes="90vw"
                                         />
                                     </div>
                                 </motion.div>

@@ -407,6 +407,18 @@ async def delete_project(session_id: str, user_id: str) -> bool:
             if blobs_frontend:
                 bucket.delete_blobs(blobs_frontend)
                 
+            # Path C: Backend Renders (Deep Delete)
+            prefix_renders = f"renders/{session_id}/"
+            blobs_renders = list(bucket.list_blobs(prefix=prefix_renders))
+            if blobs_renders:
+                bucket.delete_blobs(blobs_renders)
+                
+            # Path D: Backend Documents (Deep Delete)
+            prefix_docs = f"documents/{session_id}/"
+            blobs_docs = list(bucket.list_blobs(prefix=prefix_docs))
+            if blobs_docs:
+                bucket.delete_blobs(blobs_docs)
+                
             logger.info(f"[Projects] Deep delete: Storage cleaned for {session_id}")
                 
         except Exception as storage_e:

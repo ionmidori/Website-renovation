@@ -173,19 +173,28 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<'div'>)
     // SWIPE HANDLERS
     // ========================================================================
     const [touchStart, setTouchStart] = React.useState<number | null>(null)
+    const [touchStartY, setTouchStartY] = React.useState<number | null>(null)
     const [touchEnd, setTouchEnd] = React.useState<number | null>(null)
     const minSwipeDistance = 50
 
     const onTouchStart = (e: React.TouchEvent) => {
         setTouchEnd(null)
         setTouchStart(e.targetTouches[0].clientX)
+        setTouchStartY(e.targetTouches[0].clientY)
     }
 
     const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
 
-    const onTouchEnd = () => {
-        if (!touchStart || !touchEnd) return
+    const onTouchEnd = (e: React.TouchEvent) => {
+        if (!touchStart || !touchEnd || !touchStartY) return
+
         const distance = touchStart - touchEnd
+        const yDistance = touchStartY - e.changedTouches[0].clientY
+
+        // Directional Locking: Ensure mostly horizontal movement
+        // If vertical movement is greater than horizontal, ignore (it's a scroll)
+        if (Math.abs(distance) < Math.abs(yDistance)) return
+
         const isLeftSwipe = distance > minSwipeDistance
         const isRightSwipe = distance < -minSwipeDistance
 

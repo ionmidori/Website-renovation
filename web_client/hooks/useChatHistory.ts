@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { useAuth } from '@/hooks/useAuth';
 import { getChatHistory, type ChatHistoryResponse } from '@/lib/api-client';
@@ -103,84 +103,88 @@ export function useChatHistory(
     );
 
     // Transform backend messages to match frontend Message format
-    const transformedMessages: Message[] = (data?.messages || []).map((backendMsg: any) => {
-        // Cast to BackendMessage for type safety
-        const msg = backendMsg as BackendMessage;
+    const transformedMessages: Message[] = useMemo(() => {
+        return (data?.messages || []).map((backendMsg: any) => {
+            // Cast to BackendMessage for type safety
+            const msg = backendMsg as BackendMessage;
 
-        // Parse tool_calls from backend format to frontend toolInvocations
-        let toolInvocations = undefined;
-        if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
-            toolInvocations = msg.tool_calls.map((tc: any) => ({
-                toolCallId: tc.id || tc.tool_call_id,
-                toolName: tc.function?.name || tc.name,
-                args: typeof tc.function?.arguments === 'string'
-                    ? JSON.parse(tc.function.arguments)
-                    : (tc.function?.arguments || tc.args),
-                state: 'result' as const
-            }));
-        }
+            // Parse tool_calls from backend format to frontend toolInvocations
+            let toolInvocations = undefined;
+            if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+                toolInvocations = msg.tool_calls.map((tc: any) => ({
+                    toolCallId: tc.id || tc.tool_call_id,
+                    toolName: tc.function?.name || tc.name,
+                    args: typeof tc.function?.arguments === 'string'
+                        ? JSON.parse(tc.function.arguments)
+                        : (tc.function?.arguments || tc.args),
+                    state: 'result' as const
+                }));
+            }
 
-        // Parse attachments from backend format
-        let attachments = undefined;
-        if (msg.attachments) {
-            // Backend sends { images?: string[], videos?: string[], documents?: string[] }
-            attachments = msg.attachments;
-        }
+            // Parse attachments from backend format
+            let attachments = undefined;
+            if (msg.attachments) {
+                // Backend sends { images?: string[], videos?: string[], documents?: string[] }
+                attachments = msg.attachments;
+            }
 
-        // Clean content from legacy markers
-        let content = msg.content;
-        if (content && (attachments?.images?.length || attachments?.videos?.length)) {
-            content = content
-                .replace(/\[(Immagine|Video) allegata:.*?\]/g, '')
-                .replace(/\[https?:\/\/.*?\]/g, '')
-                .trim();
-        }
+            // Clean content from legacy markers
+            let content = msg.content;
+            if (content && (attachments?.images?.length || attachments?.videos?.length)) {
+                content = content
+                    .replace(/\[(Immagine|Video) allegata:.*?\]/g, '')
+                    .replace(/\[https?:\/\/.*?\]/g, '')
+                    .trim();
+            }
 
-        return {
-            id: msg.id,
-            role: msg.role as 'user' | 'assistant' | 'system' | 'tool',
-            content,
-            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-            timestamp: msg.timestamp,
-            toolInvocations,
-            tool_call_id: msg.tool_call_id,
-            attachments
-        };
-    });
+            return {
+                id: msg.id,
+                role: msg.role as 'user' | 'assistant' | 'system' | 'tool',
+                content,
+                createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+                timestamp: msg.timestamp,
+                toolInvocations,
+                tool_call_id: msg.tool_call_id,
+                attachments
+            };
+        });
+    }, [data?.messages]);
 
     // Link tool results to assistant tool invocations
-    const linkedMessages = transformedMessages.map(msg => {
-        if (msg.role === 'assistant' && msg.toolInvocations) {
-            return {
-                ...msg,
-                toolInvocations: msg.toolInvocations.map((tool: any) => {
-                    const toolResultMsg = transformedMessages.find(m =>
-                        m.role === 'tool' && m.tool_call_id === tool.toolCallId
-                    );
+    const linkedMessages = useMemo(() => {
+        return transformedMessages.map(msg => {
+            if (msg.role === 'assistant' && msg.toolInvocations) {
+                return {
+                    ...msg,
+                    toolInvocations: msg.toolInvocations.map((tool: any) => {
+                        const toolResultMsg = transformedMessages.find(m =>
+                            m.role === 'tool' && m.tool_call_id === tool.toolCallId
+                        );
 
-                    if (toolResultMsg) {
-                        let parsedResult = toolResultMsg.content;
-                        try {
-                            if (typeof toolResultMsg.content === 'string' &&
-                                (toolResultMsg.content.startsWith('{') || toolResultMsg.content.startsWith('['))) {
-                                parsedResult = JSON.parse(toolResultMsg.content);
+                        if (toolResultMsg) {
+                            let parsedResult = toolResultMsg.content;
+                            try {
+                                if (typeof toolResultMsg.content === 'string' &&
+                                    (toolResultMsg.content.startsWith('{') || toolResultMsg.content.startsWith('['))) {
+                                    parsedResult = JSON.parse(toolResultMsg.content);
+                                }
+                            } catch (e) {
+                                // Keep as string if parse fails
                             }
-                        } catch (e) {
-                            // Keep as string if parse fails
-                        }
 
-                        return {
-                            ...tool,
-                            state: 'result' as const,
-                            result: parsedResult
-                        };
-                    }
-                    return tool;
-                })
-            };
-        }
-        return msg;
-    });
+                            return {
+                                ...tool,
+                                state: 'result' as const,
+                                result: parsedResult
+                            };
+                        }
+                        return tool;
+                    })
+                };
+            }
+            return msg;
+        });
+    }, [transformedMessages]);
 
     // Determine if history is fully loaded
     const historyLoaded = !isLoading && !authLoading;
