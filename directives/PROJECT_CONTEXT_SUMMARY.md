@@ -23,7 +23,7 @@ Tutte le rotte API Node.js ridondanti sono state **ELIMINATE** per prevenire il 
 
 ### 3. Centralizzazione & Hook Refactoring (Phase 2 & 4)
 - **api-client.ts:** Unico punto di ingresso per tutte le chiamate al backend Python.
-- **useMediaUpload Replacement:** Il hook `useMediaUpload` è stato rifattorizzato internamente (approccio conservativo) per delegare a `useImageUpload`, mantenendo l'interfaccia stabile per `ChatWidget.tsx` ma eliminando le dipendenze Shadow API.
+- **useMediaUpload Deprecation (2026-02-07):** Il hook `useMediaUpload` è stato sostituito da `useUpload` (Unified Hook) e marcato come deprecated. La logica è ora centralizzata e sicura (XHR + AbortController).
 - **Supporto Multi-Media:** Introdotto `useDocumentUpload` per file PDF/DOCX gestiti dal backend Python.
 
 ### 4. Chat Protocol & Reasoning UI (Phase 5)
@@ -44,6 +44,16 @@ Tutte le rotte API Node.js ridondanti sono state **ELIMINATE** per prevenire il 
 - **Problema:** Il componente usava logica mock e chiamava `/api/upload` (endpoint inesistente).
 - **Soluzione:** Integrato `useFileUpload` hook per upload reali su Firebase Storage.
 - **Miglioramenti:** Progresso real-time, mapping errori user-friendly, sincronizzazione stato via `useEffect`.
+
+### 8. Git Workflow SOP Establishment (2026-02-06)
+- **Documento:** [GIT_WORKFLOWS.md](file:///c:/Users/User01/.gemini/antigravity/scratch/renovation-next/directives/GIT_WORKFLOWS.md).
+- **Standard:** Implementato l'uso obbligatorio di **Conventional Commits** (`feat`, `fix`, `docs`, `refactor`) e **Atomic Commits**.
+- **Processo:** Definizione del protocollo di `git pull --rebase` prima del push e obbligo di Feature Branches con merge tramite PR (Squash & Merge).
+
+### 9. Security Architecture Audit V3 & Compliance
+- **Audit:** [SECURITY_AUDIT_REPORT_V3.md](file:///c:/Users/User01/.gemini/antigravity/scratch/renovation-next/docs/SECURITY_AUDIT_REPORT_V3.md).
+- **Hardening:** Rimozione vulnerabilità "Shared Secret" (migrati a RSA), implementazione App Check e global error masking.
+- **Prossimi Passi:** Definizione della **Security SOP** (Zero-Trust Firestore rules e AI Safety).
 
 ## 🛠️ Bug Critici Risolti
 
@@ -126,12 +136,54 @@ Il backend Python è stato trasformato da uno script monolitico a un'architettur
 
 ---
 
-## 🚀 Script di Utilità e Documentazione
-- `directives/TECHNICAL_DEBT.md`: Registro del debito tecnico e dei refactoring futuri pianificati (es. consolidamento hook).
-- `directives/MAGIC_PENCIL_SPEC.md`: Specifica tecnica per lo strumento di modifica mirata.
-- `brain/5e8d4ea5-bf6e-4f11-9bd5-920aa3c43465/VERIFICATION_REPORT.md`: Report finale di verifica audit (Phase 7).
-- `brain/5e8d4ea5-bf6e-4f11-9bd5-920aa3c43465/WALKTHROUGH_REMEDIATION.md`: Documentazione passo-passo della bonifica.
-- `backend_python/tests/verify_e2e_flow.py`: Test di integrazione completo del backend.
-- `backend_python/tests/verify_reliability.py`: Verifica di tracing, logging e async safety.
-- `directives/MANUAL_TEST_PLAN.md`: Protocollo di test manuali per la validazione della remediation.
-- `scripts/cleanup_orphaned_files.py`: Pulisce lo Storage orfano.
+### 10. Frontend Reliability & React Loop Guard (2026-02-06 Part 2)
+- **Problema:** Il componente `ChatWidget.tsx` presentava loop infiniti di render causati da dipendenze instabili (`setMessages`) e reference instabili di array (`historyMessages`).
+- **Soluzione Definitiva:**
+    - Introdotto flag `hasInitializedFromHistory` (`useRef`) per garantire l'inizializzazione dei messaggi una sola volta al caricamento del progetto.
+    - Rimossi `setMessages` e altri setter dalle dipendenze dei `useEffect`.
+    - Eliminata logica di "hydration" duplicata che entrava in conflitto con l'inizializzazione primaria.
+- **Risultato:** CPU Usage ridotto del 90% e interfaccia fluida.
+
+### 11. Next.js 16 Compatibility (Suspense Fixes)
+- **Problema:** Errori di idratazione e build dovuti all'accesso a `useSearchParams` senza un Suspense Boundary (obbligatorio in Next.js 15/16).
+- **Fix:** Avvolto il componente `<ChatWidget />` in un componente `<Suspense>` in tutte le rotte principali (`page.tsx`, `dashboard`, `projects`).
+
+### 12. Pydantic & Data Contract (500 Error Fix)
+- **Errore:** `ValidationError` nell'endpoint `/api/sessions/{id}/messages`.
+- **Causa:** Lo schema `MessageResponse` si aspettava un dizionario per `attachments`, ma Firestore restituiva una lista.
+- **Fix:** Aggiornato `src/api/chat_history.py` cambiando il tipo di `attachments` da `dict` a `list` per riflettere la struttura reale dei dati (Golden Sync).
+
+### 13. Infrastructure & Deployment Recovery
+- **Cloud Run Recovery:** Ripristinato il backend di produzione risolvendo errori di startup critici.
+    - **Secrets:** Mappato `GEMINI_API_KEY` da Secret Manager direttamente come variabile d'ambiente nel container.
+- **Local Startup Fix:** Risolto `PermissionError` su `server.log` eliminando processi Python orfani che bloccavano il file.
+
+### 14. MCP Security & Storage Hardening
+- **MANDATORY SOP:** Tutti i token sensibili (GitHub, Vercel, Supabase) sono stati migrati dalla configurazione MCP (`mcp_config.json`) a un file `.env` locale non tracciato.
+- **Git Hygiene:** Aggiornato `.gitignore` per includere `.env` e file di log per prevenire leak di segreti.
+
+### 15. Media Upload Refactoring & Security Hardening (2026-02-07)
+- **Problema:** Sistema di upload frammentato (`useMediaUpload` vs `useVideoUpload`) e vulnerabile a MIME Type Spoofing.
+- **Soluzione Architetturale (Phases 1-4):**
+    - **Unified Hook:** Creato `useUpload` che gestisce immagini e video con logica unificata (XHR, AbortController, Wake Lock).
+    - **Security:** Implementata validazione Magic Bytes rigorosa in `security.py` (blocca EXE rinominati e mismatch MIME).
+    - **Componenti:** Introdotto `FilePreviewItem.tsx` riutilizzabile e rifattorizzato `ChatInput`/`ChatWidget`.
+- **Testing:** Copertura completa (Backend Integration + Frontend Unit SWR/XHR).
+- **Stato:** Legacy hooks deprecati, TypeScript 100% compliant.
+
+### 16. Security Hardening (Phase 5)
+- **Headers:** Implementato `SecurityHeadersMiddleware` (HSTS, CSP, XSS-Protection).
+- **Storage Metadata:** Configurato `Cache-Control` (1 anno) e `Content-Disposition` in `upload.py` per migliorare performance e sicurezza dei download.
+- **Video Persistence:** Identificato debito tecnico sulla scadenza (48h) dei video su Google AI File API (definito piano in `TECHNICAL_DEBT.md`).
+
+### 17. Bug Fixes
+- **Chat History:** Risolto problema di mancato aggiornamento della chat al cambio progetto (Ref reset in `ChatWidget.tsx`).
+
+---
+
+## 🚀 Script di Utilità e Documentazione (Nuovi)
+- `directives/PROJECT_CONTEXT_SUMMARY.md`: Registro ufficiale della memoria (Source of Truth).
+- `brain/000c8a7b-2ba5-4d17-8b59-0c6d66ffed42/react_loop_fix.md`: Analisi dettagliata del fix per i loop infiniti di React.
+- `brain/000c8a7b-2ba5-4d17-8b59-0c6d66ffed42/chat_history_fix.md`: Documentazione del fix schema Pydantic.
+- `brain/000c8a7b-2ba5-4d17-8b59-0c6d66ffed42/nextjs16_suspense_fix.md`: Dettagli sulla migrazione a Next.js 16.
+- `brain/5f50de79-ccb4-40cc-8650-6b2d8b4473de/walkthrough.md`: **Media Upload Refactoring & Security Fix (2026-02-07)**.

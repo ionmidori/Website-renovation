@@ -80,6 +80,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         ).model_dump()
     )
 
+# 🛡️ Security Headers Middleware (HSTS, CSP, XSS)
+from src.middleware.security_headers import SecurityHeadersMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 # 🔒 App Check Middleware
 from src.middleware.app_check import validate_app_check_token
 from fastapi.responses import JSONResponse

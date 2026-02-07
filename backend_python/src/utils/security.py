@@ -29,6 +29,29 @@ VIDEO_SIGNATURES = {
     ],
 }
 
+# Magic Bytes signatures for allowed image formats
+IMAGE_SIGNATURES = {
+    "image/jpeg": [
+        bytes.fromhex("FF D8 FF E0"),  # JFIF
+        bytes.fromhex("FF D8 FF E1"),  # EXIF
+        bytes.fromhex("FF D8 FF E8"),  # SPIFF
+        bytes.fromhex("FF D8 FF DB"),  # Raw JPEG (no marker)
+        bytes.fromhex("FF D8 FF EE"),  # Adobe JPEG
+    ],
+    "image/png": [
+        bytes.fromhex("89 50 4E 47 0D 0A 1A 0A"),  # PNG
+    ],
+    "image/gif": [
+        bytes.fromhex("47 49 46 38 37 61"),  # GIF87a
+        bytes.fromhex("47 49 46 38 39 61"),  # GIF89a
+    ],
+    "image/webp": [
+        # WebP starts with RIFF....WEBP (bytes 0-3: RIFF, bytes 8-11: WEBP)
+        # We check first 4 bytes for RIFF
+        bytes.fromhex("52 49 46 46"),  # RIFF (WebP container)
+    ],
+}
+
 
 async def validate_video_magic_bytes(file: UploadFile, max_header_size: int = 2048) -> str:
     """
@@ -104,6 +127,92 @@ async def validate_video_magic_bytes(file: UploadFile, max_header_size: int = 20
         raise HTTPException(
             status_code=500,
             detail="File validation failed. Please try again."
+        )
+
+
+async def validate_image_magic_bytes(file: UploadFile, max_header_size: int = 16) -> str:
+    """
+    Validate image file using Magic Bytes inspection.
+    
+    Prevents attackers from uploading malicious files disguised as images
+    by renaming them (e.g., exploit.exe -> image.jpg).
+    
+    Args:
+        file: The uploaded file object
+        max_header_size: Number of bytes to read for signature detection
+        
+    Returns:
+        Detected MIME type
+        
+    Raises:
+        HTTPException(400): If file signature doesn't match an allowed image type
+    """
+    try:
+        header = await file.read(max_header_size)
+        await file.seek(0)
+        
+        if len(header) < 4:
+            raise HTTPException(
+                status_code=400,
+                detail="File too small or corrupted. Minimum 4 bytes required."
+            )
+        
+        detected_type: Optional[str] = None
+        
+        for mime_type, signatures in IMAGE_SIGNATURES.items():
+            for signature in signatures:
+                if header.startswith(signature):
+                    # Extra check for WebP: bytes 8-11 must be "WEBP"
+                    if mime_type == "image/webp":
+                        if len(header) >= 12 and header[8:12] == b'WEBP':
+                            detected_type = mime_type
+                    else:
+                        detected_type = mime_type
+                    break
+            if detected_type:
+                break
+        
+        declared_type = file.content_type
+        
+        if not detected_type:
+            logger.warning(
+                f"🚨 Security Alert: Rejected file with unknown image signature. "
+                f"Declared: {declared_type}, Header: {header[:16].hex()}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Security validation failed. File signature not recognized as a valid image format."
+            )
+        
+        # Strict MIME type validation
+        # We allow 'image/jpg' as an alias for 'image/jpeg'
+        is_jpeg_alias = (declared_type == "image/jpg" and detected_type == "image/jpeg")
+        
+        if not declared_type:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing Content-Type header for image upload"
+            )
+        
+        if declared_type != detected_type and not is_jpeg_alias:
+            logger.warning(
+                f"🚨 MIME Type Mismatch: Declared={declared_type}, Detected={detected_type}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Security Alert: File claims to be {declared_type} but detected as {detected_type}"
+            )
+        
+        logger.info(f"✅ Image Magic Bytes validation passed: {detected_type}")
+        return detected_type
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during image magic bytes validation: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Image validation failed. Please try again."
         )
 
 

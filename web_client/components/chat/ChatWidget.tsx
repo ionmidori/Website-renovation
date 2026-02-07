@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils';
 // Hooks & Utils
 import { useSessionId } from '@/hooks/useSessionId';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { useMediaUpload, MediaUploadState } from '@/hooks/useMediaUpload';
-import { useVideoUpload, VideoUploadState } from '@/hooks/useVideoUpload';
+import { useUpload } from '@/hooks/useUpload';
 import { useChatScroll } from '@/hooks/useChatScroll';
 import { useMobileViewport } from '@/hooks/useMobileViewport';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -76,8 +75,8 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     // State for Global Widget Synchronization
     const [syncedProjectId, setSyncedProjectId] = useState<string | undefined>(projectId);
 
-    // Prevent infinite loop during hydration
-    const lastSyncedHistoryRef = useRef<any>(null);
+    // Track if we've already initialized messages from history (prevent infinite loop)
+    const hasInitializedFromHistory = useRef<boolean>(false);
 
     // Refs
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -157,6 +156,13 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     const fallbackSessionId = useSessionId();
     const sessionId = syncedProjectId || fallbackSessionId;
 
+    // 🛡️ GUARD: Prevent useChat initialization if sessionId is not ready
+    // This prevents "sessionId is required" errors from the API route
+    if (!sessionId || sessionId.trim().length === 0) {
+        console.log('[ChatWidget] ⏳ Waiting for sessionId to initialize...');
+        return null; // Or return a loading spinner
+    }
+
     // Load conversation history
     const { historyLoaded, historyMessages } = useChatHistory(sessionId);
 
@@ -222,6 +228,11 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         // When switching projects, we must clear the OLD messages from the SDK state
         // The useChatHistory hook will handle loading the NEW messages for the new ID
         // But we need to ensure the UI doesn't show a mix/flash of old messages
+
+        // 1. Reset Initialization Flag so new history can be loaded
+        hasInitializedFromHistory.current = false;
+
+        // 2. Clear SDK State
         if (typeof setMessages === 'function') {
             setMessages([]);
         }
@@ -249,39 +260,8 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         console.log("[ChatWidget] Messages State:", messages.length, messages);
     }, [messages]);
 
-    // 🌊 HYDRATION FIX: Sync DB History to SDK State
-    // We trust DB (Server State) more than SDK (Client State) for history.
-    useEffect(() => {
-        if (!historyLoaded) return;
-        if (historyMessages.length === 0) return;
-
-        // 🛡️ LOOP GUARD: Only sync if historyMessages reference has changed OR strict divergence detected
-        if (lastSyncedHistoryRef.current === historyMessages) {
-            return; // Already synced this exact snapshot
-        }
-
-        const lastHistoryMsg = historyMessages[historyMessages.length - 1];
-        const lastSdkMsg = messages[messages.length - 1];
-
-        // Case 1: DB has MORE messages (Stream failed to add message)
-        if (historyMessages.length > messages.length) {
-            console.log(`[ChatWidget] 💧 Hydrating: DB has more messages (${historyMessages.length} > ${messages.length})`);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setMessages(historyMessages as any);
-            lastSyncedHistoryRef.current = historyMessages; // MARK SYNCED
-        }
-        // Case 2: DB has *longer* content (Stream hung empty or partial)
-        else if (historyMessages.length === messages.length && lastSdkMsg && lastHistoryMsg) {
-            // Only sync if it's the assistant and DB has significantly more data (>10 chars diff)
-            // This prevents fighting with the active stream typing
-            if (lastSdkMsg.role === 'assistant' && lastHistoryMsg.content.length > (lastSdkMsg.content.length + 10)) {
-                console.log(`[ChatWidget] 💧 Hydrating: DB content richer (${lastHistoryMsg.content.length} > ${lastSdkMsg.content.length})`);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                setMessages(historyMessages as any);
-                lastSyncedHistoryRef.current = historyMessages; // MARK SYNCED
-            }
-        }
-    }, [historyLoaded, historyMessages, messages, setMessages]);
+    // 🌊 HYDRATION FIX: Removed duplicate sync logic that was causing infinite loops
+    // History is now initialized once via the useEffect below (line ~510)
 
     // Welcome Message (UI Only)
     const welcomeMessage = useMemo<Message>(() => ({
@@ -299,9 +279,8 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         return messages;
     }, [historyMessages, messages, welcomeMessage]);
 
-    // Media & Video Upload Hooks
-    const { mediaItems, addFiles, removeMedia, clearMedia, updateMediaItem, isGlobalUploading } = useMediaUpload(sessionId);
-    const { videos, addVideos, removeVideo, clearVideos, isUploading: isVideoUploading } = useVideoUpload();
+    // Unified Upload Hook (replaces useMediaUpload + useVideoUpload)
+    const { uploads, addFiles, removeFile, retryUpload, clearAll, isUploading, successfulUploads } = useUpload({ sessionId });
 
     // Scroll & Viewport
     const { messagesContainerRef, messagesEndRef, scrollToBottom } = useChatScroll(displayMessages, isOpen);
@@ -335,17 +314,10 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
     // Typing Indicator
     const typingMessage = useTypingIndicator(isLoading);
 
-    // File Selection
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            const videoFiles = files.filter(f => f.type.startsWith('video/'));
-            const imageFiles = files.filter(f => f.type.startsWith('image/'));
-
-            if (imageFiles.length > 0) addFiles(imageFiles);
-            if (videoFiles.length > 0) await addVideos(videoFiles);
-
-            e.target.value = '';
+    // File Selection - Unified handler
+    const handleFileSelect = (files: File[]) => {
+        if (files.length > 0) {
+            addFiles(files);
         }
     };
 
@@ -375,41 +347,38 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         e?.preventDefault();
 
         // 1. Guard Clauses
-        const hasActiveUploads = mediaItems.some(i => i.status === 'uploading' || i.status === 'compressing');
-        const hasActiveVideoUploads = videos.some(v => v.status === 'uploading' || v.status === 'processing');
-
-        // OPTIMISTIC CHANGE: Allow submitting even if authLoading, as long as initialized
-        // We removed 'isLoading' check to decouple UI from AI processing if users want to queue (though SDK might reject)
-        if (hasActiveUploads || hasActiveVideoUploads || !isInitialized) return;
+        if (isUploading || !isInitialized) return;
 
         const currentInput = localInput;
-        if (!currentInput.trim() && mediaItems.length === 0 && videos.length === 0) return;
+        const uploadItems = Object.values(uploads);
+        if (!currentInput.trim() && uploadItems.length === 0) return;
 
-        // 2. Prepare Structured Media Data
-        // Extract Firebase URLs
-        const mediaUrls = mediaItems
-            .filter((i: MediaUploadState) => i.status === 'done' && i.publicUrl)
-            .map((i: MediaUploadState) => i.publicUrl!);
+        // 2. Prepare Structured Media Data from successful uploads
+        const completedUploads = successfulUploads;
 
-        const mediaTypes = mediaItems
-            .filter((i: MediaUploadState) => i.status === 'done' && i.publicUrl)
-            .map((i: MediaUploadState) => i.file.type);
+        // Extract URLs for images (using serverData from discriminated union)
+        const mediaUrls = completedUploads
+            .filter(u => u.serverData?.asset_type === 'image')
+            .map(u => u.serverData!.url);
 
-        // Extract File API URIs (Native Video)
-        const videoFileUris = videos
-            .filter((v: VideoUploadState) => v.status === 'done' && v.fileUri)
-            .map((v: VideoUploadState) => v.fileUri!);
+        const mediaTypes = completedUploads
+            .filter(u => u.serverData?.asset_type === 'image')
+            .map(u => u.serverData!.mime_type);
 
-        // Extract Metadata (Trim Ranges + Full File Info)
+        // Extract File API URIs for videos
+        const videoFileUris = completedUploads
+            .filter(u => u.serverData?.asset_type === 'video')
+            .map(u => (u.serverData as { file_uri: string }).file_uri);
+
+        // Extract Metadata
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mediaMetadata: Record<string, any> = {};
-        mediaItems.forEach(i => {
-            if (i.status === 'done' && i.publicUrl) {
-                mediaMetadata[i.publicUrl] = {
-                    mimeType: i.file.type,
-                    fileSize: i.file.size,
-                    originalFileName: i.file.name,
-                    ...(i.trimRange && { trimRange: i.trimRange })
+        completedUploads.forEach(u => {
+            if (u.serverData) {
+                mediaMetadata[u.serverData.url] = {
+                    mimeType: u.serverData.mime_type,
+                    fileSize: u.serverData.size_bytes,
+                    originalFileName: u.serverData.filename,
                 };
             }
         });
@@ -422,8 +391,7 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
         };
 
         // 3. Clear UI State immediately (Optimistic)
-        clearMedia();
-        clearVideos();
+        clearAll();
         setLocalInput('');
         if (setInput) setInput('');
         setErrorMessage(null);
@@ -510,11 +478,12 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
 
     // ✅ Sync SDK messages when history loads (Late Binding)
     useEffect(() => {
-        if (historyLoaded && historyMessages.length > 0) {
+        if (historyLoaded && historyMessages.length > 0 && !hasInitializedFromHistory.current) {
+            hasInitializedFromHistory.current = true;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setMessages(historyMessages as any[]);
         }
-    }, [historyLoaded, historyMessages, setMessages]);
+    }, [historyLoaded, historyMessages]); // ✅ FIXED: Removed setMessages from deps, using ref flag to ensure one-time init
 
     return (
         <>
@@ -639,13 +608,12 @@ function ChatWidgetContent({ projectId, variant = 'floating' }: ChatWidgetProps)
                     setInputValue={handleInputChange}
                     onSubmit={submitMessage}
                     isLoading={isLoading}
-                    isGlobalUploading={isGlobalUploading || isVideoUploading}
-                    mediaItems={mediaItems}
+                    uploads={uploads}
                     onFileSelect={handleFileSelect}
+                    onRemoveUpload={removeFile}
+                    onRetryUpload={retryUpload}
                     onScrollToBottom={() => scrollToBottom('smooth')}
                     fileInputRef={fileInputRef}
-                    removeMedia={removeMedia}
-                    updateMediaItem={updateMediaItem}
                     authLoading={authLoading}
                 />
             </>

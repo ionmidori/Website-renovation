@@ -25,7 +25,7 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     timestamp: Optional[str] = None
-    attachments: Optional[dict] = None
+    attachments: Optional[list] = None  # Fixed: was dict, should be list to match Firestore data
     tool_calls: Optional[list] = None
 
 

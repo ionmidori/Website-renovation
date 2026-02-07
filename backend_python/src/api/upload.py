@@ -4,7 +4,11 @@ Media Upload Handler for Images and Videos.
 This module provides endpoints for uploading media files:
 - Images: Uploaded to Firebase Storage with signed URLs
 - Videos: Uploaded to Google AI File API for native multimodal processing
+
+**Security**: All uploaded files are validated using Magic Bytes to prevent
+MIME type spoofing attacks (e.g., .exe files renamed to .jpg).
 """
+import io
 import uuid
 import time
 from datetime import datetime, timedelta
@@ -16,6 +20,8 @@ from src.auth.jwt_handler import verify_token
 from src.schemas.internal import UserSession
 from src.services.media_processor import MediaProcessor, get_media_processor, VideoProcessingError
 from src.core.logger import get_logger
+from src.models.media import ImageMediaAsset, VideoMediaAsset
+from src.utils.security import validate_image_magic_bytes, validate_video_magic_bytes, sanitize_filename
 
 logger = get_logger(__name__)
 
@@ -40,12 +46,12 @@ class ImageUploadResponse(BaseModel):
     size_bytes: int
 
 
-@router.post("/image", response_model=ImageUploadResponse)
+@router.post("/image", response_model=ImageMediaAsset)
 async def upload_image(
     file: UploadFile = File(...),
     session_id: str = Form(...),
     user_session: UserSession = Depends(verify_token),
-) -> ImageUploadResponse:
+) -> ImageMediaAsset:
     """
     Upload an image to Firebase Storage.
     
@@ -74,13 +80,12 @@ async def upload_image(
                 detail=f"⏳ Upload limit reached (10 images/day). Resets at {reset_time}."
             )
         
-        # 🛡️ SECURITY: Validate MIME type
-        ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-        if file.content_type not in ALLOWED_MIME_TYPES:
-            raise HTTPException(
-                status_code=415,
-                detail=f"Unsupported image type: {file.content_type}. Allowed: {', '.join(ALLOWED_MIME_TYPES)}"
-            )
+        # 🛡️ SECURITY: Magic Bytes Validation (Prevents .exe -> .jpg attacks)
+        validated_mime = await validate_image_magic_bytes(file)
+        logger.info(f"🛡️ Image Magic Bytes check passed: {validated_mime}")
+        
+        # Sanitize filename
+        safe_filename = await sanitize_filename(file.filename or "upload.jpg")
         
         # Read file content
         content = await file.read()
@@ -113,9 +118,10 @@ async def upload_image(
                 detail=f"File too large: {file_size / 1024 / 1024:.2f}MB. Maximum size is 10MB."
             )
         
-        # Generate unique filename
-        ext = file.filename.split('.')[-1] if file.filename and '.' in file.filename else 'jpg'
-        unique_filename = f"{uuid.uuid4().hex}.{ext}"
+        # Generate unique filename with asset ID
+        asset_id = uuid.uuid4().hex
+        ext = safe_filename.split('.')[-1] if '.' in safe_filename else 'jpg'
+        unique_filename = f"{asset_id}.{ext}"
         file_path = f"user-uploads/{session_id}/{unique_filename}"
         
         # Upload to Firebase Storage
@@ -125,8 +131,15 @@ async def upload_image(
         
         blob.upload_from_string(
             content,
-            content_type=file.content_type
+            content_type=validated_mime  # Use validated MIME, not declared
         )
+
+        # 🛡️ SECURITY: Set Metadata
+        # - Cache-Control: Immutable (1 year) since we use UUIDs
+        # - Content-Disposition: Inline but with correct filename
+        blob.cache_control = "public, max-age=31536000, immutable"
+        blob.content_disposition = f'inline; filename="{safe_filename}"'
+        blob.patch()
         
         # Generate signed URL (7 days validity)
         signed_url = blob.generate_signed_url(
@@ -155,12 +168,14 @@ async def upload_image(
             }
         )
         
-        return ImageUploadResponse(
-            public_url=public_url,
-            signed_url=signed_url,
+        return ImageMediaAsset(
+            id=asset_id,
+            url=public_url,
+            filename=safe_filename,
+            mime_type=validated_mime,
+            size_bytes=file_size,
             file_path=file_path,
-            mime_type=file.content_type,
-            size_bytes=file_size
+            signed_url=signed_url
         )
         
     except HTTPException:
@@ -173,12 +188,12 @@ async def upload_image(
         )
 
 
-@router.post("/video", response_model=VideoUploadResponse)
+@router.post("/video", response_model=VideoMediaAsset)
 async def upload_video(
     file: UploadFile = File(...),
     user_session: UserSession = Depends(verify_token),
     processor: MediaProcessor = Depends(get_media_processor)
-) -> VideoUploadResponse:
+) -> VideoMediaAsset:
     """
     Upload a video file to Google AI File API for native processing.
     
@@ -208,12 +223,9 @@ async def upload_video(
             )
         
         try:
-            # 🛡️ SECURITY: Magic Bytes Validation
-            from src.utils.security import validate_video_magic_bytes, sanitize_filename
-            
+            # 🛡️ SECURITY: Magic Bytes Validation (already imported at top)
             detected_mime = await validate_video_magic_bytes(file)
-            logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")
-            
+            logger.info(f"🛡️ Magic Bytes check passed: {detected_mime}")            
             safe_filename = await sanitize_filename(file.filename or "upload.mp4")
             logger.info(f"📹 User {user_id} uploading video: {safe_filename} ({file.content_type})")
             
@@ -243,12 +255,17 @@ async def upload_video(
             # ✅ INCREMENT QUOTA (Only on success)
             increment_quota(user_id, "upload_video")
             
-            return VideoUploadResponse(
-                file_uri=active_file.uri,
+            # Generate asset ID
+            asset_id = uuid.uuid4().hex
+            
+            return VideoMediaAsset(
+                id=asset_id,
+                url=active_file.uri,  # File API URI is the URL for videos
+                filename=safe_filename,
                 mime_type=active_file.mime_type,
-                display_name=active_file.display_name,
-                state=active_file.state.name,
-                size_bytes=file_size
+                size_bytes=file_size,
+                file_uri=active_file.uri,
+                state=active_file.state.name
             )
             
         except VideoProcessingError as e:
