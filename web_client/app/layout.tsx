@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Playfair_Display, Lato } from "next/font/google";
+import { Outfit, Playfair_Display, Lato, Cinzel } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { AppCheckProvider } from "@/components/providers/AppCheckProvider";
@@ -15,6 +15,12 @@ const outfit = Outfit({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-serif",
+  display: "swap",
+});
+
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  variable: "--font-trajan", // Mapping effectively to Trajan style
   display: "swap",
 });
 
@@ -51,7 +57,7 @@ export default function RootLayout({
   return (
     <html lang="it" className="scroll-smooth" suppressHydrationWarning>
       <body
-        className={`${outfit.variable} ${playfair.variable} ${lato.variable} antialiased font-sans bg-luxury-bg text-luxury-text`}
+        className={`${outfit.variable} ${playfair.variable} ${lato.variable} ${cinzel.variable} antialiased font-sans bg-luxury-bg text-luxury-text`}
         suppressHydrationWarning
       >
         <AppCheckProvider>

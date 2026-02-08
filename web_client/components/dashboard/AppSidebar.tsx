@@ -445,7 +445,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<'div'>)
                             {isDesktopCollapsed && (
                                 <Link href="/" className="relative z-10 group/logo mb-2">
                                     <div className="w-8 h-8 rounded bg-luxury-gold/10 flex items-center justify-center border border-luxury-gold/20 group-hover/logo:border-luxury-gold/50 transition-colors">
-                                        <span className="font-bold text-luxury-gold text-xs">SYD</span>
+                                        <span className="font-bold text-luxury-gold text-xs font-trajan">SYD</span>
                                     </div>
                                 </Link>
                             )}

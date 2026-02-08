@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation'; // 🔥 NEW
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Mail, FileText, Image as ImageIcon } from 'lucide-react';
+import { Menu, X, Mail, FileText, Image as ImageIcon, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { AuthDialog } from '@/components/auth/AuthDialog'; // Import AuthDialog
@@ -243,33 +243,14 @@ export function Navbar() {
 
                             {/* Primary Actions - Icon Only Row */}
                             <div className="flex flex-col items-center gap-6 mb-8 mt-4">
-                                <button
+                                <Link
+                                    href="/dashboard"
                                     className="flex items-center justify-center w-14 h-14 rounded-full bg-luxury-teal/10 border border-luxury-teal/20 text-luxury-teal hover:bg-luxury-teal hover:text-white transition-all duration-300 shadow-lg shadow-luxury-teal/10 active:scale-95 group"
-                                    onClick={() => {
-                                        setMobileMenuOpen(false);
-                                        const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
-                                            detail: { message: "Vorrei richiedere un preventivo gratuito per la mia ristrutturazione." }
-                                        });
-                                        window.dispatchEvent(event);
-                                    }}
-                                    aria-label="Richiedi Preventivo"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    aria-label="Dashboard"
                                 >
-                                    <FileText className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                </button>
-
-                                <button
-                                    className="flex items-center justify-center w-14 h-14 rounded-full bg-luxury-gold/10 border border-luxury-gold/20 text-luxury-gold hover:bg-luxury-gold hover:text-white transition-all duration-300 shadow-lg shadow-luxury-gold/10 active:scale-95 group"
-                                    onClick={() => {
-                                        setMobileMenuOpen(false);
-                                        const event = new CustomEvent('OPEN_CHAT_WITH_MESSAGE', {
-                                            detail: { message: "Ciao SYD! Vorrei creare un rendering fotorealistico." }
-                                        });
-                                        window.dispatchEvent(event);
-                                    }}
-                                    aria-label="Crea Rendering"
-                                >
-                                    <ImageIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                </button>
+                                    <LayoutDashboard className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                </Link>
                             </div>
 
                             <div className="flex flex-col gap-6">

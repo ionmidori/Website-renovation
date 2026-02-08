@@ -53,7 +53,7 @@ export function CookieConsent() {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className="fixed bottom-6 inset-x-6 z-[200] flex justify-center pointer-events-none"
                 >
-                    <div className="w-full max-w-4xl glass-premium p-6 md:p-8 rounded-[2rem] border-luxury-gold/20 shadow-2xl pointer-events-auto relative overflow-hidden group">
+                    <div className="w-full max-w-4xl glass-premium !bg-slate-900/95 p-6 md:p-8 rounded-[2rem] border-luxury-gold/20 shadow-2xl pointer-events-auto relative overflow-hidden group">
                         {/* Atmospheric Background Element */}
                         <div className="absolute -top-10 -right-10 w-40 h-40 bg-luxury-gold/5 rounded-full blur-3xl pointer-events-none group-hover:bg-luxury-gold/10 transition-all duration-700" />
 

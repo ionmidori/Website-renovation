@@ -81,7 +81,7 @@ export function Hero() {
         <section className="relative min-h-[100dvh] flex items-center pt-20 overflow-hidden bg-luxury-bg">
             {/* Background Elements - Luxury Tech */}
             <div className="absolute inset-0 bg-luxury-bg z-0" />
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-luxury-teal/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-luxury-teal/10 rounded-full atmospheric-blur-optimized -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-luxury-gold/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             <div className="container mx-auto px-4 md:px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center lg:items-start">
@@ -108,7 +108,7 @@ export function Hero() {
                             Casa dei Sogni
                             <span className="absolute -bottom-2 left-0 w-full h-1 bg-luxury-teal/30 rounded-full blur-sm"></span>
                         </span>
-                        <br /> con SYD BIOEDILIZIA
+                        <br /> con <span className="font-trajan tracking-tight">SYD BIOEDILIZIA</span>
                     </h1>
 
                     <p className="text-lg md:text-xl text-luxury-text/80 mb-10 max-w-xl leading-relaxed font-light">

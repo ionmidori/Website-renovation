@@ -172,7 +172,7 @@ export function Footer() {
 
                 <div className="border-t border-luxury-gold/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-luxury-text/40 text-sm font-light">
-                        © {currentYear} SYD BIOEDILIZIA. Tutti i diritti riservati.
+                        © {currentYear} <span className="font-trajan tracking-tight text-luxury-gold">SYD BIOEDILIZIA</span>. Tutti i diritti riservati.
                     </p>
                     <div className="flex gap-6 text-sm text-luxury-text/40">
                         <Link href="/privacy" className="hover:text-luxury-gold transition-colors">Privacy Policy</Link>

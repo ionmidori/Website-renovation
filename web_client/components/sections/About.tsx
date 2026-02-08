@@ -54,7 +54,7 @@ export function About() {
                         {/* Company Intro */}
                         <div className="prose prose-invert prose-lg text-luxury-text/80 leading-relaxed font-light">
                             <p>
-                                <span className="text-luxury-gold font-medium">SYD Bioedilizia</span> è una realtà operativa in tutta la Provincia di Roma, nata per offrire a privati e aziende soluzioni edili complete e personalizzate.
+                                <span className="text-luxury-gold font-medium font-trajan tracking-tight">SYD BIOEDILIZIA</span> è una realtà operativa in tutta la Provincia di Roma, nata per offrire a privati e aziende soluzioni edili complete e personalizzate.
                             </p>
                             <p className="mt-4">
                                 Sebbene l'azienda sia giovane, le nostre fondamenta sono storiche: il nostro lavoro si basa sulla competenza di un team di tecnici con <span className="text-luxury-text font-medium">oltre 30 anni di esperienza</span> sul campo, supportati oggi dalle tecnologie più avanzate.
@@ -130,7 +130,7 @@ export function About() {
 
                         {/* Why Choose Us */}
                         <div className="bg-gradient-to-br from-luxury-gold/10 to-transparent p-8 rounded-2xl border border-luxury-gold/20">
-                            <h3 className="text-2xl font-serif font-bold text-luxury-gold mb-4">Perché Scegliere SYD Bioedilizia</h3>
+                            <h3 className="text-2xl font-serif font-bold text-luxury-gold mb-4">Perché Scegliere <span className="font-trajan tracking-tight">SYD BIOEDILIZIA</span></h3>
                             <p className="text-luxury-text/80 mb-6 leading-relaxed">
                                 Non offriamo solo lavorazioni di alta qualità. Ti supportiamo anche nella burocrazia, guidandoti nell'accesso alle <strong>detrazioni fiscali</strong> e agli <strong>Ecobonus</strong> per interventi come l'insufflaggio termico e la riqualificazione energetica.
                             </p>

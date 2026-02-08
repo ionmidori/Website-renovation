@@ -44,8 +44,13 @@
   /* Luxury Tech Palette */
   --color-luxury-bg: #264653;
   --color-luxury-gold: #E9C46A;
+  --color-luxury-gold-dark: #B38B36;
   --color-luxury-teal: #2A9D8F;
   --color-luxury-text: #F4F1DE;
+}
+
+.font-trajan {
+  font-family: var(--font-trajan), serif;
 }
 
 :root {
@@ -225,8 +230,15 @@
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(233, 196, 106, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(233, 196, 106, 0.25);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.atmospheric-blur-optimized {
+  @apply blur-[60px] md:blur-[120px];
+  will-change: transform;
 }
 
 /* Shimmer Effect */
