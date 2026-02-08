@@ -23,13 +23,13 @@ def _get_llm():
     return _llm
 
 def _get_reasoning_llm():
-    """Lazy-load Reasoning LLM instance (Gemini 2.0 Flash)."""
+    """Lazy-load Reasoning LLM instance (Gemini 2.5 Flash)."""
     global _reasoning_llm
     if _reasoning_llm is None:
         logger.info("🧠 Initializing Reasoning LLM...")
         _reasoning_llm = ChatGoogleGenerativeAI(
-            # Using Flash for reasoning speed
-            model="gemini-2.0-flash", 
+            # Using 2.5 Flash for improved reasoning & unified quota
+            model="gemini-2.5-flash", 
             google_api_key=settings.api_key,
             temperature=0.0, # Strict Logic
         )

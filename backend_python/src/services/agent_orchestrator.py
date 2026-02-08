@@ -170,6 +170,13 @@ class AgentOrchestrator:
             if accumulated_response:
                 await self.repo.save_message(request.session_id, "assistant", accumulated_response)
                 logger.info(f"[Orchestrator] Saved response ({len(accumulated_response)} chars)")
+            else:
+                # 🛡️ Fallback: If agent finished without text/tools, it likely followed an error path
+                logger.warning("[Orchestrator] Agent finished without producing text or tool calls.")
+                fallback_msg = "Non sono riuscito a generare una risposta. Prova a riformulare la richiesta o controlla la connessione."
+                await self.repo.save_message(request.session_id, "assistant", fallback_msg)
+                async for chunk in stream_text(fallback_msg):
+                    yield chunk
 
         except Exception as e:
             await self._handle_error(e)
